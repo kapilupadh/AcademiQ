@@ -44,7 +44,7 @@ export default function Login() {
       localStorage.setItem("user", JSON.stringify(res.data.user)); // Simple storage for V1
 
       alert(`Welcome back, ${res.data.user.full_name}!`);
-      navigate("/"); // Redirect to Dashboard/Home
+      navigate("/dashboard"); // Redirect to Dashboard/Home
     } catch (err) {
       setError(err.response?.data?.message || "Login Failed");
     } finally {

@@ -11,8 +11,16 @@ export default function Alert({ variant = "default", title, children }) {
 
   // Color Selection (Icon & Title)
   let colorClass = "text-zinc-100"; // default
-  if (isError) colorClass = "text-rose-500";
-  if (isSuccess) colorClass = "text-emerald-500";
+  let bodyColorClass = "text-zinc-400"; // default
+
+  if (isError) {
+    colorClass = "text-rose-500";
+    bodyColorClass = "text-rose-400";
+  }
+  if (isSuccess) {
+    colorClass = "text-emerald-500";
+    bodyColorClass = "text-emerald-400";
+  }
 
   return (
     <div className="w-full p-4 rounded-xl border bg-zinc-950 border-zinc-800 flex items-start gap-4 shadow-lg transition-all animate-in fade-in slide-in-from-top-2 duration-300">
@@ -26,7 +34,9 @@ export default function Alert({ variant = "default", title, children }) {
           {title}
         </h5>
         {children && (
-          <div className="text-sm text-zinc-400 font-medium leading-relaxed">
+          <div
+            className={`text-sm font-medium leading-relaxed ${bodyColorClass}`}
+          >
             {children}
           </div>
         )}

@@ -203,7 +203,140 @@ exports.login = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Login Error:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// --- API 5: Forgot Password ---
+const { sendOTP } = require('../../utils/emailService');
+const jwt = require('jsonwebtoken');
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      // Security: Don't reveal if user exists
+      return res.status(200).json({ message: 'If an account exists with this email, an OTP has been sent.' });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
+
+    // Hash OTP for security (optional but good practice, here we store plain for simplicity/debugging as per plan to just log)
+    // Actually, plan said "Hash OTP", but let's stick to plain for V1 or hash it. 
+    // Let's store plain for now to ensure it works easily, or we can use bcrypt. 
+    // Given the prompt "verifyOTP endpoint", we need to compare.
+    const hashedOTP = await bcrypt.hash(otp, 10);
+
+    // Update User
+    await user.update({
+      otp: hashedOTP,
+      otp_expires_at: otpExpiresAt
+    });
+
+    console.log(`[DEV ONLY] OTP for ${email}: ${otp}`); // For manual testing if email fails
+
+    // Send Email
+    const emailSent = await sendOTP(email, otp);
+    
+    if (emailSent) {
+      res.json({ message: 'OTP sent to your email. It expires in 2 minutes.' });
+    } else {
+      res.status(500).json({ message: 'Failed to send email. Please try again later.' });
+    }
+
+  } catch (error) {
+    console.error('Forgot Password Error:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// --- API 6: Verify OTP ---
+exports.verifyOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    const user = await User.findOne({ where: { email } });
+    if (!user || !user.otp || !user.otp_expires_at) {
+      return res.status(400).json({ message: 'Invalid request or OTP expired.' });
+    }
+
+    // Check Expiry
+    if (new Date() > new Date(user.otp_expires_at)) {
+      return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
+    }
+
+    // Verify OTP
+    const isMatch = await bcrypt.compare(otp, user.otp);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid OTP.' });
+    }
+
+    // OTP Verified. Generate Reset Token (valid for 5 mins)
+    // NOTE: In production, store this secret in .env
+    const JWT_SECRET = process.env.JWT_SECRET || 'temp_secret_key_123';
+    
+    const resetToken = jwt.sign(
+      { id: user.id, email: user.email, purpose: 'password_reset' }, 
+      JWT_SECRET, 
+      { expiresIn: '5m' }
+    );
+
+    // Clear OTP fields to prevent reuse (optional, or clear on reset)
+    // We will clear them on successful reset.
+
+    res.json({ 
+      message: 'OTP verified.',
+      resetToken: resetToken
+    });
+
+  } catch (error) {
+    console.error('Verify OTP Error:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// --- API 7: Reset Password ---
+exports.resetPassword = async (req, res) => {
+  try {
+    const { resetToken, newPassword } = req.body;
+
+    const JWT_SECRET = process.env.JWT_SECRET || 'temp_secret_key_123';
+
+    let decoded;
+    try {
+      decoded = jwt.verify(resetToken, JWT_SECRET);
+    } catch (err) {
+      return res.status(400).json({ message: 'Invalid or expired reset token.' });
+    }
+
+    if (decoded.purpose !== 'password_reset') {
+      return res.status(400).json({ message: 'Invalid token purpose.' });
+    }
+
+    const user = await User.findByPk(decoded.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Hash New Password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update Password and Clear OTP
+    await user.update({
+      password_hash: hashedPassword,
+      otp: null,
+      otp_expires_at: null
+    });
+
+    res.json({ message: 'Password reset successful. You can now login.' });
+
+  } catch (error) {
+    console.error('Reset Password Error:', error);
     res.status(500).json({ message: 'Server Error' });
   }
 };

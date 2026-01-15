@@ -42,9 +42,17 @@ const User = sequelize.define('User', {
     allowNull: true,
   },
   role: {
-    type: DataTypes.ENUM('student', 'admin'),
+    type: DataTypes.ENUM('student', 'admin', 'teacher'),
     defaultValue: 'student',
     allowNull: false,
+  },
+  otp: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  otp_expires_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
   },
   registered_date: {
     type: DataTypes.DATE,
