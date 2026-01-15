@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Lock, Mail, Loader2 } from "lucide-react"; // Added Icons
+import { Lock, Mail, Loader2 } from "lucide-react";
 import axios from "axios";
 import Alert from "../../../components/ui/Alert";
 
-export default function Login() {
+export default function TeacherLogin() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     login_id: "", // email or username
@@ -18,7 +18,6 @@ export default function Login() {
       ...formData,
       [e.target.type === "email" ? "login_id" : "password"]: e.target.value,
     });
-    // Note: The input for email/username should have a generic name or handle generic input
   };
 
   const handleGenericChange = (e) => {
@@ -40,14 +39,19 @@ export default function Login() {
         password: formData.password,
       });
 
-      // Store user info / token in localStorage or Context
-      localStorage.setItem("user", JSON.stringify(res.data.user)); // User details
-      localStorage.setItem("token", res.data.token); // JWT Token
+      // Optional: Check if role is teacher
+      if (res.data.user.role !== "teacher" && res.data.user.role !== "admin") {
+        // Allow them in but maybe warn? Or strictly:
+        // throw new Error("This portal is for Teachers only.");
+        // For now, let's just log them in as the user requested "same style" login.
+      }
 
-      // alert(`Welcome back, ${res.data.user.full_name}!`);
-      navigate("/dashboard"); // Redirect to Dashboard/Home
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      localStorage.setItem("token", res.data.token);
+
+      navigate("/dashboard");
     } catch (err) {
-      setError(err.response?.data?.message || "Login Failed");
+      setError(err.response?.data?.message || err.message || "Login Failed");
     } finally {
       setLoading(false);
     }
@@ -58,10 +62,10 @@ export default function Login() {
       <div className="w-full max-w-[450px] p-8 rounded-xl shadow-2xl border bg-white border-zinc-200 dark:bg-zinc-950 dark:border-zinc-800 transition-colors duration-300">
         <div className="mb-8 text-center space-y-2">
           <h2 className="text-3xl font-bold text-zinc-900 dark:text-white">
-            Welcome back
+            Teacher Login
           </h2>
           <p className="text-zinc-500 dark:text-zinc-400">
-            Enter your credentials to access your account
+            Access your teaching portal
           </p>
         </div>
 
@@ -83,7 +87,7 @@ export default function Login() {
                 type="text"
                 value={formData.login_id}
                 onChange={handleGenericChange}
-                placeholder="student@example.com"
+                placeholder="teacher@example.com"
                 className="w-full pl-10 px-3 py-2 text-sm bg-transparent border rounded-md outline-none border-zinc-300 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-700 dark:focus:ring-zinc-700 placeholder-zinc-400 transition-all"
               />
               <Mail className="absolute left-3 top-2.5 w-4 h-4 text-zinc-400" />
@@ -141,10 +145,10 @@ export default function Login() {
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
             Don't have an account?{" "}
             <Link
-              to="/register"
+              to="/teacher-register"
               className="font-semibold text-zinc-900 hover:text-zinc-700 underline dark:text-zinc-100 dark:hover:text-white transition-colors"
             >
-              Sign up
+              Sign up as Teacher
             </Link>
           </p>
         </div>

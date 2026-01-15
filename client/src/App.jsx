@@ -5,6 +5,14 @@ import ForgotPassword from "./pages/auth/ForgotPassword/ForgotPassword";
 import Dashboard from "./pages/student/Dashboard/Dashboard";
 import Layout from "./components/layout/Layout";
 import Navbar from "./components/layout/Navbar";
+import Sidebar from "./components/layout/Sidebar";
+import ExamInstructions from "./pages/student/Exam/ExamInstructions";
+import ExamPortal from "./pages/student/Exam/ExamPortal";
+import ExamLayout from "./components/layout/ExamLayout";
+import Profile from "./pages/student/Profile/Profile";
+import TeacherLogin from "./pages/auth/Login/TeacherLogin";
+import TeacherRegister from "./pages/auth/Register/TeacherRegister";
+import GenerateId from "./pages/admin/GenerateId";
 
 export default function App() {
   return (
@@ -41,6 +49,24 @@ export default function App() {
           }
         />
 
+        {/* TEACHER ROUTING */}
+        <Route
+          path="/teacher-login"
+          element={
+            <Layout header={<Navbar page="public" />}>
+              <TeacherLogin />
+            </Layout>
+          }
+        />
+        <Route
+          path="/teacher-register"
+          element={
+            <Layout header={<Navbar page="public" />}>
+              <TeacherRegister />
+            </Layout>
+          }
+        />
+
         {/* DEFAULT: Redirect to Login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
@@ -48,12 +74,70 @@ export default function App() {
         <Route
           path="/dashboard"
           element={
-            <Layout
-              header={<Navbar page="student" />}
-              sidebar={<div className="text-zinc-500">College Sidebar</div>}
-            >
-              <Dashboard />
-            </Layout>
+            <>
+              <Sidebar />
+              {/* Add padding left for the sidebar space */}
+              <div className="md:pl-[240px]">
+                <Layout header={<Navbar page="student" />}>
+                  <Dashboard />
+                </Layout>
+              </div>
+            </>
+          }
+        />
+
+        <Route
+          path="/admin/generate-id"
+          element={
+            <>
+              <Sidebar />
+              <div className="md:pl-[240px]">
+                <Layout header={<Navbar page="student" />}>
+                  <GenerateId />
+                </Layout>
+              </div>
+            </>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <>
+              <Sidebar />
+              <div className="md:pl-[240px]">
+                <Layout header={<Navbar page="student" />}>
+                  <Profile />
+                </Layout>
+              </div>
+            </>
+          }
+        />
+
+        {/* EXAM MODULE ROUTES */}
+        {/* Instructions Page - Wrapped in Standard Layout (Optional, or ExamLayout) */}
+        {/* Let's keep instructions in standard layout so they feel still "in app" */}
+        <Route
+          path="/exam/instructions"
+          element={
+            <>
+              <Sidebar />
+              <div className="md:pl-[240px]">
+                <Layout header={<Navbar page="student" />}>
+                  <ExamInstructions />
+                </Layout>
+              </div>
+            </>
+          }
+        />
+
+        {/* The Actual Exam Portal - NO Sidebar, NO Navbar, Custom Layout */}
+        <Route
+          path="/exam/portal/:sessionId"
+          element={
+            <ExamLayout>
+              <ExamPortal />
+            </ExamLayout>
           }
         />
       </Routes>

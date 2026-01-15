@@ -43,7 +43,12 @@ exports.validateId = async (req, res) => {
     res.json({ 
       valid: true, 
       session_token: sessionToken, 
-      message: 'Unique ID validated. Proceed to registration.' 
+      message: 'Unique ID validated. Proceed to registration.',
+      role: idRecord.role,
+      bound_data: {
+        name: idRecord.student_name,
+        email: idRecord.student_email
+      }
     });
 
   } catch (error) {
@@ -104,6 +109,20 @@ exports.register = async (req, res) => {
        return res.status(400).json({ message: 'Unique ID is invalid or already used.' });
     }
 
+    // STRICT TEACHER VALIDATION
+    if (idRecord.role === 'teacher') {
+      const inputName = full_name.trim().toLowerCase();
+      const boundName = (idRecord.student_name || '').trim().toLowerCase();
+      const inputEmail = email.trim().toLowerCase();
+      const boundEmail = (idRecord.student_email || '').trim().toLowerCase();
+
+      if (inputName !== boundName || inputEmail !== boundEmail) {
+        return res.status(400).json({ 
+          message: 'Registration Failed: Name and Email must match the details provided by Admin for this Teacher ID.' 
+        });
+      }
+    }
+
     const emailExists = await User.findOne({ where: { email } });
     if (emailExists) {
       return res.status(400).json({ message: 'Email already registered.' });
@@ -127,7 +146,7 @@ exports.register = async (req, res) => {
       password_hash: hashedPassword,
       full_name,
       dob,
-      role: 'student', // Default rule as per request
+      role: idRecord.role, // Use role from UniqueId (admin, teacher, student)
       is_active: true,
       email_verified: false, // Default false until verify
       registered_date: new Date()
@@ -153,11 +172,13 @@ exports.register = async (req, res) => {
 
   } catch (error) {
     console.error('Registration Error:', error);
-    res.status(500).json({ message: 'Registration Failed' });
+    res.status(500).json({ message: error.message || 'Registration Failed' });
   }
 };
 
 // --- API 4: Login ---
+const jwt = require('jsonwebtoken');
+
 exports.login = async (req, res) => {
   try {
     const { login_id, password } = req.body; // login_id can be username or email
@@ -187,8 +208,9 @@ exports.login = async (req, res) => {
       return res.status(403).json({ message: 'Account is inactive. Contact Admin.' });
     }
 
-    // 4. Generate Token (Simple Mock Token for V1 or actually implement JWT if secret exists)
-    // Ideally: const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET);
+    // 4. Generate Token
+    const JWT_SECRET = process.env.JWT_SECRET || 'temp_secret_key_123';
+    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
     
     res.json({
       message: 'Login successful',
@@ -198,18 +220,19 @@ exports.login = async (req, res) => {
         email: user.email,
         role: user.role,
         full_name: user.full_name
-      }
-      // token: token
+      },
+      token: token
     });
 
   } catch (error) {
+    console.error('Login Error:', error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
 
 // --- API 5: Forgot Password ---
 const { sendOTP } = require('../../utils/emailService');
-const jwt = require('jsonwebtoken');
+
 
 exports.forgotPassword = async (req, res) => {
   try {
@@ -240,12 +263,12 @@ exports.forgotPassword = async (req, res) => {
     console.log(`[DEV ONLY] OTP for ${email}: ${otp}`); // For manual testing if email fails
 
     // Send Email
-    const emailSent = await sendOTP(email, otp);
+    const emailResult = await sendOTP(email, otp);
     
-    if (emailSent) {
+    if (emailResult.success) {
       res.json({ message: 'OTP sent to your email. It expires in 2 minutes.' });
     } else {
-      res.status(500).json({ message: 'Failed to send email. Please try again later.' });
+      res.status(500).json({ message: `Failed to send email: ${emailResult.error}` });
     }
 
   } catch (error) {
@@ -338,5 +361,65 @@ exports.resetPassword = async (req, res) => {
   } catch (error) {
     console.error('Reset Password Error:', error);
     res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// --- API 8: Get Profile ---
+exports.getProfile = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id, {
+      attributes: { exclude: ['password_hash', 'otp', 'otp_expires_at'] }
+    });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching profile' });
+  }
+};
+
+// --- API 9: Update Profile ---
+exports.updateProfile = async (req, res) => {
+  try {
+    const { full_name, dob } = req.body;
+    const user = await User.findByPk(req.user.id);
+    
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Update allowed fields
+    if (full_name) user.full_name = full_name;
+    if (dob) user.dob = dob;
+    
+    await user.save();
+
+    res.json({ message: 'Profile updated successfully', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating profile' });
+  }
+};
+
+// --- API 10: Change Password ---
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findByPk(req.user.id);
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Incorrect current password' });
+    }
+
+    // Update with new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    
+    user.password_hash = hashedPassword;
+    await user.save();
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error changing password' });
   }
 };

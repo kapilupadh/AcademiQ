@@ -1,17 +1,15 @@
-// src/pages/Register.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { HelpCircle, Loader2 } from "lucide-react";
 import axios from "axios";
 import Alert from "../../../components/ui/Alert";
 
-export default function Register() {
+export default function TeacherRegister() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1); // 1: ID Validation, 2: Full Form
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Form Data
   const [formData, setFormData] = useState({
     unique_id: "",
     session_token: "",
@@ -21,9 +19,10 @@ export default function Register() {
     dob: "",
     password: "",
     confirm_password: "",
-    username: "", // Added username
+    username: "",
   });
 
+  const [boundData, setBoundData] = useState(null); // Stores admin provided name/email
   const [agreed, setAgreed] = useState(false);
 
   const handleChange = (e) => {
@@ -33,10 +32,9 @@ export default function Register() {
     });
   };
 
-  // Step 1: Validate Unique ID
   const handleValidateId = async () => {
     if (!formData.unique_id) {
-      setError("Please enter your Unique ID.");
+      setError("Please enter your Teacher ID.");
       return;
     }
 
@@ -52,22 +50,53 @@ export default function Register() {
       );
 
       if (res.data.valid) {
+        if (res.data.role !== "teacher") {
+          setError("This ID is not authorized for Teacher registration.");
+          setLoading(false);
+          return;
+        }
+
         setFormData((prev) => ({
           ...prev,
           session_token: res.data.session_token,
         }));
+
+        // Handle Bound Data if present
+        if (res.data.bound_data) {
+          setBoundData(res.data.bound_data);
+
+          // Attempt to split name
+          const fullName = res.data.bound_data.name || "";
+          const lastSpaceIndex = fullName.lastIndexOf(" ");
+          let firstName = fullName;
+          let lastName = "";
+
+          if (lastSpaceIndex > 0) {
+            firstName = fullName.substring(0, lastSpaceIndex);
+            lastName = fullName.substring(lastSpaceIndex + 1);
+          }
+
+          setFormData((prev) => ({
+            ...prev,
+            first_name: firstName,
+            last_name: lastName,
+            email: res.data.bound_data.email || "",
+          }));
+        }
+
         setStep(2);
       }
     } catch (err) {
       setError(
-        err.response?.data?.message || "Invalid Unique ID or Connection Error"
+        err.response?.data?.message ||
+          err.message ||
+          "Invalid ID or Connection Error"
       );
     } finally {
       setLoading(false);
     }
   };
 
-  // Step 2: Register
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
@@ -80,12 +109,6 @@ export default function Register() {
     setLoading(true);
 
     try {
-      // Construct full name for backend (though backend stores user detail, request said full_name)
-      // Actually backend User model has first_name / last_name, but Logic req says "full_name" is passed.
-      // Based on my previously written Controller, it expects 'full_name' in body but stores in field 'full_name'?
-      // Wait, User model has 'full_name', NOT first/last separate (I updated User model to have full_name)
-      // BUT Register.jsx has First/Last inputs. I will combine them.
-
       const payload = {
         unique_id: formData.unique_id,
         session_token: formData.session_token,
@@ -97,12 +120,11 @@ export default function Register() {
       };
 
       await axios.post("http://localhost:5000/api/auth/register", payload);
-
-      // Success
-      // alert("Registration Successful! Please login.");
-      navigate("/login");
+      navigate("/teacher-login");
     } catch (err) {
-      setError(err.response?.data?.message || "Registration Failed");
+      setError(
+        err.response?.data?.message || err.message || "Registration Failed"
+      );
     } finally {
       setLoading(false);
     }
@@ -113,12 +135,12 @@ export default function Register() {
       <div className="w-full max-w-[600px] p-8 rounded-xl shadow-2xl border bg-white border-zinc-200 dark:bg-zinc-950 dark:border-zinc-800 transition-colors duration-300">
         <div className="mb-6 text-center space-y-2">
           <h2 className="text-3xl font-bold text-zinc-900 dark:text-white">
-            Create your account
+            Teacher Registration
           </h2>
           <p className="text-zinc-500 dark:text-zinc-400">
             {step === 1
-              ? "Enter your Unique ID to start"
-              : "Complete your registration details"}
+              ? "Enter your Teacher ID to verify eligibility"
+              : "Complete your account setup"}
           </p>
         </div>
 
@@ -131,24 +153,23 @@ export default function Register() {
         )}
 
         <form className="space-y-4" onSubmit={handleRegister}>
-          {/* Unique ID - Always Visible, Disabled in Step 2 */}
+          {/* Unique ID */}
           <div className="space-y-1 relative group">
             <div className="flex items-center gap-2">
               <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 cursor-help">
-                Unique ID
+                Teacher ID
               </label>
               <HelpCircle className="w-4 h-4 text-zinc-400" />
             </div>
-            {/* Tooltip code... */}
+
             <div className="flex gap-2">
               <input
                 type="text"
-                name="unique_id" // Important for handleChange
-                id="unique_id"
+                name="unique_id"
                 value={formData.unique_id}
                 onChange={handleChange}
                 disabled={step === 2}
-                placeholder="e.g. CS-2024-001"
+                placeholder="e.g. TCH-2024-XXXX"
                 className={`w-full px-3 py-2 text-sm bg-transparent border rounded-md outline-none border-zinc-300 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-700 dark:focus:ring-zinc-700 placeholder-zinc-400 font-medium transition-all ${
                   step === 2 ? "opacity-50 cursor-not-allowed" : ""
                 }`}
@@ -173,7 +194,14 @@ export default function Register() {
 
           {step === 2 && (
             <>
-              {/* Username Field (Added) */}
+              {boundData && (
+                <div className="p-3 mb-2 text-xs rounded bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 border border-blue-200 dark:border-blue-800">
+                  <strong>Note:</strong> Your Name and Email have been
+                  pre-filled based on your Teacher ID. They cannot be changed.
+                </div>
+              )}
+
+              {/* Username Field */}
               <div className="space-y-1">
                 <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   Username
@@ -181,10 +209,9 @@ export default function Register() {
                 <input
                   type="text"
                   name="username"
-                  id="username" // fallback
                   value={formData.username}
                   onChange={handleChange}
-                  placeholder="captain_code"
+                  placeholder="prof_smith"
                   className="w-full px-3 py-2 text-sm bg-transparent border rounded-md outline-none border-zinc-300 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-700 dark:focus:ring-zinc-700 placeholder-zinc-400 font-medium transition-all"
                 />
               </div>
@@ -198,11 +225,14 @@ export default function Register() {
                   <input
                     type="text"
                     name="first_name"
-                    id="first_name"
                     value={formData.first_name}
                     onChange={handleChange}
-                    placeholder="John"
-                    className="w-full px-3 py-2 text-sm bg-transparent border rounded-md outline-none border-zinc-300 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-700 dark:focus:ring-zinc-700 placeholder-zinc-400 font-medium transition-all"
+                    disabled={!!boundData?.name}
+                    className={`w-full px-3 py-2 text-sm bg-transparent border rounded-md outline-none border-zinc-300 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-700 dark:focus:ring-zinc-700 placeholder-zinc-400 font-medium transition-all ${
+                      boundData?.name
+                        ? "opacity-60 cursor-not-allowed bg-zinc-100 dark:bg-zinc-900"
+                        : ""
+                    }`}
                   />
                 </div>
                 <div className="w-full space-y-1">
@@ -212,11 +242,14 @@ export default function Register() {
                   <input
                     type="text"
                     name="last_name"
-                    id="last_name"
                     value={formData.last_name}
                     onChange={handleChange}
-                    placeholder="Doe"
-                    className="w-full px-3 py-2 text-sm bg-transparent border rounded-md outline-none border-zinc-300 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-700 dark:focus:ring-zinc-700 placeholder-zinc-400 font-medium transition-all"
+                    disabled={!!boundData?.name}
+                    className={`w-full px-3 py-2 text-sm bg-transparent border rounded-md outline-none border-zinc-300 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-700 dark:focus:ring-zinc-700 placeholder-zinc-400 font-medium transition-all ${
+                      boundData?.name
+                        ? "opacity-60 cursor-not-allowed bg-zinc-100 dark:bg-zinc-900"
+                        : ""
+                    }`}
                   />
                 </div>
               </div>
@@ -229,11 +262,14 @@ export default function Register() {
                 <input
                   type="email"
                   name="email"
-                  id="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="m@example.com"
-                  className="w-full px-3 py-2 text-sm bg-transparent border rounded-md outline-none border-zinc-300 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-700 dark:focus:ring-zinc-700 placeholder-zinc-400 font-medium transition-all"
+                  disabled={!!boundData?.email}
+                  className={`w-full px-3 py-2 text-sm bg-transparent border rounded-md outline-none border-zinc-300 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-700 dark:focus:ring-zinc-700 placeholder-zinc-400 font-medium transition-all ${
+                    boundData?.email
+                      ? "opacity-60 cursor-not-allowed bg-zinc-100 dark:bg-zinc-900"
+                      : ""
+                  }`}
                 />
               </div>
 
@@ -245,14 +281,13 @@ export default function Register() {
                 <input
                   type="date"
                   name="dob"
-                  id="dob"
                   value={formData.dob}
                   onChange={handleChange}
                   className="w-full px-3 py-2 text-sm bg-transparent border rounded-md outline-none border-zinc-300 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-700 dark:focus:ring-zinc-700 placeholder-zinc-400 font-medium transition-all scheme-light dark:scheme-dark"
                 />
               </div>
 
-              {/* Passwords (Same as before) */}
+              {/* Passwords */}
               <div className="flex flex-col gap-4 sm:flex-row">
                 <div className="w-full space-y-1">
                   <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
@@ -261,7 +296,6 @@ export default function Register() {
                   <input
                     type="password"
                     name="password"
-                    id="password"
                     value={formData.password}
                     onChange={handleChange}
                     className="w-full px-3 py-2 text-sm bg-transparent border rounded-md outline-none border-zinc-300 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-700 dark:focus:ring-zinc-700 transition-all"
@@ -274,7 +308,6 @@ export default function Register() {
                   <input
                     type="password"
                     name="confirm_password"
-                    id="confirm_password"
                     value={formData.confirm_password}
                     onChange={handleChange}
                     className="w-full px-3 py-2 text-sm bg-transparent border rounded-md outline-none border-zinc-300 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-700 dark:focus:ring-zinc-700 transition-all"
@@ -295,21 +328,7 @@ export default function Register() {
                   htmlFor="terms"
                   className="text-sm text-zinc-500 dark:text-zinc-400 leading-none"
                 >
-                  I agree to the{" "}
-                  <Link
-                    to="/terms"
-                    className="underline hover:text-zinc-800 dark:hover:text-zinc-200"
-                  >
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link
-                    to="/privacy"
-                    className="underline hover:text-zinc-800 dark:hover:text-zinc-200"
-                  >
-                    Privacy Policy
-                  </Link>
-                  .
+                  I agree to the Terms of Service.
                 </label>
               </div>
 
@@ -324,7 +343,7 @@ export default function Register() {
                 {loading ? (
                   <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                 ) : (
-                  "Create Account"
+                  "Create Teacher Account"
                 )}
               </button>
             </>
@@ -335,7 +354,7 @@ export default function Register() {
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
             Already have an account?{" "}
             <Link
-              to="/login"
+              to="/teacher-login"
               className="underline text-zinc-900 hover:text-zinc-600 dark:text-zinc-200 dark:hover:text-white transition-colors"
             >
               Sign in

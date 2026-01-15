@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const authController = require('./authController');
 
+const { authenticateToken } = require('../../middleware/authMiddleware');
+
 // POST /api/auth/validate-id (Step 1)
 router.post('/validate-id', authController.validateId);
 
@@ -22,5 +24,10 @@ router.post('/verify-otp', authController.verifyOTP);
 
 // POST /api/auth/reset-password
 router.post('/reset-password', authController.resetPassword);
+
+// --- Protected Routes ---
+router.get('/me', authenticateToken, authController.getProfile);
+router.put('/me', authenticateToken, authController.updateProfile);
+router.post('/change-password', authenticateToken, authController.changePassword);
 
 module.exports = router;

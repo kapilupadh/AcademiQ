@@ -41,7 +41,10 @@ export default function ForgotPassword() {
       setSuccess(res.data.message);
       setStep(2);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to send OTP.");
+      console.error("OTP Error:", err);
+      const msg =
+        err.response?.data?.message || err.message || "Failed to send OTP.";
+      setError(msg);
     } finally {
       setLoading(false);
     }

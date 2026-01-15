@@ -3,10 +3,8 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const sequelize = require('./config/database');
 
-// Import models to ensure they are registered with Sequelize
-require('./models/UniqueId');
-require('./models/User');
-require('./models/RegistrationSession');
+// Import models (Triggers associations in models/index.js)
+const db = require('./models');
 
 dotenv.config();
 
@@ -18,7 +16,12 @@ app.use(express.json());
 
 // Routes
 const authRoutes = require('./modules/auth/authRoutes');
+const examRoutes = require('./modules/exam/examRoutes');
+const adminRoutes = require('./modules/admin/adminRoutes');
+
 app.use('/api/auth', authRoutes);
+app.use('/api/exam', examRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Test Route
 app.get('/', (req, res) => {

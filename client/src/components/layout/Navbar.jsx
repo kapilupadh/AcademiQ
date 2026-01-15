@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Bell, LogOut, User, Sun, Moon } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function Navbar({ page = "public" }) {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const notificationRef = useRef(null);
 
   // Theme State
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "dark");
@@ -38,6 +41,12 @@ export default function Navbar({ page = "public" }) {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
+      }
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target)
+      ) {
+        setNotificationOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -93,11 +102,63 @@ export default function Navbar({ page = "public" }) {
               <li className="cursor-pointer text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition duration-300 ease-in-out">
                 <Link to="/dashboard">Home</Link>
               </li>
-              <li className="cursor-pointer text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition duration-300 ease-in-out">
-                <Link to="/sessional">Sessional</Link>
-              </li>
-              <li className="cursor-pointer text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition duration-300 ease-in-out">
-                <Link to="/Notifications">Notifications</Link>
+              {/* Notification Dropdown */}
+              <li className="relative ml-2" ref={notificationRef}>
+                <button
+                  className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition duration-300 ease-in-out flex items-center gap-2"
+                  onClick={() => setNotificationOpen(!notificationOpen)}
+                  title="Notifications"
+                >
+                  <motion.div
+                    whileHover={{ rotate: [0, -20, 20, -20, 20, 0] }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <Bell className="w-5 h-5" />
+                  </motion.div>
+                </button>
+
+                {notificationOpen && (
+                  <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl py-2 animate-in fade-in zoom-in-95 duration-200 z-50">
+                    <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-100 dark:border-zinc-800">
+                      <h3 className="font-semibold text-zinc-900 dark:text-white">
+                        Notifications
+                      </h3>
+                      <button
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        onClick={() => {}} // Mock function
+                      >
+                        Mark all as read
+                      </button>
+                    </div>
+                    <div className="max-h-[300px] overflow-y-auto">
+                      {/* Mock Notifications */}
+                      <div className="px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors border-b border-zinc-50 dark:border-zinc-800/50 cursor-pointer">
+                        <p className="text-sm text-zinc-800 dark:text-zinc-200 font-medium">
+                          Exam Schedule Released
+                        </p>
+                        <p className="text-xs text-zinc-500 mt-1">
+                          Sessional 1 starts next Monday.
+                        </p>
+                      </div>
+                      <div className="px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer">
+                        <p className="text-sm text-zinc-800 dark:text-zinc-200 font-medium">
+                          Assignment Due
+                        </p>
+                        <p className="text-xs text-zinc-500 mt-1">
+                          Physics assignment is due tomorrow.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="p-2 border-t border-zinc-100 dark:border-zinc-800 text-center">
+                      <Link
+                        to="/notifications"
+                        className="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+                      >
+                        View All
+                      </Link>
+                    </div>
+                  </div>
+                )}
               </li>
 
               {/* Profile Dropdown */}
@@ -147,13 +208,13 @@ export default function Navbar({ page = "public" }) {
           <li className="cursor-pointer text-zinc-500 hover:text-slate-200 transition duration-300 ease-in-out ml-2">
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-zinc-800 dark:hover:bg-zinc-800/50 transition-colors"
+              className="p-2 rounded-full hover:bg-zinc-800 dark:hover:bg-zinc-800/50 transition duration-300 ease-in-out "
               aria-label="Toggle Theme"
             >
               {theme === "dark" ? (
                 <Sun className="w-5 h-5 text-yellow-500" />
               ) : (
-                <Moon className="w-5 h-5 text-zinc-100 dark:text-zinc-400" />
+                <Moon className="w-5 h-5 text-zinc-700 hover:text-zinc-100 dark:text-zinc-400 transition duration-300 ease-in-out" />
               )}
             </button>
           </li>
