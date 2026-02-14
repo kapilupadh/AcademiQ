@@ -13,6 +13,7 @@ import Profile from "./pages/student/Profile/Profile";
 import TeacherLogin from "./pages/auth/Login/TeacherLogin";
 import TeacherRegister from "./pages/auth/Register/TeacherRegister";
 import GenerateId from "./pages/admin/GenerateId";
+import AdminDashboard from "./pages/admin/Dashboard/AdminDashboard";
 
 export default function App() {
   return (
@@ -94,6 +95,20 @@ export default function App() {
               <div className="md:pl-[240px]">
                 <Layout header={<Navbar page="student" />}>
                   <GenerateId />
+                </Layout>
+              </div>
+            </>
+          }
+        />
+
+        <Route
+          path="/admin/dashboard"
+          element={
+            <>
+              <Sidebar />
+              <div className="md:pl-[240px]">
+                <Layout header={<Navbar page="student" />}>
+                  <AdminDashboard />
                 </Layout>
               </div>
             </>

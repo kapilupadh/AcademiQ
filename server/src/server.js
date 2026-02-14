@@ -22,6 +22,7 @@ const adminRoutes = require('./modules/admin/adminRoutes');
 app.use('/api/auth', authRoutes);
 app.use('/api/exam', examRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/departments', require('./modules/department/departmentRoutes'));
 
 // Test Route
 app.get('/', (req, res) => {

@@ -2,6 +2,7 @@ const sequelize = require('../config/database');
 const User = require('./User');
 const UniqueId = require('./UniqueId');
 const RegistrationSession = require('./RegistrationSession');
+const Department = require('./Department');
 
 // Exam Modules
 const Exam = require('./Exam');
@@ -9,11 +10,21 @@ const Question = require('./Question');
 const ExamAttempt = require('./ExamAttempt');
 const StudentAnswer = require('./StudentAnswer');
 const Violation = require('./Violation');
+const Attendance = require('./Attendance');
+const ActivityLog = require('./ActivityLog');
 
 // --- Associations ---
 
-// User Relationships
-// (Existing user associations should be here if any, e.g. UniqueId)
+// User Associations
+User.hasMany(Attendance, { foreignKey: 'student_id' });
+Attendance.belongsTo(User, { foreignKey: 'student_id' });
+
+User.hasMany(ActivityLog, { foreignKey: 'user_id' });
+ActivityLog.belongsTo(User, { foreignKey: 'user_id' });
+
+// User <-> Department
+User.belongsTo(Department, { foreignKey: 'department_id' });
+Department.hasMany(User, { foreignKey: 'department_id' });
 
 // Exam <-> Question
 Exam.hasMany(Question, { foreignKey: 'exam_id', onDelete: 'CASCADE' });
@@ -44,10 +55,13 @@ module.exports = {
   sequelize,
   User,
   UniqueId,
+  Department,
   RegistrationSession,
   Exam,
   Question,
   ExamAttempt,
   StudentAnswer,
   Violation,
+  Attendance,
+  ActivityLog,
 };

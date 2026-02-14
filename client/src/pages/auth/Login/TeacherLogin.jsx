@@ -39,17 +39,25 @@ export default function TeacherLogin() {
         password: formData.password,
       });
 
-      // Optional: Check if role is teacher
-      if (res.data.user.role !== "teacher" && res.data.user.role !== "admin") {
-        // Allow them in but maybe warn? Or strictly:
-        // throw new Error("This portal is for Teachers only.");
-        // For now, let's just log them in as the user requested "same style" login.
+      // Check if role is teacher (2) or admin (1)
+      const role = res.data.user.role; // Now an integer: 1=Admin, 2=Teacher, 3=Student
+      if (role !== 2 && role !== 1) {
+        // Fallback for students trying to use this portal, though backend might allow it.
+        // If you want strict separation:
+        // throw new Error("This portal is for Teachers and Admins only.");
+
+        // For now, we allow them but log it.
+        console.warn("Student logged in via Teacher Portal");
       }
 
       localStorage.setItem("user", JSON.stringify(res.data.user));
       localStorage.setItem("token", res.data.token);
 
-      navigate("/dashboard");
+      if (res.data.user.role === 1) {
+        navigate("/admin/generate-id");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Login Failed");
     } finally {

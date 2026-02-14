@@ -81,7 +81,8 @@ exports.register = async (req, res) => {
       email, 
       password, 
       full_name, 
-      dob 
+      dob,
+      department_id 
     } = req.body;
 
     console.log('--- Register Attempt ---');
@@ -110,7 +111,7 @@ exports.register = async (req, res) => {
     }
 
     // STRICT TEACHER VALIDATION
-    if (idRecord.role === 'teacher') {
+    if (idRecord.role === 2) {
       const inputName = full_name.trim().toLowerCase();
       const boundName = (idRecord.student_name || '').trim().toLowerCase();
       const inputEmail = email.trim().toLowerCase();
@@ -149,7 +150,8 @@ exports.register = async (req, res) => {
       role: idRecord.role, // Use role from UniqueId (admin, teacher, student)
       is_active: true,
       email_verified: false, // Default false until verify
-      registered_date: new Date()
+      registered_date: new Date(),
+      department_id: department_id || null
     });
 
     // Mark ID as Used
@@ -221,7 +223,8 @@ exports.login = async (req, res) => {
         role: user.role,
         full_name: user.full_name
       },
-      token: token
+      token: token,
+      role: user.role // Explicitly returning role as requested
     });
 
   } catch (error) {
@@ -240,8 +243,8 @@ exports.forgotPassword = async (req, res) => {
 
     const user = await User.findOne({ where: { email } });
     if (!user) {
-      // Security: Don't reveal if user exists
-      return res.status(200).json({ message: 'If an account exists with this email, an OTP has been sent.' });
+      // Per User Request: Show explicit error if email is not found
+      return res.status(404).json({ message: 'Email not found. Please register first.' });
     }
 
     // Generate 6-digit OTP

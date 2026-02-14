@@ -16,6 +16,14 @@ const User = sequelize.define('User', {
       key: 'unique_id',
     }
   },
+  department_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'Departments',
+      key: 'id',
+    }
+  },
   username: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -46,9 +54,12 @@ const User = sequelize.define('User', {
     allowNull: true,
   },
   role: {
-    type: DataTypes.ENUM('student', 'admin', 'teacher'),
-    defaultValue: 'student',
+    type: DataTypes.INTEGER, // 1 = Admin, 2 = Teacher, 3 = Student
+    defaultValue: 3,
     allowNull: false,
+    validate: {
+      isIn: [[1, 2, 3]]
+    }
   },
   otp: {
     type: DataTypes.STRING,

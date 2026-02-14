@@ -40,3 +40,10 @@
    npm run dev
    ```
    This uses `nodemon` to watch for file changes.
+
+Unique ids for Student to register
+STD-2026-8872
+STD-2026-4724
+STD-2026-4499
+Unique id's to Teacher to register
+TCH-2026-8836

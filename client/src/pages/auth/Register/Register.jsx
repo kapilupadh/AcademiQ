@@ -1,5 +1,5 @@
 // src/pages/Register.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { HelpCircle, Loader2 } from "lucide-react";
 import axios from "axios";
@@ -22,7 +22,17 @@ export default function Register() {
     password: "",
     confirm_password: "",
     username: "", // Added username
+    department_id: "", // Added department
   });
+  const [departments, setDepartments] = useState([]);
+
+  useEffect(() => {
+    // Fetch departments
+    axios
+      .get("http://localhost:5000/api/departments")
+      .then((res) => setDepartments(res.data))
+      .catch((err) => console.error("Failed to fetch departments", err));
+  }, []);
 
   const [agreed, setAgreed] = useState(false);
 
@@ -48,7 +58,7 @@ export default function Register() {
         "http://localhost:5000/api/auth/validate-id",
         {
           unique_id: formData.unique_id,
-        }
+        },
       );
 
       if (res.data.valid) {
@@ -60,7 +70,7 @@ export default function Register() {
       }
     } catch (err) {
       setError(
-        err.response?.data?.message || "Invalid Unique ID or Connection Error"
+        err.response?.data?.message || "Invalid Unique ID or Connection Error",
       );
     } finally {
       setLoading(false);
@@ -94,6 +104,7 @@ export default function Register() {
         password: formData.password,
         full_name: `${formData.first_name} ${formData.last_name}`,
         dob: formData.dob,
+        department_id: formData.department_id,
       };
 
       await axios.post("http://localhost:5000/api/auth/register", payload);
@@ -187,6 +198,35 @@ export default function Register() {
                   placeholder="captain_code"
                   className="w-full px-3 py-2 text-sm bg-transparent border rounded-md outline-none border-zinc-300 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-700 dark:focus:ring-zinc-700 placeholder-zinc-400 font-medium transition-all"
                 />
+              </div>
+
+              {/* Department Selection */}
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  Department
+                </label>
+                <select
+                  name="department_id"
+                  value={formData.department_id}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 text-sm bg-transparent border rounded-md outline-none border-zinc-300 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-700 dark:focus:ring-zinc-700 placeholder-zinc-400 font-medium transition-all"
+                >
+                  <option
+                    value=""
+                    className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+                  >
+                    Select Department
+                  </option>
+                  {departments.map((dept) => (
+                    <option
+                      key={dept.id}
+                      value={dept.id}
+                      className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+                    >
+                      {dept.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* First/Last Name */}

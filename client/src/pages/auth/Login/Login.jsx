@@ -45,7 +45,14 @@ export default function Login() {
       localStorage.setItem("token", res.data.token); // JWT Token
 
       // alert(`Welcome back, ${res.data.user.full_name}!`);
-      navigate("/dashboard"); // Redirect to Dashboard/Home
+      const role = res.data.user.role; // 1=Admin, 2=Teacher, 3=Student
+
+      if (role === 1) {
+        navigate("/admin/generate-id"); // detailed admin page
+      } else {
+        // Student and Teacher default to dashboard
+        navigate("/dashboard");
+      }
     } catch (err) {
       setError(err.response?.data?.message || "Login Failed");
     } finally {

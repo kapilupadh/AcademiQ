@@ -13,9 +13,12 @@ const UniqueId = sequelize.define('UniqueId', {
     unique: true,
   },
   role: {
-    type: DataTypes.ENUM('student', 'teacher', 'admin'),
-    defaultValue: 'student',
+    type: DataTypes.INTEGER, // 1 = Admin, 2 = Teacher, 3 = Student
+    defaultValue: 3,
     allowNull: false,
+    validate: {
+      isIn: [[1, 2, 3]]
+    }
   },
   student_name: {
     type: DataTypes.STRING,
