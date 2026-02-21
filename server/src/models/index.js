@@ -31,8 +31,8 @@ Exam.hasMany(Question, { foreignKey: 'exam_id', onDelete: 'CASCADE' });
 Question.belongsTo(Exam, { foreignKey: 'exam_id' });
 
 // User <-> ExamAttempt (A student takes an exam)
-User.hasMany(ExamAttempt, { foreignKey: 'student_id' });
-ExamAttempt.belongsTo(User, { foreignKey: 'student_id' });
+User.hasMany(ExamAttempt, { foreignKey: 'student_id', as: 'attempts' });
+ExamAttempt.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
 
 // Exam <-> ExamAttempt
 Exam.hasMany(ExamAttempt, { foreignKey: 'exam_id' });

@@ -14,6 +14,11 @@ import TeacherLogin from "./pages/auth/Login/TeacherLogin";
 import TeacherRegister from "./pages/auth/Register/TeacherRegister";
 import GenerateId from "./pages/admin/GenerateId";
 import AdminDashboard from "./pages/admin/Dashboard/AdminDashboard";
+import TeacherDashboard from "./pages/teacher/Dashboard/TeacherDashboard";
+import TeacherSidebar from "./components/layout/TeacherSidebar";
+import ExamList from "./pages/teacher/Exam/ExamList";
+import ExamBuilder from "./pages/teacher/Exam/ExamBuilder";
+import ExamManage from "./pages/teacher/Exam/ExamManage";
 
 export default function App() {
   return (
@@ -109,6 +114,63 @@ export default function App() {
               <div className="md:pl-[240px]">
                 <Layout header={<Navbar page="student" />}>
                   <AdminDashboard />
+                </Layout>
+              </div>
+            </>
+          }
+        />
+
+        {/* TEACHER DASHBOARD */}
+        <Route
+          path="/teacher/dashboard"
+          element={
+            <>
+              <TeacherSidebar />
+              <div className="md:pl-[240px]">
+                <Layout header={<Navbar page="teacher" />}>
+                  <TeacherDashboard />
+                </Layout>
+              </div>
+            </>
+          }
+        />
+
+        <Route
+          path="/teacher/exams"
+          element={
+            <>
+              <TeacherSidebar />
+              <div className="md:pl-[240px]">
+                <Layout header={<Navbar page="teacher" />}>
+                  <ExamList />
+                </Layout>
+              </div>
+            </>
+          }
+        />
+
+        <Route
+          path="/teacher/exams/create"
+          element={
+            <>
+              <TeacherSidebar />
+              <div className="md:pl-[240px]">
+                <Layout header={<Navbar page="teacher" />}>
+                  <ExamBuilder />
+                </Layout>
+              </div>
+            </>
+          }
+        />
+
+        <Route
+          path="/teacher/exams/:id/manage"
+          element={
+            <>
+              <TeacherSidebar />
+              <div className="md:pl-[240px]">
+                <Layout header={<Navbar page="teacher" />}>
+                  <ExamManage />
                 </Layout>
               </div>
             </>

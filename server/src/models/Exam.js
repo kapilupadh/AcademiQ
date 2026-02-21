@@ -30,6 +30,30 @@ const Exam = sequelize.define('Exam', {
     allowNull: false,
     defaultValue: 40.0,
   },
+  subject: {
+    type: DataTypes.STRING,
+    allowNull: true, // Optional initially, but recommended
+  },
+  type: {
+    type: DataTypes.ENUM('Test', 'Sessional 1', 'Sessional 2', 'Sessional 3'),
+    defaultValue: 'Test',
+  },
+  status: {
+    type: DataTypes.ENUM('Draft', 'Scheduled', 'Live', 'Completed'),
+    defaultValue: 'Draft',
+  },
+  start_time: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  otp: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  otp_expires_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
   is_active: {
     type: DataTypes.BOOLEAN,
     defaultValue: true,

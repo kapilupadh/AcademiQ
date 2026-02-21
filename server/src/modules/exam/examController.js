@@ -5,7 +5,7 @@ exports.getAvailableExams = async (req, res) => {
   try {
     const exams = await Exam.findAll({
       where: { is_active: true },
-      attributes: ['id', 'title', 'description', 'duration_minutes', 'total_questions_to_ask']
+      attributes: ['id', 'title', 'description', 'duration_minutes', 'total_questions_to_ask', 'status']
     });
     res.json(exams);
   } catch (error) {
@@ -13,50 +13,39 @@ exports.getAvailableExams = async (req, res) => {
   }
 };
 
-exports.startExam = async (req, res) => {
-  const { examId } = req.params;
-  const studentId = req.user.id; // From middleware
+exports.joinExam = async (req, res) => {
+  const { examId, otp } = req.body;
+  const studentId = req.user.id;
 
   try {
     const exam = await Exam.findByPk(examId);
     if (!exam) return res.status(404).json({ message: 'Exam not found' });
 
-    // Check for existing 'IN_PROGRESS' attempt
-    let attempt = await ExamAttempt.findOne({
-      where: {
-        student_id: studentId,
-        exam_id: examId,
-        status: 'IN_PROGRESS',
-      },
-    });
+    if (exam.status === 'Completed') return res.status(400).json({ message: 'Exam has already concluded' });
+    if (exam.status === 'Draft') return res.status(400).json({ message: 'Exam is not open for joining' });
 
-    // If active attempt exists, return it (RESUME functionality)
-    if (attempt) {
-       // Check if time expired
-       if (new Date() > attempt.end_time) {
-         attempt.status = 'AUTO_SUBMITTED';
-         await attempt.save();
-         return res.status(400).json({ message: 'Exam time expired' });
-       }
-
-       // Fetch questions for this attempt
-       const assignedQuestionIds = attempt.assigned_questions;
-       const questions = await Question.findAll({
-         where: { id: assignedQuestionIds },
-         attributes: ['id', 'question_text', 'question_type', 'options', 'marks'] // No correct_answer
-       });
-
-       return res.json({
-         attemptId: attempt.id,
-         startTime: attempt.start_time,
-         endTime: attempt.end_time,
-         questions,
-         resumed: true
-       });
+    if (exam.otp !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+    
+    if (new Date() > new Date(exam.otp_expires_at)) {
+      return res.status(400).json({ message: 'OTP has expired' });
     }
 
-    // CREATE NEW ATTEMPT
-    // 1. Select Random Questions
+    // Check if attempt already exists
+    let attempt = await ExamAttempt.findOne({
+      where: { student_id: studentId, exam_id: examId }
+    });
+
+    if (attempt) {
+      if (attempt.status === 'TERMINATED') return res.status(403).json({ message: 'Your exam was terminated' });
+      if (attempt.status === 'SUBMITTED' || attempt.status === 'AUTO_SUBMITTED') return res.status(400).json({ message: 'Already submitted' });
+      
+      return res.json({ message: 'Already joined', status: attempt.status, attemptId: attempt.id });
+    }
+
+    // CREATE WAITING ROOM ATTEMPT
+    // 1. Select Random Questions beforehand so they are ready when exam goes live
     const randomQuestions = await Question.findAll({
       where: { exam_id: examId },
       order: sequelize.random(),
@@ -69,29 +58,83 @@ exports.startExam = async (req, res) => {
     }
 
     const questionIds = randomQuestions.map(q => q.id);
-    const endTime = new Date(Date.now() + exam.duration_minutes * 60000);
 
+    // End time is arbitrarily set because it's not started yet.
+    // Real end_time will be set by the teacher's starting action.
     attempt = await ExamAttempt.create({
       student_id: studentId,
       exam_id: examId,
-      status: 'IN_PROGRESS',
-      start_time: new Date(),
-      end_time: endTime,
-      assigned_questions: questionIds
+      status: 'WAITING_ROOM',
+      assigned_questions: questionIds,
+      end_time: new Date() // Dummy until started
     });
 
-    const questions = await Question.findAll({
-      where: { id: questionIds },
-      attributes: ['id', 'question_text', 'question_type', 'options', 'marks']
+    res.json({ message: 'Successfully joined waiting room', status: 'WAITING_ROOM', attemptId: attempt.id });
+  } catch (error) {
+    console.error('joinExam error:', error);
+    res.status(500).json({ message: 'Error joining exam', error: error.message });
+  }
+};
+
+// exports.startExam is repurposed for student polling / fetching of questions when exam goes LIVE
+exports.startExam = async (req, res) => {
+  const { examId } = req.params;
+  const studentId = req.user.id;
+
+  try {
+    const exam = await Exam.findByPk(examId);
+    if (!exam) return res.status(404).json({ message: 'Exam not found' });
+
+    let attempt = await ExamAttempt.findOne({
+      where: {
+        student_id: studentId,
+        exam_id: examId,
+      },
     });
 
-    res.json({
-      attemptId: attempt.id,
-      startTime: attempt.start_time,
-      endTime: attempt.end_time,
-      questions,
-      resumed: false
-    });
+    if (!attempt) {
+       return res.status(403).json({ message: 'Please join the exam room first' });
+    }
+
+    if (attempt.status === 'WAITING_ROOM') {
+      if (exam.status === 'Live') {
+         // Auto fix attempt status in case the teacher's mass update missed this late joiner occasionally, 
+         // though the API handles late join via a race condition.
+         // Wait, the plan says: students join using OTP within 5 minutes.
+         // If teacher started, they are updated in bulk.
+         attempt.status = 'IN_PROGRESS';
+         attempt.start_time = new Date();
+         attempt.end_time = new Date(Date.now() + exam.duration_minutes * 60000);
+         await attempt.save();
+      } else {
+         return res.json({ status: 'WAITING_ROOM', message: 'Waiting for teacher to start' });
+      }
+    }
+
+    if (attempt.status === 'IN_PROGRESS') {
+       if (new Date() > attempt.end_time || exam.status === 'Completed') {
+         attempt.status = 'AUTO_SUBMITTED';
+         await attempt.save();
+         return res.status(400).json({ message: 'Exam time expired or exam ended.' });
+       }
+
+       const assignedQuestionIds = attempt.assigned_questions;
+       const questions = await Question.findAll({
+         where: { id: assignedQuestionIds },
+         attributes: ['id', 'question_text', 'question_type', 'options', 'marks']
+       });
+
+       return res.json({
+         status: 'IN_PROGRESS',
+         attemptId: attempt.id,
+         startTime: attempt.start_time,
+         endTime: attempt.end_time,
+         questions,
+         resumed: true
+       });
+    }
+
+    return res.status(400).json({ message: 'Cannot start or resume exam. Current status: ' + attempt.status });
 
   } catch (error) {
     res.status(500).json({ message: 'Error starting exam', error: error.message });

@@ -1,7 +1,7 @@
 // src/pages/Register.jsx
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { HelpCircle, Loader2 } from "lucide-react";
+import { CircleHelp, Loader2 } from "lucide-react";
 import axios from "axios";
 import Alert from "../../../components/ui/Alert";
 
@@ -148,7 +148,7 @@ export default function Register() {
               <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 cursor-help">
                 Unique ID
               </label>
-              <HelpCircle className="w-4 h-4 text-zinc-400" />
+              <CircleHelp className="w-4 h-4 text-zinc-400" />
             </div>
             {/* Tooltip code... */}
             <div className="flex gap-2">

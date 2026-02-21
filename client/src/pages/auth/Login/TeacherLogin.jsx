@@ -55,6 +55,8 @@ export default function TeacherLogin() {
 
       if (res.data.user.role === 1) {
         navigate("/admin/generate-id");
+      } else if (res.data.user.role === 2) {
+        navigate("/teacher/dashboard");
       } else {
         navigate("/dashboard");
       }

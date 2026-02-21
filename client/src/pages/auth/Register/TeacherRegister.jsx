@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { HelpCircle, Loader2 } from "lucide-react";
+import { CircleHelp, Loader2 } from "lucide-react";
 import axios from "axios";
 import Alert from "../../../components/ui/Alert";
 
@@ -46,11 +46,11 @@ export default function TeacherRegister() {
         "http://localhost:5000/api/auth/validate-id",
         {
           unique_id: formData.unique_id,
-        }
+        },
       );
 
       if (res.data.valid) {
-        if (res.data.role !== "teacher") {
+        if (res.data.role !== 2 && res.data.role !== "teacher") {
           setError("This ID is not authorized for Teacher registration.");
           setLoading(false);
           return;
@@ -90,7 +90,7 @@ export default function TeacherRegister() {
       setError(
         err.response?.data?.message ||
           err.message ||
-          "Invalid ID or Connection Error"
+          "Invalid ID or Connection Error",
       );
     } finally {
       setLoading(false);
@@ -123,7 +123,7 @@ export default function TeacherRegister() {
       navigate("/teacher-login");
     } catch (err) {
       setError(
-        err.response?.data?.message || err.message || "Registration Failed"
+        err.response?.data?.message || err.message || "Registration Failed",
       );
     } finally {
       setLoading(false);
@@ -159,7 +159,7 @@ export default function TeacherRegister() {
               <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 cursor-help">
                 Teacher ID
               </label>
-              <HelpCircle className="w-4 h-4 text-zinc-400" />
+              <CircleHelp className="w-4 h-4 text-zinc-400" />
             </div>
 
             <div className="flex gap-2">

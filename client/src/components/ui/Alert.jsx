@@ -1,4 +1,4 @@
-import { CheckCircle2, AlertCircle, Info } from "lucide-react";
+import { CheckCircle, CircleAlert, Info } from "lucide-react";
 
 export default function Alert({ variant = "default", title, children }) {
   const isError = variant === "error";
@@ -6,8 +6,8 @@ export default function Alert({ variant = "default", title, children }) {
 
   // Icon Selection
   let Icon = Info;
-  if (isError) Icon = AlertCircle;
-  if (isSuccess) Icon = CheckCircle2;
+  if (isError) Icon = CircleAlert;
+  if (isSuccess) Icon = CheckCircle;
 
   // Color Selection (Icon & Title)
   let colorClass = "text-zinc-100"; // default

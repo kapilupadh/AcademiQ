@@ -18,10 +18,12 @@ app.use(express.json());
 const authRoutes = require('./modules/auth/authRoutes');
 const examRoutes = require('./modules/exam/examRoutes');
 const adminRoutes = require('./modules/admin/adminRoutes');
+const teacherRoutes = require('./modules/teacher/teacherRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/exam', examRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/teacher', teacherRoutes);
 app.use('/api/departments', require('./modules/department/departmentRoutes'));
 
 // Test Route

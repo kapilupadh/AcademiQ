@@ -17,7 +17,7 @@ const Question = sequelize.define('Question', {
     allowNull: false,
   },
   question_type: {
-    type: DataTypes.ENUM('MCQ', 'TEXT'),
+    type: DataTypes.ENUM('MCQ'),
     defaultValue: 'MCQ',
     allowNull: false,
   },
