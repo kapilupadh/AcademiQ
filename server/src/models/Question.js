@@ -21,6 +21,10 @@ const Question = sequelize.define('Question', {
     defaultValue: 'MCQ',
     allowNull: false,
   },
+  image_url: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   options: {
     type: DataTypes.JSONB,
     allowNull: false,

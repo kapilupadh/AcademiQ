@@ -17,7 +17,14 @@ router.get('/dashboard/heatmap', authenticateToken, checkAdmin, dashboardControl
 router.get('/dashboard/activities', authenticateToken, checkAdmin, dashboardController.getRecentActivities);
 
 // POST /api/admin/generate-id
-// For Development, if you don't have an admin user, comment out checkAdmin
 router.post('/generate-id', authenticateToken, checkAdmin, adminController.generateUniqueId);
 
-module.exports = router;
+// POST /api/admin/bulk-generate-ids  (Excel upload → Excel download)
+router.post(
+  '/bulk-generate-ids',
+  authenticateToken,
+  checkAdmin,
+  adminController.excelUpload.single('file'),
+  adminController.bulkGenerateIds
+);
+

@@ -5,6 +5,57 @@ const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const { Op } = require('sequelize');
 
+// ── Admin Registration ──────────────────────────────────────────────────────
+// Uses a server-held secret code instead of the unique_id flow.
+// Set ADMIN_SETUP_CODE in your .env file.
+exports.adminRegister = async (req, res) => {
+  try {
+    const { full_name, username, email, password, admin_code } = req.body;
+    const expectedCode = process.env.ADMIN_SETUP_CODE || 'ACADEMIQ_ADMIN_2025';
+
+    if (!admin_code || admin_code !== expectedCode) {
+      return res.status(403).json({ message: 'Invalid admin setup code. Contact the system owner.' });
+    }
+
+    // Check uniqueness
+    if (await User.findOne({ where: { email } })) {
+      return res.status(400).json({ message: 'This email is already registered.' });
+    }
+    if (await User.findOne({ where: { username } })) {
+      return res.status(400).json({ message: 'Username already taken.' });
+    }
+
+    // Create a UniqueId record first — required by the FK constraint on Users.unique_id
+    const syntheticId = `ADMIN-${uuidv4().slice(0, 8).toUpperCase()}`;
+    await UniqueId.create({
+      unique_id: syntheticId,
+      role: 1,
+      student_name: full_name,
+      student_email: email,
+      is_used: true,
+      status: 'ACTIVE',
+      used_date: new Date(),
+    });
+
+    const password_hash = await bcrypt.hash(password, 10);
+    const newAdmin = await User.create({
+      full_name,
+      username,
+      email,
+      password_hash,
+      role: 1, // Admin
+      is_active: true,
+      email_verified: true,
+      unique_id: syntheticId,
+    });
+
+    res.status(201).json({ message: 'Admin account created successfully.', adminId: newAdmin.id });
+  } catch (error) {
+    console.error('adminRegister error:', error);
+    res.status(500).json({ message: error.message || 'Server error during admin registration.' });
+  }
+};
+
 // --- API 1: Validate Unique ID ---
 exports.validateId = async (req, res) => {
   try {

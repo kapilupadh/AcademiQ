@@ -16,7 +16,7 @@ const ExamAttempt = sequelize.define('ExamAttempt', {
     allowNull: false,
   },
   status: {
-    type: DataTypes.ENUM('WAITING_ROOM', 'IN_PROGRESS', 'SUBMITTED', 'AUTO_SUBMITTED', 'TERMINATED'),
+    type: DataTypes.ENUM('WAITING_ROOM', 'IN_PROGRESS', 'SUBMITTED', 'AUTO_SUBMITTED', 'FORCE_SUBMITTED', 'ABSENT', 'TERMINATED'),
     defaultValue: 'WAITING_ROOM',
   },
   start_time: {

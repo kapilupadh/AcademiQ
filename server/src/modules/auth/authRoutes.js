@@ -4,6 +4,9 @@ const authController = require('./authController');
 
 const { authenticateToken } = require('../../middleware/authMiddleware');
 
+// POST /api/auth/admin-register  (secured by ADMIN_SETUP_CODE)
+router.post('/admin-register', authController.adminRegister);
+
 // POST /api/auth/validate-id (Step 1)
 router.post('/validate-id', authController.validateId);
 

@@ -5,11 +5,42 @@ exports.getAvailableExams = async (req, res) => {
   try {
     const exams = await Exam.findAll({
       where: { is_active: true },
-      attributes: ['id', 'title', 'description', 'duration_minutes', 'total_questions_to_ask', 'status']
+      attributes: ['id', 'title', 'description', 'duration_minutes', 'total_questions_to_ask', 'status', 'subject', 'type', 'passing_percentage']
     });
     res.json(exams);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching exams', error: error.message });
+  }
+};
+
+// Returns public exam details a student can see before joining (no OTP needed)
+exports.getExamPublicDetails = async (req, res) => {
+  try {
+    const { examId } = req.params;
+    const exam = await Exam.findByPk(examId, {
+      attributes: ['id', 'title', 'subject', 'type', 'duration_minutes', 'total_questions_to_ask', 'passing_percentage', 'status', 'start_time']
+    });
+    if (!exam) return res.status(404).json({ message: 'Exam not found' });
+    res.json(exam);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching exam details', error: error.message });
+  }
+};
+
+// Called when student disconnects from the waiting room mid-way
+exports.markAbsent = async (req, res) => {
+  const { attemptId } = req.body;
+  const studentId = req.user.id;
+  try {
+    const attempt = await ExamAttempt.findOne({ where: { id: attemptId, student_id: studentId } });
+    if (!attempt) return res.status(404).json({ message: 'Attempt not found' });
+    // Only mark ABSENT if still in waiting room (not if already in progress or submitted)
+    if (attempt.status === 'WAITING_ROOM') {
+      await attempt.update({ status: 'ABSENT' });
+    }
+    res.json({ message: 'Marked absent' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error marking absent', error: error.message });
   }
 };
 
@@ -121,7 +152,7 @@ exports.startExam = async (req, res) => {
        const assignedQuestionIds = attempt.assigned_questions;
        const questions = await Question.findAll({
          where: { id: assignedQuestionIds },
-         attributes: ['id', 'question_text', 'question_type', 'options', 'marks']
+         attributes: ['id', 'question_text', 'question_type', 'options', 'marks', 'image_url']
        });
 
        return res.json({

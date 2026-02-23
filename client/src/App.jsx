@@ -14,6 +14,8 @@ import TeacherLogin from "./pages/auth/Login/TeacherLogin";
 import TeacherRegister from "./pages/auth/Register/TeacherRegister";
 import GenerateId from "./pages/admin/GenerateId";
 import AdminDashboard from "./pages/admin/Dashboard/AdminDashboard";
+import AdminLogin from "./pages/auth/Login/AdminLogin";
+import AdminRegister from "./pages/auth/Login/AdminRegister";
 import TeacherDashboard from "./pages/teacher/Dashboard/TeacherDashboard";
 import TeacherSidebar from "./components/layout/TeacherSidebar";
 import ExamList from "./pages/teacher/Exam/ExamList";
@@ -69,6 +71,24 @@ export default function App() {
           element={
             <Layout header={<Navbar page="public" />}>
               <TeacherRegister />
+            </Layout>
+          }
+        />
+
+        {/* ADMIN AUTH ROUTING */}
+        <Route
+          path="/admin/login"
+          element={
+            <Layout header={<Navbar page="public" />}>
+              <AdminLogin />
+            </Layout>
+          }
+        />
+        <Route
+          path="/admin/register"
+          element={
+            <Layout header={<Navbar page="public" />}>
+              <AdminRegister />
             </Layout>
           }
         />
@@ -151,6 +171,20 @@ export default function App() {
 
         <Route
           path="/teacher/exams/create"
+          element={
+            <>
+              <TeacherSidebar />
+              <div className="md:pl-[240px]">
+                <Layout header={<Navbar page="teacher" />}>
+                  <ExamBuilder />
+                </Layout>
+              </div>
+            </>
+          }
+        />
+
+        <Route
+          path="/teacher/exams/edit/:id"
           element={
             <>
               <TeacherSidebar />

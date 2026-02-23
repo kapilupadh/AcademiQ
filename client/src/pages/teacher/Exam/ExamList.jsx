@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Clock, FileText, CheckCircle, ArrowRight } from "lucide-react";
+import { Plus, Clock, FileText, ArrowRight, Edit3 } from "lucide-react";
 
 export default function ExamList() {
   const [exams, setExams] = useState([]);
@@ -99,7 +99,18 @@ export default function ExamList() {
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-zinc-100 dark:border-zinc-800 flex justify-end">
+              <div className="mt-6 pt-4 border-t border-zinc-100 dark:border-zinc-800 flex justify-end gap-3 z-10 relative">
+                {(exam.status === "Draft" || exam.status === "Scheduled") && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/teacher/exams/edit/${exam.id}`);
+                    }}
+                    className="text-sm font-medium text-zinc-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1 transition-colors"
+                  >
+                    Edit <Edit3 className="w-4 h-4" />
+                  </button>
+                )}
                 <button className="text-sm font-medium text-zinc-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1 transition-colors">
                   Manage <ArrowRight className="w-4 h-4" />
                 </button>

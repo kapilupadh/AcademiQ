@@ -1,15 +1,42 @@
 import React, { useEffect, useState } from "react";
-import { BookOpen, Calendar, Clock, Award } from "lucide-react";
+import { BookOpen, Calendar, Clock, Award, CalendarClock } from "lucide-react";
+import axios from "axios";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
+  const [upcomingExams, setUpcomingExams] = useState([]);
+  const [loadingExams, setLoadingExams] = useState(true);
 
   useEffect(() => {
-    // Ideally use Context, but for V1 per plan we read from localStorage
     const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    if (storedUser) setUser(JSON.parse(storedUser));
+  }, []);
+
+  useEffect(() => {
+    const fetchExams = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("http://localhost:5000/api/exam", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        // Filter to exams that have a future scheduled start
+        const now = new Date();
+        const scheduled = res.data
+          .filter(
+            (e) => e.scheduled_start_at && new Date(e.scheduled_start_at) > now,
+          )
+          .sort(
+            (a, b) =>
+              new Date(a.scheduled_start_at) - new Date(b.scheduled_start_at),
+          );
+        setUpcomingExams(scheduled);
+      } catch (err) {
+        console.error("Failed to fetch exams", err);
+      } finally {
+        setLoadingExams(false);
+      }
+    };
+    fetchExams();
   }, []);
 
   const stats = [
@@ -39,9 +66,42 @@ export default function Dashboard() {
     },
   ];
 
+  const formatScheduledDate = (dateStr) =>
+    new Date(dateStr).toLocaleDateString("en-IN", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
+
+  const formatScheduledTime = (dateStr) =>
+    new Date(dateStr).toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+  // Days until exam
+  const daysUntil = (dateStr) => {
+    const diff = new Date(dateStr) - new Date();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days === 0) return "Today";
+    if (days === 1) return "Tomorrow";
+    return `In ${days} days`;
+  };
+
+  const urgencyColor = (dateStr) => {
+    const days = Math.floor(
+      (new Date(dateStr) - new Date()) / (1000 * 60 * 60 * 24),
+    );
+    if (days <= 1)
+      return "border-red-500 bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-400";
+    if (days <= 3)
+      return "border-amber-500 bg-amber-50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400";
+    return "border-blue-500 bg-blue-50 dark:bg-blue-900/10 text-blue-700 dark:text-blue-400";
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-      {/* Welcome Section */}
+      {/* Welcome */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">
@@ -64,7 +124,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
@@ -91,9 +151,9 @@ export default function Dashboard() {
         })}
       </div>
 
-      {/* Recent Activity / Content Placeholder */}
+      {/* Main grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content Area */}
+        {/* Current Classes */}
         <div className="lg:col-span-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
           <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">
             Current Classes
@@ -120,29 +180,64 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Sidebar / Schedule */}
+        {/* ── Upcoming Exams ── */}
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
-          <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">
-            Upcoming Events
+          <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
+            <CalendarClock className="w-5 h-5 text-blue-500" />
+            Upcoming Exams
           </h3>
-          <div className="space-y-4">
-            <div className="p-3 rounded-lg border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/10">
-              <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-                Today, 2:00 PM
-              </p>
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
-                Project Submission
-              </p>
+
+          {loadingExams ? (
+            <div className="space-y-3">
+              {[1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="h-20 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse"
+                />
+              ))}
             </div>
-            <div className="p-3 rounded-lg border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/10">
-              <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                Tomorrow, 10:00 AM
-              </p>
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
-                Guest Lecture
-              </p>
+          ) : upcomingExams.length === 0 ? (
+            <div className="text-center py-8 text-zinc-400 dark:text-zinc-600 text-sm">
+              <CalendarClock className="w-10 h-10 mx-auto mb-2 opacity-40" />
+              No upcoming exams scheduled
             </div>
-          </div>
+          ) : (
+            <div className="space-y-3">
+              {upcomingExams.map((exam) => (
+                <div
+                  key={exam.id}
+                  className={`p-3 rounded-xl border-l-4 ${urgencyColor(exam.scheduled_start_at)}`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold truncate text-zinc-900 dark:text-zinc-100">
+                        {exam.title}
+                      </p>
+                      <p className="text-xs opacity-75 mt-0.5">
+                        {exam.subject && `${exam.subject} · `}
+                        {exam.type}
+                      </p>
+                      <p className="text-xs font-medium mt-1">
+                        {formatScheduledDate(exam.scheduled_start_at)} •{" "}
+                        {formatScheduledTime(exam.scheduled_start_at)}
+                      </p>
+                      <p className="text-xs opacity-60">
+                        {exam.duration_minutes} mins
+                      </p>
+                    </div>
+                    <span className="text-xs font-bold whitespace-nowrap shrink-0 bg-white/60 dark:bg-zinc-900/60 px-2 py-1 rounded-lg">
+                      {daysUntil(exam.scheduled_start_at)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <p className="text-xs text-zinc-400 mt-4">
+            ⚠️ Exams require teacher OTP to start — be present before scheduled
+            time.
+          </p>
         </div>
       </div>
     </div>

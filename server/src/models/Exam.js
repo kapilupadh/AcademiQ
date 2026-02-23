@@ -54,9 +54,35 @@ const Exam = sequelize.define('Exam', {
     type: DataTypes.DATE,
     allowNull: true,
   },
+  scheduled_start_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Informational scheduled start time for student notifications',
+  },
+  scheduled_end_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Informational scheduled end time for student notifications',
+  },
   is_active: {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
+  },
+  department_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    comment: 'Department this exam belongs to — used for email targeting',
+  },
+  semester: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    validate: { min: 1, max: 8 },
+    comment: 'Semester number for which this exam is scheduled',
+  },
+  subject_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    comment: 'FK to Subject — used for enrollment-level email filtering',
   },
 }, {
   timestamps: true,

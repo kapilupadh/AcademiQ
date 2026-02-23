@@ -3,6 +3,8 @@ const User = require('./User');
 const UniqueId = require('./UniqueId');
 const RegistrationSession = require('./RegistrationSession');
 const Department = require('./Department');
+const Subject = require('./Subject');
+const StudentSubject = require('./StudentSubject');
 
 // Exam Modules
 const Exam = require('./Exam');
@@ -26,9 +28,29 @@ ActivityLog.belongsTo(User, { foreignKey: 'user_id' });
 User.belongsTo(Department, { foreignKey: 'department_id' });
 Department.hasMany(User, { foreignKey: 'department_id' });
 
+// Department <-> Subject
+Department.hasMany(Subject, { foreignKey: 'department_id' });
+Subject.belongsTo(Department, { foreignKey: 'department_id' });
+
+// Subject <-> StudentSubject (enrollment)
+Subject.hasMany(StudentSubject, { foreignKey: 'subject_id' });
+StudentSubject.belongsTo(Subject, { foreignKey: 'subject_id' });
+
+// User (student) <-> StudentSubject
+User.hasMany(StudentSubject, { foreignKey: 'student_id', as: 'enrollments' });
+StudentSubject.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
+
 // Exam <-> Question
-Exam.hasMany(Question, { foreignKey: 'exam_id', onDelete: 'CASCADE' });
+Exam.hasMany(Question, { foreignKey: 'exam_id', as: 'questions', onDelete: 'CASCADE' });
 Question.belongsTo(Exam, { foreignKey: 'exam_id' });
+
+// Exam <-> Department (for targeting)
+Exam.belongsTo(Department, { foreignKey: 'department_id' });
+Department.hasMany(Exam, { foreignKey: 'department_id' });
+
+// Exam <-> Subject (for enrollment-level targeting)
+Exam.belongsTo(Subject, { foreignKey: 'subject_id' });
+Subject.hasMany(Exam, { foreignKey: 'subject_id' });
 
 // User <-> ExamAttempt (A student takes an exam)
 User.hasMany(ExamAttempt, { foreignKey: 'student_id', as: 'attempts' });
@@ -56,6 +78,8 @@ module.exports = {
   User,
   UniqueId,
   Department,
+  Subject,
+  StudentSubject,
   RegistrationSession,
   Exam,
   Question,
