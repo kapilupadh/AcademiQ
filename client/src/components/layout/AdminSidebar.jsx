@@ -4,127 +4,166 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
-  NotebookPen,
-  Clock,
-  BookMarked,
-  MessageSquare,
-  BookOpenCheck,
-  ClipboardEdit,
-  AlertTriangle,
-  ScrollText,
-  Armchair,
-  FileCheck,
-  PenLine,
-  Ruler,
-  Upload,
+  BookText,
   CalendarRange,
-  PhoneCall,
-  Megaphone,
+  Clock,
+  MessageSquare,
+  Lock,
+  BarChart2,
+  Wallet,
+  AlertOctagon,
+  GraduationCap,
+  UserCheck,
+  UserCog,
+  Layers,
+  BookOpen,
+  CalendarClock,
+  ClipboardList,
+  FileCheck,
+  Radio,
+  FileBarChart,
+  Building,
+  SlidersHorizontal,
+  ShieldCheck,
+  Bell,
+  Mail,
+  Globe,
+  Webhook,
+  DatabaseBackup,
+  ScrollText,
   ChevronDown,
   Menu,
   X,
   LogOut,
-  School,
+  ShieldEllipsis,
 } from "lucide-react";
 import { useSidebar } from "../../hooks/useSidebar";
 
-const ACCENT = "blue";
+const ACCENT = "violet";
 
 const PRIMARY = [
-  { label: "Dashboard", icon: LayoutDashboard, to: "/teacher/dashboard" },
-  { label: "My Classes", icon: Users, to: "/teacher/students" },
-  { label: "Assessments", icon: NotebookPen, to: "/teacher/exams" },
+  { label: "Dashboard", icon: LayoutDashboard, to: "/admin/dashboard" },
+  { label: "User Management", icon: Users, to: "/admin/generate-id" },
+  { label: "Examination Engine", icon: BookText, to: "/admin/exams/create" },
 ];
 
 const SECONDARY = [
   {
+    key: "dashboard-detail",
+    label: "Dashboard Details",
+    icon: BarChart2,
+    sub: [
+      { label: "Analytics Overview", icon: BarChart2, to: "/admin/dashboard" },
+      {
+        label: "Financial Summary",
+        icon: Wallet,
+        to: "/admin/dashboard/finance",
+      },
+      {
+        label: "Early Warnings",
+        icon: AlertOctagon,
+        to: "/admin/dashboard/warnings",
+      },
+    ],
+  },
+  {
+    key: "users-detail",
+    label: "User Details",
+    icon: Users,
+    sub: [
+      { label: "Students", icon: GraduationCap, to: "/admin/users/students" },
+      { label: "Teachers", icon: UserCheck, to: "/admin/users/teachers" },
+      { label: "Administrators", icon: UserCog, to: "/admin/generate-id" },
+      { label: "Parents", icon: Users, to: "/admin/users/parents" },
+    ],
+  },
+  {
+    key: "academics",
+    label: "Academics & Timetable",
+    icon: CalendarRange,
+    sub: [
+      { label: "Class Setup", icon: Layers, to: "/admin/academics/classes" },
+      {
+        label: "Subject Allocation",
+        icon: BookOpen,
+        to: "/admin/academics/subjects",
+      },
+      {
+        label: "Master Schedule",
+        icon: CalendarClock,
+        to: "/admin/academics/schedule",
+      },
+    ],
+  },
+  {
     key: "attendance",
-    label: "Attendance",
+    label: "Attendance Control",
     icon: Clock,
     sub: [
       {
-        label: "Mark Register",
-        icon: ClipboardEdit,
-        to: "/teacher/attendance/mark",
+        label: "Daily Logs",
+        icon: ClipboardList,
+        to: "/admin/attendance/logs",
       },
-      { label: "Edit Logs", icon: FileCheck, to: "/teacher/attendance/logs" },
       {
-        label: "Leave Applications",
+        label: "Leave Approvals",
         icon: FileCheck,
-        to: "/teacher/attendance/leave",
+        to: "/admin/attendance/leave",
       },
+      { label: "Hardware Sync", icon: Radio, to: "/admin/attendance/hardware" },
+      { label: "Reports", icon: FileBarChart, to: "/admin/attendance/reports" },
     ],
   },
   {
-    key: "classes-detail",
-    label: "Class Details",
-    icon: Users,
+    key: "exams-detail",
+    label: "Exam Details",
+    icon: BookText,
     sub: [
-      { label: "Cohort Rosters", icon: ScrollText, to: "/teacher/students" },
+      { label: "Exam Creation", icon: BookText, to: "/admin/exams/create" },
+      { label: "Hall Allocation", icon: Building, to: "/admin/exams/halls" },
       {
-        label: "Student Profiles",
-        icon: Users,
-        to: "/teacher/students/profiles",
+        label: "Grading Scales",
+        icon: SlidersHorizontal,
+        to: "/admin/exams/grading",
       },
-      {
-        label: "Seating Charts",
-        icon: Armchair,
-        to: "/teacher/students/seating",
-      },
+      { label: "Compliance", icon: ShieldCheck, to: "/admin/exams/compliance" },
     ],
   },
   {
-    key: "assess-detail",
-    label: "Assessment Details",
-    icon: BookOpenCheck,
-    sub: [
-      { label: "Gradebook", icon: BookOpenCheck, to: "/teacher/exams" },
-      { label: "Quiz Builder", icon: PenLine, to: "/teacher/exams/create" },
-      {
-        label: "Rubric Management",
-        icon: Ruler,
-        to: "/teacher/assessments/rubrics",
-      },
-    ],
-  },
-  {
-    key: "lessons",
-    label: "Lesson Planning",
-    icon: BookMarked,
-    sub: [
-      { label: "Syllabus Tracker", icon: ScrollText, to: "/teacher/subjects" },
-      {
-        label: "Resource Upload",
-        icon: Upload,
-        to: "/teacher/lessons/resources",
-      },
-      {
-        label: "Course Calendar",
-        icon: CalendarRange,
-        to: "/teacher/lessons/calendar",
-      },
-    ],
-  },
-  {
-    key: "communication",
-    label: "Communication",
+    key: "communications",
+    label: "Communications",
     icon: MessageSquare,
     sub: [
       {
-        label: "Direct Messages",
-        icon: MessageSquare,
-        to: "/teacher/messages",
+        label: "Announcements",
+        icon: Bell,
+        to: "/admin/communications/announcements",
+      },
+      { label: "SMS/Email Logs", icon: Mail, to: "/admin/communications/logs" },
+      {
+        label: "Parent Portals",
+        icon: Globe,
+        to: "/admin/communications/parents",
+      },
+    ],
+  },
+  {
+    key: "settings",
+    label: "System Settings",
+    icon: Lock,
+    sub: [
+      {
+        label: "Integrations (API)",
+        icon: Webhook,
+        to: "/admin/settings/integrations",
       },
       {
-        label: "Parent Conferencing",
-        icon: PhoneCall,
-        to: "/teacher/communication/parents",
+        label: "Security Policies",
+        icon: Lock,
+        to: "/admin/settings/security",
       },
-      {
-        label: "Class Announcements",
-        icon: Megaphone,
-        to: "/teacher/communication/announcements",
-      },
+      { label: "Backups", icon: DatabaseBackup, to: "/admin/settings/backups" },
+      { label: "Audit Trails", icon: ScrollText, to: "/admin/settings/audit" },
     ],
   },
 ];
@@ -132,7 +171,7 @@ const SECONDARY = [
 function NavItem({ icon: Icon, label, to, onClick }) {
   const { pathname } = useLocation();
   const isActive =
-    pathname === to || (to !== "/teacher/dashboard" && pathname.startsWith(to));
+    pathname === to || (to !== "/admin/dashboard" && pathname.startsWith(to));
   return (
     <Link
       to={to}
@@ -140,12 +179,12 @@ function NavItem({ icon: Icon, label, to, onClick }) {
       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 relative
         ${
           isActive
-            ? "bg-blue-500/15 text-blue-500 dark:bg-blue-500/20 dark:text-blue-400"
+            ? "bg-violet-500/15 text-violet-400 dark:bg-violet-500/20"
             : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/70 hover:text-zinc-900 dark:hover:text-zinc-100"
         }`}
     >
       {isActive && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-blue-500 rounded-full" />
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-violet-500 rounded-full" />
       )}
       <Icon size={17} strokeWidth={isActive ? 2.2 : 1.8} className="shrink-0" />
       <span className="truncate">{label}</span>
@@ -188,7 +227,7 @@ function NavGroup({
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
             className="overflow-hidden"
           >
-            <div className="mt-0.5 ml-6 pl-3 border-l border-zinc-200 dark:border-zinc-800 space-y-0.5 pb-1">
+            <div className="mt-0.5 ml-6 pl-3 border-l border-zinc-800 space-y-0.5 pb-1">
               {children}
             </div>
           </motion.div>
@@ -208,8 +247,8 @@ function SubItem({ icon: Icon, label, to, onClick }) {
       className={`flex items-center gap-2.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all duration-150
         ${
           isActive
-            ? "text-blue-500 dark:text-blue-400 bg-blue-500/10"
-            : "text-zinc-500 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
+            ? "text-violet-400 bg-violet-500/10"
+            : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60"
         }`}
     >
       <Icon size={13} strokeWidth={isActive ? 2.2 : 1.8} className="shrink-0" />
@@ -233,26 +272,26 @@ function SidebarContent({
       return {};
     }
   })();
-  const initials = (user.name || "T").charAt(0).toUpperCase();
+  const initials = (user.name || "A").charAt(0).toUpperCase();
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    navigate("/teacher-login");
+    navigate("/admin/login");
   };
 
   return (
     <div className="flex flex-col h-full bg-zinc-950">
       <div className="flex items-center justify-between px-4 pt-5 pb-3">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
-            <School size={16} className="text-white" />
+          <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center shrink-0">
+            <ShieldEllipsis size={16} className="text-white" />
           </div>
           <div>
             <p className="text-sm font-semibold text-white leading-tight">
               AcademiQ
             </p>
             <p className="text-[10px] text-zinc-500 leading-tight">
-              Teacher Portal
+              Admin Portal
             </p>
           </div>
         </div>
@@ -290,18 +329,18 @@ function SidebarContent({
       </div>
       <div className="mx-3 border-t border-zinc-800" />
       <div className="p-3 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-blue-900/50 flex items-center justify-center shrink-0">
-          <span className="text-xs font-semibold text-blue-400">
+        <div className="w-8 h-8 rounded-full bg-violet-900/50 flex items-center justify-center shrink-0">
+          <span className="text-xs font-semibold text-violet-400">
             {initials}
           </span>
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs font-medium text-zinc-100 truncate">
-            {user.name || "Teacher"}
+            {user.name || "Admin"}
           </p>
-          <p className="text-[10px] text-zinc-500 truncate">
-            {user.email || ""}
-          </p>
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-sm bg-violet-900/40 text-violet-400">
+            Administrator
+          </span>
         </div>
         <button
           onClick={handleLogout}
@@ -315,7 +354,7 @@ function SidebarContent({
   );
 }
 
-export default function TeacherSidebar() {
+export default function AdminSidebar() {
   const { mobileOpen, openGroups, toggleMobile, closeMobile, toggleGroup } =
     useSidebar();
   return (

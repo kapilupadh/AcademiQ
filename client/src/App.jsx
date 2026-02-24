@@ -16,6 +16,7 @@ import GenerateId from "./pages/admin/GenerateId";
 import AdminDashboard from "./pages/admin/Dashboard/AdminDashboard";
 import AdminLogin from "./pages/auth/Login/AdminLogin";
 import AdminRegister from "./pages/auth/Login/AdminRegister";
+import AdminSidebar from "./components/layout/AdminSidebar";
 import TeacherDashboard from "./pages/teacher/Dashboard/TeacherDashboard";
 import TeacherSidebar from "./components/layout/TeacherSidebar";
 import ExamList from "./pages/teacher/Exam/ExamList";
@@ -116,9 +117,9 @@ export default function App() {
           path="/admin/generate-id"
           element={
             <>
-              <Sidebar />
-              <div className="md:pl-[240px]">
-                <Layout header={<Navbar page="student" />}>
+              <AdminSidebar />
+              <div className="md:pl-[240px] transition-all duration-300">
+                <Layout header={<Navbar page="public" />}>
                   <GenerateId />
                 </Layout>
               </div>
@@ -130,9 +131,9 @@ export default function App() {
           path="/admin/dashboard"
           element={
             <>
-              <Sidebar />
-              <div className="md:pl-[240px]">
-                <Layout header={<Navbar page="student" />}>
+              <AdminSidebar />
+              <div className="md:pl-[240px] transition-all duration-300">
+                <Layout header={<Navbar page="public" />}>
                   <AdminDashboard />
                 </Layout>
               </div>
