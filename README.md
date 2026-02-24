@@ -36,10 +36,18 @@
    npm install
    ```
 4. Start the backend server:
+
    ```bash
    npm run dev
    ```
+
    This uses `nodemon` to watch for file changes.
+
+5. Login to different Credentials as followed -
+   1. Student URL : localhost:3000/login
+   2. Teacher URL : localhost:3000/teacher-login
+   3. Admin URL : localhost:3000/admin/login
+      (Register a new admin at: localhost:3000/admin/register)
 
 Unique ids for Student to register
 STD-2026-8872

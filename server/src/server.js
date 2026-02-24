@@ -29,7 +29,7 @@ const teacherRoutes = require('./modules/teacher/teacherRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/exam', examRoutes);
-app.use('/api/admin', adminRoutes);
+// app.use('/api/admin', adminRoutes);
 app.use('/api/teacher', teacherRoutes);
 app.use('/api/departments', require('./modules/department/departmentRoutes'));
 
