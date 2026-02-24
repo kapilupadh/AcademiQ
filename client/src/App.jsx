@@ -147,7 +147,10 @@ export default function App() {
           element={
             <>
               <TeacherSidebar />
-              <div className="md:pl-[240px]">
+              <div
+                className="transition-all duration-300"
+                style={{ paddingLeft: "var(--teacher-sidebar-w, 240px)" }}
+              >
                 <Layout header={<Navbar page="teacher" />}>
                   <TeacherDashboard />
                 </Layout>
@@ -161,7 +164,10 @@ export default function App() {
           element={
             <>
               <TeacherSidebar />
-              <div className="md:pl-[240px]">
+              <div
+                className="transition-all duration-300"
+                style={{ paddingLeft: "var(--teacher-sidebar-w, 240px)" }}
+              >
                 <Layout header={<Navbar page="teacher" />}>
                   <ExamList />
                 </Layout>
@@ -175,7 +181,10 @@ export default function App() {
           element={
             <>
               <TeacherSidebar />
-              <div className="md:pl-[240px]">
+              <div
+                className="transition-all duration-300"
+                style={{ paddingLeft: "var(--teacher-sidebar-w, 240px)" }}
+              >
                 <Layout header={<Navbar page="teacher" />}>
                   <ExamBuilder />
                 </Layout>
@@ -189,7 +198,10 @@ export default function App() {
           element={
             <>
               <TeacherSidebar />
-              <div className="md:pl-[240px]">
+              <div
+                className="transition-all duration-300"
+                style={{ paddingLeft: "var(--teacher-sidebar-w, 240px)" }}
+              >
                 <Layout header={<Navbar page="teacher" />}>
                   <ExamBuilder />
                 </Layout>
@@ -203,7 +215,10 @@ export default function App() {
           element={
             <>
               <TeacherSidebar />
-              <div className="md:pl-[240px]">
+              <div
+                className="transition-all duration-300"
+                style={{ paddingLeft: "var(--teacher-sidebar-w, 240px)" }}
+              >
                 <Layout header={<Navbar page="teacher" />}>
                   <ExamManage />
                 </Layout>

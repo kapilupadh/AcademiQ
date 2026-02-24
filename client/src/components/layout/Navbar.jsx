@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Bell, LogOut, User, Sun, Moon } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function Navbar({ page = "public" }) {
   const navigate = useNavigate();
@@ -11,30 +12,15 @@ export default function Navbar({ page = "public" }) {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const notificationRef = useRef(null);
 
-  // Theme State
-  const [theme, setTheme] = useState(localStorage.getItem("theme") || "dark");
+  // Shared theme from context
+  const { isDark, toggleTheme } = useTheme();
+  const theme = isDark ? "dark" : "light";
 
+  // Load user from localStorage
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    if (storedUser) setUser(JSON.parse(storedUser));
   }, []);
-
-  // Theme Logic
-  useEffect(() => {
-    const root = window.document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-    localStorage.setItem("theme", theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  };
 
   // Close dropdown when clicking outside
   useEffect(() => {

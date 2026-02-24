@@ -1,39 +1,66 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
+  BookOpen,
   Users,
   NotebookPen,
   Clock,
+  CalendarRange,
+  FileText,
   BookMarked,
   MessageSquare,
-  BookOpenCheck,
-  ClipboardEdit,
-  AlertTriangle,
-  ScrollText,
-  Armchair,
-  FileCheck,
-  PenLine,
-  Ruler,
-  Upload,
-  CalendarRange,
-  PhoneCall,
-  Megaphone,
+  ChevronLeft,
+  ChevronRight,
   ChevronDown,
-  Menu,
-  X,
   LogOut,
   School,
+  Menu,
+  X,
 } from "lucide-react";
-import { useSidebar } from "../../hooks/useSidebar";
+import { useTheme } from "../../context/ThemeContext";
 
-const ACCENT = "blue";
+/* ─── Google Font: DM Sans ─────────────────────────────────────── */
+const injectFont = () => {
+  if (document.getElementById("dm-sans-font")) return;
+  const link = Object.assign(document.createElement("link"), {
+    id: "dm-sans-font",
+    rel: "stylesheet",
+    href: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap",
+  });
+  document.head.appendChild(link);
+};
 
+/* ─── CSS variable for content padding ─────────────────────────── */
+const setSidebarWidth = (w) =>
+  document.documentElement.style.setProperty("--teacher-sidebar-w", w);
+
+/* ─── Logo paths ────────────────────────────────────────────────── */
+const LOGO_DARK_MODE = "/Icons/Dark-Logo.jpg"; // isDark = true  → dark bg → Dark-Logo
+const LOGO_LIGHT_MODE = "/Icons/light-logo.jpg"; // isDark = false → light bg → light-logo
+
+/* ─── NAV DATA ──────────────────────────────────────────────────── */
 const PRIMARY = [
-  { label: "Dashboard", icon: LayoutDashboard, to: "/teacher/dashboard" },
-  { label: "My Classes", icon: Users, to: "/teacher/students" },
-  { label: "Assessments", icon: NotebookPen, to: "/teacher/exams" },
+  {
+    key: "dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    to: "/teacher/dashboard",
+  },
+  {
+    key: "examination",
+    label: "Examination",
+    icon: BookOpen,
+    to: "/teacher/exams",
+  },
+  { key: "classes", label: "My Classes", icon: Users, to: "/teacher/students" },
+  {
+    key: "assessments",
+    label: "Assessments",
+    icon: NotebookPen,
+    to: "/teacher/exams/create",
+  },
 ];
 
 const SECONDARY = [
@@ -41,191 +68,211 @@ const SECONDARY = [
     key: "attendance",
     label: "Attendance",
     icon: Clock,
-    sub: [
-      {
-        label: "Mark Register",
-        icon: ClipboardEdit,
-        to: "/teacher/attendance/mark",
-      },
-      { label: "Edit Logs", icon: FileCheck, to: "/teacher/attendance/logs" },
-      {
-        label: "Leave Applications",
-        icon: FileCheck,
-        to: "/teacher/attendance/leave",
-      },
-    ],
+    to: "/teacher/attendance/mark",
+    badge: {
+      type: "otp",
+      text: "OTP",
+      style: "bg-amber-500/15 text-amber-400 border border-amber-500/30",
+    },
   },
   {
-    key: "classes-detail",
+    key: "class-details",
     label: "Class Details",
-    icon: Users,
-    sub: [
-      { label: "Cohort Rosters", icon: ScrollText, to: "/teacher/students" },
-      {
-        label: "Student Profiles",
-        icon: Users,
-        to: "/teacher/students/profiles",
-      },
-      {
-        label: "Seating Charts",
-        icon: Armchair,
-        to: "/teacher/students/seating",
-      },
-    ],
+    icon: CalendarRange,
+    to: "/teacher/students/seating",
   },
   {
-    key: "assess-detail",
+    key: "assessment-details",
     label: "Assessment Details",
-    icon: BookOpenCheck,
-    sub: [
-      { label: "Gradebook", icon: BookOpenCheck, to: "/teacher/exams" },
-      { label: "Quiz Builder", icon: PenLine, to: "/teacher/exams/create" },
-      {
-        label: "Rubric Management",
-        icon: Ruler,
-        to: "/teacher/assessments/rubrics",
-      },
-    ],
+    icon: FileText,
+    to: "/teacher/assessments/rubrics",
   },
   {
-    key: "lessons",
+    key: "lesson-planning",
     label: "Lesson Planning",
     icon: BookMarked,
-    sub: [
-      { label: "Syllabus Tracker", icon: ScrollText, to: "/teacher/subjects" },
-      {
-        label: "Resource Upload",
-        icon: Upload,
-        to: "/teacher/lessons/resources",
-      },
-      {
-        label: "Course Calendar",
-        icon: CalendarRange,
-        to: "/teacher/lessons/calendar",
-      },
-    ],
+    to: "/teacher/subjects",
+    badge: {
+      type: "new",
+      text: "NEW",
+      style: "bg-teal-500/15 text-teal-400 border border-teal-500/30",
+    },
   },
   {
     key: "communication",
     label: "Communication",
     icon: MessageSquare,
-    sub: [
-      {
-        label: "Direct Messages",
-        icon: MessageSquare,
-        to: "/teacher/messages",
-      },
-      {
-        label: "Parent Conferencing",
-        icon: PhoneCall,
-        to: "/teacher/communication/parents",
-      },
-      {
-        label: "Class Announcements",
-        icon: Megaphone,
-        to: "/teacher/communication/announcements",
-      },
-    ],
+    to: "/teacher/messages",
+    badge: { type: "count", text: "3", style: "bg-teal-600 text-white" },
   },
 ];
 
-function NavItem({ icon: Icon, label, to, onClick }) {
-  const { pathname } = useLocation();
-  const isActive =
-    pathname === to || (to !== "/teacher/dashboard" && pathname.startsWith(to));
+/* ─── THEME TOKENS ──────────────────────────────────────────────── */
+const T = {
+  dark: {
+    bg: "bg-[#0f1117]",
+    border: "border-zinc-800",
+    label: "text-zinc-600",
+    divider: "border-zinc-800",
+    navBase: "text-zinc-400",
+    navHover: "hover:bg-zinc-800/60 hover:text-zinc-100",
+    navActive: "bg-teal-500/12 text-teal-400",
+    activeBar: "bg-teal-500",
+    btn: "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800",
+    brand: "text-white",
+    brandSub: "text-zinc-500",
+    rolePill: "bg-teal-900/40 text-teal-400 border border-teal-800/50",
+    avatar: "bg-teal-900/40 text-teal-400 border-teal-800/40",
+    userName: "text-zinc-100",
+    email: "text-zinc-500",
+    tooltip: "bg-zinc-900 border-zinc-700 text-white shadow-xl",
+  },
+  light: {
+    bg: "bg-zinc-50",
+    border: "border-zinc-200",
+    label: "text-zinc-400",
+    divider: "border-zinc-200",
+    navBase: "text-zinc-600",
+    navHover: "hover:bg-zinc-100 hover:text-zinc-900",
+    navActive: "bg-teal-50 text-teal-700",
+    activeBar: "bg-teal-600",
+    btn: "text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100",
+    brand: "text-zinc-900",
+    brandSub: "text-zinc-500",
+    rolePill: "bg-teal-50 text-teal-700 border border-teal-200",
+    avatar: "bg-teal-100 text-teal-700 border-teal-200",
+    userName: "text-zinc-900",
+    email: "text-zinc-500",
+    tooltip: "bg-zinc-900 border-zinc-700 text-white shadow-xl",
+  },
+};
+
+/* ─── BADGE ─────────────────────────────────────────────────────── */
+function Badge({ badge, forIcon = false }) {
+  if (!badge) return null;
+  if (forIcon && badge.type === "count") {
+    return (
+      <span
+        className={`absolute -top-1 -right-1 flex items-center justify-center
+        w-3.5 h-3.5 rounded-full text-[9px] font-bold leading-none ${badge.style}`}
+      >
+        {badge.text}
+      </span>
+    );
+  }
+  if (forIcon) {
+    // OTP / NEW in icon mode: small coloured dot
+    const dot = badge.type === "otp" ? "bg-amber-400" : "bg-teal-400";
+    return (
+      <span
+        className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ${dot}`}
+      />
+    );
+  }
+  // Expanded text badge
+  if (badge.type === "count") {
+    return (
+      <span
+        className={`inline-flex items-center justify-center w-4 h-4 rounded-full
+        text-[10px] font-bold leading-none shrink-0 ${badge.style}`}
+      >
+        {badge.text}
+      </span>
+    );
+  }
   return (
-    <Link
-      to={to}
-      onClick={onClick}
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 relative
-        ${
-          isActive
-            ? "bg-blue-500/15 text-blue-500 dark:bg-blue-500/20 dark:text-blue-400"
-            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/70 hover:text-zinc-900 dark:hover:text-zinc-100"
-        }`}
+    <span
+      className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px]
+      font-bold tracking-wide uppercase leading-none shrink-0 ${badge.style}`}
     >
-      {isActive && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-blue-500 rounded-full" />
-      )}
-      <Icon size={17} strokeWidth={isActive ? 2.2 : 1.8} className="shrink-0" />
-      <span className="truncate">{label}</span>
-    </Link>
+      {badge.text}
+    </span>
   );
 }
 
-function NavGroup({
-  icon: Icon,
-  label,
-  groupKey,
-  openGroups,
-  toggleGroup,
-  children,
-}) {
-  const isOpen = !!openGroups[groupKey];
+/* ─── TOOLTIP ───────────────────────────────────────────────────── */
+function Tooltip({ label, tk }) {
   return (
-    <div>
-      <button
-        onClick={() => toggleGroup(groupKey)}
-        className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium
-          text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/70
-          hover:text-zinc-900 dark:hover:text-zinc-100 transition-all duration-150"
+    <div
+      className="absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50
+      pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+    >
+      <div
+        className={`px-2.5 py-1.5 rounded-md text-xs whitespace-nowrap border ${tk.tooltip}`}
       >
-        <Icon size={17} strokeWidth={1.8} className="shrink-0" />
-        <span className="flex-1 text-left truncate">{label}</span>
-        <motion.span
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <ChevronDown size={14} strokeWidth={2} />
-        </motion.span>
-      </button>
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            className="overflow-hidden"
-          >
-            <div className="mt-0.5 ml-6 pl-3 border-l border-zinc-200 dark:border-zinc-800 space-y-0.5 pb-1">
-              {children}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {label}
+      </div>
     </div>
   );
 }
 
-function SubItem({ icon: Icon, label, to, onClick }) {
+/* ─── NAV ITEM ──────────────────────────────────────────────────── */
+function NavItem({ icon: Icon, label, to, badge, collapsed, tk, onClick }) {
   const { pathname } = useLocation();
-  const isActive = pathname === to;
+  const isActive =
+    pathname === to ||
+    (to !== "/teacher/dashboard" && to.length > 1 && pathname.startsWith(to));
+
   return (
-    <Link
-      to={to}
-      onClick={onClick}
-      className={`flex items-center gap-2.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all duration-150
-        ${
-          isActive
-            ? "text-blue-500 dark:text-blue-400 bg-blue-500/10"
-            : "text-zinc-500 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
-        }`}
-    >
-      <Icon size={13} strokeWidth={isActive ? 2.2 : 1.8} className="shrink-0" />
-      <span className="truncate">{label}</span>
-    </Link>
+    <div className="relative group">
+      <Link
+        to={to}
+        onClick={onClick}
+        className={`relative flex items-center gap-3 rounded-lg text-sm font-medium
+          transition-all duration-150 cursor-pointer
+          ${collapsed ? "justify-center px-0 py-2.5 w-full" : "px-3 py-2.5"}
+          ${isActive ? tk.navActive : `${tk.navBase} ${tk.navHover}`}`}
+        style={{ fontFamily: "'DM Sans', sans-serif" }}
+      >
+        {isActive && !collapsed && (
+          <span
+            className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full ${tk.activeBar}`}
+          />
+        )}
+        <span className="relative shrink-0">
+          <Icon size={17} strokeWidth={isActive ? 2.2 : 1.8} />
+          {collapsed && <Badge badge={badge} forIcon />}
+        </span>
+        {!collapsed && (
+          <>
+            <span className="flex-1 truncate">{label}</span>
+            <Badge badge={badge} />
+          </>
+        )}
+      </Link>
+      {collapsed && <Tooltip label={label} tk={tk} />}
+    </div>
   );
 }
 
+/* ─── SECTION LABEL ─────────────────────────────────────────────── */
+function SectionLabel({ text, collapsed, tk }) {
+  if (collapsed) {
+    return <div className={`my-2 mx-auto w-6 border-t ${tk.divider}`} />;
+  }
+  return (
+    <p
+      className={`text-[9px] font-bold uppercase tracking-[0.12em] px-3 mb-1.5 ${tk.label}`}
+      style={{ fontFamily: "'DM Sans', sans-serif" }}
+    >
+      {text}
+    </p>
+  );
+}
+
+/* ─── SIDEBAR CONTENT ───────────────────────────────────────────── */
 function SidebarContent({
-  openGroups,
-  toggleGroup,
+  collapsed,
+  onToggleCollapsed,
   onItemClick,
-  showCloseBtn,
+  showClose,
   onClose,
+  mobileView,
 }) {
+  const { isDark } = useTheme();
+  const tk = isDark ? T.dark : T.light;
   const navigate = useNavigate();
+
   const user = (() => {
     try {
       return JSON.parse(localStorage.getItem("user")) || {};
@@ -233,7 +280,15 @@ function SidebarContent({
       return {};
     }
   })();
-  const initials = (user.name || "T").charAt(0).toUpperCase();
+  const name = user.name || "Teacher";
+  const email = user.email || "teacher@academiq.com";
+  const initials = name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -241,92 +296,212 @@ function SidebarContent({
   };
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950">
-      <div className="flex items-center justify-between px-4 pt-5 pb-3">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
-            <School size={16} className="text-white" />
+    <div
+      className={`flex flex-col h-full transition-colors duration-150 ${tk.bg} ${tk.border} border-r`}
+      style={{ fontFamily: "'DM Sans', sans-serif" }}
+    >
+      {/* ── HEADER: Logo + Role badge + Collapse toggle ── */}
+      <div
+        className={`flex items-center justify-between px-3 border-b ${tk.divider} h-16 shrink-0
+        ${collapsed ? "flex-col justify-center gap-2 py-2" : ""}`}
+      >
+        {/* Logo */}
+        {!collapsed ? (
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            <img
+              src={isDark ? LOGO_DARK_MODE : LOGO_LIGHT_MODE}
+              alt="AcademiQ"
+              className="h-8 w-auto rounded-md object-contain shrink-0 transition-all duration-150"
+              onError={(e) => {
+                e.target.style.display = "none";
+                if (e.target.nextSibling)
+                  e.target.nextSibling.style.display = "flex";
+              }}
+            />
+            {/* Fallback icon if image fails */}
+            <div className="w-8 h-8 rounded-md bg-teal-600 items-center justify-center shrink-0 hidden">
+              <School size={15} className="text-white" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <p className={`text-sm font-bold leading-tight ${tk.brand}`}>
+                  AcademiQ
+                </p>
+                <span
+                  className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none ${tk.rolePill}`}
+                >
+                  TEACHER
+                </span>
+              </div>
+              <p className={`text-[10px] leading-tight ${tk.brandSub}`}>
+                Faculty Portal
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-semibold text-white leading-tight">
-              AcademiQ
-            </p>
-            <p className="text-[10px] text-zinc-500 leading-tight">
-              Teacher Portal
-            </p>
+        ) : (
+          // Collapsed: show small square fallback icon only (logo would overflow 72px)
+          <div className="w-8 h-8 rounded-md bg-teal-600 flex items-center justify-center shrink-0">
+            <School size={15} className="text-white" />
           </div>
-        </div>
-        {showCloseBtn && (
+        )}
+
+        {/* Collapse toggle (desktop) / Close (mobile) */}
+        {!mobileView ? (
+          <button
+            onClick={onToggleCollapsed}
+            className={`p-1.5 rounded-lg transition-all duration-150 ${tk.btn}`}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
+          </button>
+        ) : showClose ? (
           <button
             onClick={onClose}
-            className="p-1.5 rounded-md text-zinc-500 hover:text-white hover:bg-zinc-800 transition-all"
+            className={`p-1.5 rounded-lg transition-all duration-150 ${tk.btn}`}
           >
-            <X size={16} />
+            <X size={15} />
           </button>
+        ) : null}
+      </div>
+
+      {/* ── PRIMARY NAV ── */}
+      <div
+        className={`${collapsed ? "px-2" : "px-3"} pt-3 pb-1 overflow-hidden`}
+      >
+        <SectionLabel text="Main" collapsed={collapsed} tk={tk} />
+        <nav className="space-y-0.5">
+          {PRIMARY.map((item) => (
+            <NavItem
+              key={item.key}
+              {...item}
+              collapsed={collapsed}
+              tk={tk}
+              onClick={onItemClick}
+            />
+          ))}
+        </nav>
+      </div>
+
+      {/* ── MANAGEMENT DIVIDER ── */}
+      <div className={`mx-3 border-t ${tk.divider} my-2`} />
+
+      {/* ── SECONDARY NAV ── */}
+      <div
+        className={`flex-1 overflow-y-auto scrollbar-hide ${collapsed ? "px-2" : "px-3"} pb-2`}
+      >
+        <SectionLabel text="Management" collapsed={collapsed} tk={tk} />
+        <div className="space-y-0.5">
+          {SECONDARY.map((item) => (
+            <NavItem
+              key={item.key}
+              icon={item.icon}
+              label={item.label}
+              to={item.to}
+              badge={item.badge}
+              collapsed={collapsed}
+              tk={tk}
+              onClick={onItemClick}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* ── ACCOUNT DIVIDER ── */}
+      <div className={`mx-3 border-t ${tk.divider}`} />
+
+      {/* ── FOOTER — ACCOUNT ── */}
+      <div
+        className={`overflow-hidden ${collapsed ? "px-2 py-3 flex justify-center" : "px-3 py-3"}`}
+      >
+        {collapsed ? (
+          /* Collapsed: only red logout icon */
+          <div className="relative group">
+            <button
+              onClick={handleLogout}
+              title="Logout"
+              className="p-1.5 rounded-md text-red-500 hover:bg-red-500/10 transition-all duration-150"
+            >
+              <LogOut size={15} />
+            </button>
+            <Tooltip label="Logout" tk={tk} />
+          </div>
+        ) : (
+          /* Expanded: full account card */
+          <>
+            <SectionLabel text="Account" collapsed={false} tk={tk} />
+            <div className="flex items-center gap-2.5">
+              <div
+                className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0
+                ${tk.avatar}`}
+              >
+                <span className="text-xs font-bold leading-none">
+                  {initials}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p
+                  className={`text-xs font-semibold truncate leading-tight ${tk.userName}`}
+                >
+                  {name}
+                </p>
+                <p
+                  className={`text-[10px] truncate leading-tight mt-0.5 ${tk.email}`}
+                >
+                  {email}
+                </p>
+              </div>
+              <button
+                onClick={handleLogout}
+                title="Logout"
+                className="p-1.5 rounded-md text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150 shrink-0"
+              >
+                <LogOut size={14} />
+              </button>
+            </div>
+          </>
         )}
-      </div>
-      <div className="mx-3 border-t border-zinc-800 mb-2" />
-      <nav className="px-2 space-y-0.5">
-        {PRIMARY.map((item) => (
-          <NavItem key={item.to} {...item} onClick={onItemClick} />
-        ))}
-      </nav>
-      <div className="mx-3 border-t border-zinc-800 my-3" />
-      <div className="flex-1 overflow-y-auto px-2 space-y-0.5 pb-4 scrollbar-hide">
-        {SECONDARY.map((group) => (
-          <NavGroup
-            key={group.key}
-            groupKey={group.key}
-            icon={group.icon}
-            label={group.label}
-            openGroups={openGroups}
-            toggleGroup={toggleGroup}
-          >
-            {group.sub.map((s) => (
-              <SubItem key={s.to} {...s} onClick={onItemClick} />
-            ))}
-          </NavGroup>
-        ))}
-      </div>
-      <div className="mx-3 border-t border-zinc-800" />
-      <div className="p-3 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-blue-900/50 flex items-center justify-center shrink-0">
-          <span className="text-xs font-semibold text-blue-400">
-            {initials}
-          </span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-zinc-100 truncate">
-            {user.name || "Teacher"}
-          </p>
-          <p className="text-[10px] text-zinc-500 truncate">
-            {user.email || ""}
-          </p>
-        </div>
-        <button
-          onClick={handleLogout}
-          title="Logout"
-          className="p-1.5 rounded-md text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
-        >
-          <LogOut size={14} />
-        </button>
       </div>
     </div>
   );
 }
 
+/* ─── MAIN EXPORT ───────────────────────────────────────────────── */
 export default function TeacherSidebar() {
-  const { mobileOpen, openGroups, toggleMobile, closeMobile, toggleGroup } =
-    useSidebar();
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("tch_sidebar_collapsed")) ?? false;
+    } catch {
+      return false;
+    }
+  });
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    injectFont();
+  }, []);
+
+  useEffect(() => {
+    setSidebarWidth(collapsed ? "72px" : "260px");
+    localStorage.setItem("tch_sidebar_collapsed", JSON.stringify(collapsed));
+    return () => setSidebarWidth("260px");
+  }, [collapsed]);
+
+  const toggleCollapsed = () => setCollapsed((p) => !p);
+  const sidebarW = collapsed ? 72 : 260;
+
   return (
     <>
+      {/* Mobile hamburger */}
       <button
-        onClick={toggleMobile}
-        className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-lg bg-zinc-900 border border-zinc-700 shadow-lg text-zinc-400 hover:text-white transition-all"
-        aria-label="Open menu"
+        onClick={() => setMobileOpen(true)}
+        className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-lg
+          bg-zinc-900 border border-zinc-700 shadow-lg text-zinc-400 hover:text-white transition-all"
+        aria-label="Open sidebar"
       >
         <Menu size={18} />
       </button>
+
+      {/* Mobile overlay drawer */}
       <AnimatePresence>
         {mobileOpen && (
           <>
@@ -336,7 +511,7 @@ export default function TeacherSidebar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              onClick={closeMobile}
+              onClick={() => setMobileOpen(false)}
               className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
             />
             <motion.aside
@@ -345,28 +520,37 @@ export default function TeacherSidebar() {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 380, damping: 38 }}
-              className="fixed left-0 top-0 bottom-0 z-50 w-[260px] border-r border-zinc-800 shadow-2xl md:hidden"
+              className="fixed left-0 top-0 bottom-0 z-50 w-[260px] shadow-2xl md:hidden"
             >
               <SidebarContent
-                openGroups={openGroups}
-                toggleGroup={toggleGroup}
-                onItemClick={closeMobile}
-                showCloseBtn
-                onClose={closeMobile}
+                collapsed={false}
+                onToggleCollapsed={toggleCollapsed}
+                onItemClick={() => setMobileOpen(false)}
+                showClose
+                onClose={() => setMobileOpen(false)}
+                mobileView
               />
             </motion.aside>
           </>
         )}
       </AnimatePresence>
-      <aside className="fixed left-0 top-0 bottom-0 z-40 hidden md:flex flex-col w-[240px] border-r border-zinc-800">
+
+      {/* Desktop sidebar — top-0 full height; header row is h-16 matching navbar */}
+      <motion.aside
+        initial={false}
+        animate={{ width: sidebarW }}
+        transition={{ type: "spring", stiffness: 380, damping: 38 }}
+        className="fixed left-0 top-0 bottom-0 z-40 hidden md:block overflow-hidden"
+      >
         <SidebarContent
-          openGroups={openGroups}
-          toggleGroup={toggleGroup}
+          collapsed={collapsed}
+          onToggleCollapsed={toggleCollapsed}
           onItemClick={null}
-          showCloseBtn={false}
+          showClose={false}
           onClose={null}
+          mobileView={false}
         />
-      </aside>
+      </motion.aside>
     </>
   );
 }
