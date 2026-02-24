@@ -37,8 +37,8 @@ const setSidebarWidth = (w) =>
   document.documentElement.style.setProperty("--teacher-sidebar-w", w);
 
 /* ─── Logo paths ────────────────────────────────────────────────── */
-const LOGO_DARK_MODE = "/Icons/Dark-Logo.jpg"; // isDark = true  → dark bg → Dark-Logo
-const LOGO_LIGHT_MODE = "/Icons/light-logo.jpg"; // isDark = false → light bg → light-logo
+const LOGO_DARK_MODE = "/Icons/Untitled.png"; // isDark = true  → dark bg → Light-Logo
+const LOGO_LIGHT_MODE = "/Icons/Dark-Logo.jpg"; // isDark = false → light bg → Dark-Logo
 
 /* ─── NAV DATA ──────────────────────────────────────────────────── */
 const PRIMARY = [
@@ -300,10 +300,10 @@ function SidebarContent({
       className={`flex flex-col h-full transition-colors duration-150 ${tk.bg} ${tk.border} border-r`}
       style={{ fontFamily: "'DM Sans', sans-serif" }}
     >
-      {/* ── HEADER: Logo + Role badge + Collapse toggle ── */}
+      {/* ── HEADER: Logo + Collapse toggle — always flex-row, h-16 to match navbar ── */}
       <div
-        className={`flex items-center justify-between px-3 border-b ${tk.divider} h-16 shrink-0
-        ${collapsed ? "flex-col justify-center gap-2 py-2" : ""}`}
+        className={`flex items-center justify-between border-b ${tk.divider} h-16 shrink-0
+        ${collapsed ? "px-2" : "px-3"}`}
       >
         {/* Logo */}
         {!collapsed ? (
@@ -339,11 +339,21 @@ function SidebarContent({
             </div>
           </div>
         ) : (
-          // Collapsed: show small square fallback icon only (logo would overflow 72px)
-          <div className="w-8 h-8 rounded-md bg-teal-600 flex items-center justify-center shrink-0">
-            <School size={15} className="text-white" />
-          </div>
+          // Collapsed: show logo image, sized to fit within 72px sidebar
+          <img
+            src={isDark ? LOGO_DARK_MODE : LOGO_LIGHT_MODE}
+            alt="AcademiQ"
+            className="w-8 h-8 rounded-md object-contain shrink-0 transition-all duration-150"
+            onError={(e) => {
+              e.target.style.display = "none";
+              e.target.nextSibling.style.display = "flex";
+            }}
+          />
         )}
+        {/* Fallback if collapsed image also fails */}
+        <div className="w-8 h-8 rounded-md bg-teal-600 items-center justify-center shrink-0 hidden">
+          <School size={15} className="text-white" />
+        </div>
 
         {/* Collapse toggle (desktop) / Close (mobile) */}
         {!mobileView ? (

@@ -103,8 +103,10 @@ export default function App() {
           element={
             <>
               <Sidebar />
-              {/* Add padding left for the sidebar space */}
-              <div className="md:pl-[240px]">
+              <div
+                className="transition-all duration-300"
+                style={{ paddingLeft: "var(--student-sidebar-w, 260px)" }}
+              >
                 <Layout header={<Navbar page="student" />}>
                   <Dashboard />
                 </Layout>
@@ -118,7 +120,10 @@ export default function App() {
           element={
             <>
               <AdminSidebar />
-              <div className="md:pl-[240px] transition-all duration-300">
+              <div
+                className="transition-all duration-300"
+                style={{ paddingLeft: "var(--admin-sidebar-w, 260px)" }}
+              >
                 <Layout header={<Navbar page="public" />}>
                   <GenerateId />
                 </Layout>
@@ -132,7 +137,10 @@ export default function App() {
           element={
             <>
               <AdminSidebar />
-              <div className="md:pl-[240px] transition-all duration-300">
+              <div
+                className="transition-all duration-300"
+                style={{ paddingLeft: "var(--admin-sidebar-w, 260px)" }}
+              >
                 <Layout header={<Navbar page="public" />}>
                   <AdminDashboard />
                 </Layout>
@@ -232,7 +240,10 @@ export default function App() {
           element={
             <>
               <Sidebar />
-              <div className="md:pl-[240px]">
+              <div
+                className="transition-all duration-300"
+                style={{ paddingLeft: "var(--student-sidebar-w, 260px)" }}
+              >
                 <Layout header={<Navbar page="student" />}>
                   <Profile />
                 </Layout>
@@ -249,7 +260,10 @@ export default function App() {
           element={
             <>
               <Sidebar />
-              <div className="md:pl-[240px]">
+              <div
+                className="transition-all duration-300"
+                style={{ paddingLeft: "var(--student-sidebar-w, 260px)" }}
+              >
                 <Layout header={<Navbar page="student" />}>
                   <ExamInstructions />
                 </Layout>

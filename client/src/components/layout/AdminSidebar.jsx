@@ -1,270 +1,485 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
-  Users,
-  BookText,
-  CalendarRange,
-  Clock,
-  MessageSquare,
-  Lock,
-  BarChart2,
-  Wallet,
-  AlertOctagon,
+  UsersRound,
+  BrainCircuit,
+  LayoutPanelTop,
+  UserSearch,
   GraduationCap,
-  UserCheck,
-  UserCog,
-  Layers,
-  BookOpen,
-  CalendarClock,
   ClipboardList,
-  FileCheck,
-  Radio,
-  FileBarChart,
-  Building,
-  SlidersHorizontal,
+  MessageSquare,
+  Settings2,
   ShieldCheck,
-  Bell,
-  Mail,
-  Globe,
-  Webhook,
-  DatabaseBackup,
   ScrollText,
+  FileText,
+  ChevronLeft,
+  ChevronRight,
   ChevronDown,
+  LogOut,
+  School,
   Menu,
   X,
-  LogOut,
-  ShieldEllipsis,
 } from "lucide-react";
-import { useSidebar } from "../../hooks/useSidebar";
+import { useTheme } from "../../context/ThemeContext";
 
-const ACCENT = "violet";
+/* ─── Google Font: DM Sans ─────────────────────────────────────── */
+const injectFont = () => {
+  if (document.getElementById("dm-sans-font")) return;
+  const link = Object.assign(document.createElement("link"), {
+    id: "dm-sans-font",
+    rel: "stylesheet",
+    href: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap",
+  });
+  document.head.appendChild(link);
+};
 
+/* ─── CSS variable for content padding ─────────────────────────── */
+const setSidebarWidth = (w) =>
+  document.documentElement.style.setProperty("--admin-sidebar-w", w);
+
+/* ─── Logo paths ────────────────────────────────────────────────── */
+const LOGO_DARK_MODE = "/Icons/Untitled.png"; // isDark = true  → dark bg
+const LOGO_LIGHT_MODE = "/Icons/Dark-Logo.jpg"; // isDark = false → light bg
+
+/* ─── PRIMARY NAV ───────────────────────────────────────────────── */
 const PRIMARY = [
-  { label: "Dashboard", icon: LayoutDashboard, to: "/admin/dashboard" },
-  { label: "User Management", icon: Users, to: "/admin/generate-id" },
-  { label: "Examination Engine", icon: BookText, to: "/admin/exams/create" },
+  {
+    key: "dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    to: "/admin/dashboard",
+  },
+  {
+    key: "user-management",
+    label: "User Management",
+    icon: UsersRound,
+    to: "/admin/generate-id",
+    badge: {
+      type: "chip",
+      text: "ID",
+      style: "bg-violet-500/15 text-violet-400 border border-violet-500/30",
+    },
+  },
+  {
+    key: "exam-engine",
+    label: "Examination Engine",
+    icon: BrainCircuit,
+    to: "/admin/exams",
+    badge: {
+      type: "new",
+      text: "NEW",
+      style: "bg-violet-500/15 text-violet-400 border border-violet-500/30",
+    },
+  },
 ];
 
+/* ─── SECONDARY NAV (all accordion) ────────────────────────────── */
 const SECONDARY = [
   {
-    key: "dashboard-detail",
+    key: "dashboard-details",
     label: "Dashboard Details",
-    icon: BarChart2,
+    icon: LayoutPanelTop,
     sub: [
-      { label: "Analytics Overview", icon: BarChart2, to: "/admin/dashboard" },
-      {
-        label: "Financial Summary",
-        icon: Wallet,
-        to: "/admin/dashboard/finance",
-      },
-      {
-        label: "Early Warnings",
-        icon: AlertOctagon,
-        to: "/admin/dashboard/warnings",
-      },
+      { label: "System Overview", icon: ShieldCheck, to: "/admin/overview" },
+      { label: "Analytics", icon: ClipboardList, to: "/admin/analytics" },
+      { label: "Recent Activity", icon: ScrollText, to: "/admin/activity" },
     ],
   },
   {
-    key: "users-detail",
+    key: "user-details",
     label: "User Details",
-    icon: Users,
+    icon: UserSearch,
     sub: [
-      { label: "Students", icon: GraduationCap, to: "/admin/users/students" },
-      { label: "Teachers", icon: UserCheck, to: "/admin/users/teachers" },
-      { label: "Administrators", icon: UserCog, to: "/admin/generate-id" },
-      { label: "Parents", icon: Users, to: "/admin/users/parents" },
+      {
+        label: "All Students",
+        icon: GraduationCap,
+        to: "/admin/users/students",
+      },
+      { label: "All Teachers", icon: UsersRound, to: "/admin/users/teachers" },
+      { label: "All Admins", icon: ShieldCheck, to: "/admin/users/admins" },
+      {
+        label: "Generate Unique IDs",
+        icon: ScrollText,
+        to: "/admin/generate-id",
+      },
     ],
   },
   {
     key: "academics",
-    label: "Academics & Timetable",
-    icon: CalendarRange,
+    label: "Academics",
+    icon: GraduationCap,
     sub: [
-      { label: "Class Setup", icon: Layers, to: "/admin/academics/classes" },
+      { label: "Subjects", icon: FileText, to: "/admin/academics/subjects" },
       {
-        label: "Subject Allocation",
-        icon: BookOpen,
-        to: "/admin/academics/subjects",
+        label: "Classes & Sections",
+        icon: LayoutPanelTop,
+        to: "/admin/academics/classes",
       },
       {
-        label: "Master Schedule",
-        icon: CalendarClock,
-        to: "/admin/academics/schedule",
-      },
-    ],
-  },
-  {
-    key: "attendance",
-    label: "Attendance Control",
-    icon: Clock,
-    sub: [
-      {
-        label: "Daily Logs",
+        label: "Timetable",
         icon: ClipboardList,
-        to: "/admin/attendance/logs",
+        to: "/admin/academics/timetable",
       },
       {
-        label: "Leave Approvals",
-        icon: FileCheck,
-        to: "/admin/attendance/leave",
+        label: "Curriculum",
+        icon: ScrollText,
+        to: "/admin/academics/curriculum",
       },
-      { label: "Hardware Sync", icon: Radio, to: "/admin/attendance/hardware" },
-      { label: "Reports", icon: FileBarChart, to: "/admin/attendance/reports" },
     ],
   },
   {
-    key: "exams-detail",
+    key: "exam-details",
     label: "Exam Details",
-    icon: BookText,
+    icon: BrainCircuit,
     sub: [
-      { label: "Exam Creation", icon: BookText, to: "/admin/exams/create" },
-      { label: "Hall Allocation", icon: Building, to: "/admin/exams/halls" },
+      { label: "Scheduled Exams", icon: ClipboardList, to: "/admin/exams" },
       {
-        label: "Grading Scales",
-        icon: SlidersHorizontal,
-        to: "/admin/exams/grading",
+        label: "Results & Grades",
+        icon: ScrollText,
+        to: "/admin/exams/results",
       },
-      { label: "Compliance", icon: ShieldCheck, to: "/admin/exams/compliance" },
+      {
+        label: "Guidelines & Rules",
+        icon: ShieldCheck,
+        to: "/admin/exams/guidelines",
+      },
+      { label: "Exam Reports", icon: FileText, to: "/admin/exams/reports" },
     ],
   },
   {
     key: "communications",
     label: "Communications",
     icon: MessageSquare,
+    badge: {
+      type: "count",
+      text: "5",
+      style: "bg-violet-600 text-white",
+    },
     sub: [
       {
         label: "Announcements",
-        icon: Bell,
-        to: "/admin/communications/announcements",
+        icon: ScrollText,
+        to: "/admin/comms/announcements",
       },
-      { label: "SMS/Email Logs", icon: Mail, to: "/admin/communications/logs" },
       {
-        label: "Parent Portals",
-        icon: Globe,
-        to: "/admin/communications/parents",
+        label: "Notice Board",
+        icon: ClipboardList,
+        to: "/admin/comms/notices",
+      },
+      {
+        label: "Direct Messages",
+        icon: MessageSquare,
+        to: "/admin/comms/messages",
       },
     ],
   },
   {
-    key: "settings",
+    key: "system-settings",
     label: "System Settings",
-    icon: Lock,
+    icon: Settings2,
     sub: [
       {
-        label: "Integrations (API)",
-        icon: Webhook,
-        to: "/admin/settings/integrations",
+        label: "General Settings",
+        icon: Settings2,
+        to: "/admin/settings/general",
       },
       {
-        label: "Security Policies",
-        icon: Lock,
-        to: "/admin/settings/security",
+        label: "Roles & Permissions",
+        icon: ShieldCheck,
+        to: "/admin/settings/roles",
       },
-      { label: "Backups", icon: DatabaseBackup, to: "/admin/settings/backups" },
-      { label: "Audit Trails", icon: ScrollText, to: "/admin/settings/audit" },
+      {
+        label: "Appearance",
+        icon: LayoutPanelTop,
+        to: "/admin/settings/appearance",
+      },
+      { label: "Audit Logs", icon: ScrollText, to: "/admin/settings/audit" },
     ],
   },
 ];
 
-function NavItem({ icon: Icon, label, to, onClick }) {
-  const { pathname } = useLocation();
-  const isActive =
-    pathname === to || (to !== "/admin/dashboard" && pathname.startsWith(to));
+/* ─── THEME TOKENS (Violet accent) ─────────────────────────────── */
+const T = {
+  dark: {
+    bg: "bg-[#0f1117]",
+    border: "border-zinc-800",
+    label: "text-zinc-600",
+    divider: "border-zinc-800",
+    navBase: "text-zinc-400",
+    navHover: "hover:bg-zinc-800/60 hover:text-zinc-100",
+    navActive: "bg-violet-500/12 text-violet-400",
+    activeBar: "bg-violet-500",
+    btn: "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800",
+    brand: "text-white",
+    brandSub: "text-zinc-500",
+    rolePill: "bg-violet-900/40 text-violet-400 border border-violet-800/50",
+    avatar: "bg-violet-900/40 text-violet-400 border-violet-800/40",
+    userName: "text-zinc-100",
+    email: "text-zinc-500",
+    tooltip: "bg-zinc-900 border-zinc-700 text-white shadow-xl",
+    subActive: "text-violet-400 bg-violet-500/10",
+    subBase: "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60",
+    subBorder: "border-zinc-800",
+  },
+  light: {
+    bg: "bg-zinc-50",
+    border: "border-zinc-200",
+    label: "text-zinc-400",
+    divider: "border-zinc-200",
+    navBase: "text-zinc-600",
+    navHover: "hover:bg-zinc-100 hover:text-zinc-900",
+    navActive: "bg-violet-50 text-violet-700",
+    activeBar: "bg-violet-600",
+    btn: "text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100",
+    brand: "text-zinc-900",
+    brandSub: "text-zinc-500",
+    rolePill: "bg-violet-50 text-violet-700 border border-violet-200",
+    avatar: "bg-violet-100 text-violet-700 border-violet-200",
+    userName: "text-zinc-900",
+    email: "text-zinc-500",
+    tooltip: "bg-zinc-900 border-zinc-700 text-white shadow-xl",
+    subActive: "text-violet-700 bg-violet-50",
+    subBase: "text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100",
+    subBorder: "border-zinc-200",
+  },
+};
+
+/* ─── BADGE ─────────────────────────────────────────────────────── */
+function Badge({ badge, forIcon = false }) {
+  if (!badge) return null;
+  if (forIcon && badge.type === "count") {
+    return (
+      <span
+        className={`absolute -top-1 -right-1 flex items-center justify-center
+        w-3.5 h-3.5 rounded-full text-[9px] font-bold leading-none ${badge.style}`}
+      >
+        {badge.text}
+      </span>
+    );
+  }
+  if (forIcon) {
+    const dot = badge.type === "count" ? "bg-violet-400" : "bg-violet-400";
+    return (
+      <span
+        className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ${dot}`}
+      />
+    );
+  }
+  if (badge.type === "count") {
+    return (
+      <span
+        className={`inline-flex items-center justify-center w-4 h-4 rounded-full
+        text-[10px] font-bold leading-none shrink-0 ${badge.style}`}
+      >
+        {badge.text}
+      </span>
+    );
+  }
   return (
-    <Link
-      to={to}
-      onClick={onClick}
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 relative
-        ${
-          isActive
-            ? "bg-violet-500/15 text-violet-400 dark:bg-violet-500/20"
-            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/70 hover:text-zinc-900 dark:hover:text-zinc-100"
-        }`}
+    <span
+      className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px]
+      font-bold tracking-wide uppercase leading-none shrink-0 ${badge.style}`}
     >
-      {isActive && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-violet-500 rounded-full" />
-      )}
-      <Icon size={17} strokeWidth={isActive ? 2.2 : 1.8} className="shrink-0" />
-      <span className="truncate">{label}</span>
-    </Link>
+      {badge.text}
+    </span>
   );
 }
 
-function NavGroup({
-  icon: Icon,
-  label,
-  groupKey,
-  openGroups,
-  toggleGroup,
-  children,
-}) {
-  const isOpen = !!openGroups[groupKey];
+/* ─── TOOLTIP ───────────────────────────────────────────────────── */
+function Tooltip({ label, tk }) {
   return (
-    <div>
-      <button
-        onClick={() => toggleGroup(groupKey)}
-        className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium
-          text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/70
-          hover:text-zinc-900 dark:hover:text-zinc-100 transition-all duration-150"
+    <div
+      className="absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50
+      pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+    >
+      <div
+        className={`px-2.5 py-1.5 rounded-md text-xs whitespace-nowrap border ${tk.tooltip}`}
       >
-        <Icon size={17} strokeWidth={1.8} className="shrink-0" />
-        <span className="flex-1 text-left truncate">{label}</span>
-        <motion.span
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <ChevronDown size={14} strokeWidth={2} />
-        </motion.span>
-      </button>
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            className="overflow-hidden"
-          >
-            <div className="mt-0.5 ml-6 pl-3 border-l border-zinc-800 space-y-0.5 pb-1">
-              {children}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {label}
+      </div>
     </div>
   );
 }
 
-function SubItem({ icon: Icon, label, to, onClick }) {
+/* ─── PRIMARY NAV ITEM ──────────────────────────────────────────── */
+function NavItem({ icon: Icon, label, to, badge, collapsed, tk, onClick }) {
   const { pathname } = useLocation();
-  const isActive = pathname === to;
+  const isActive =
+    pathname === to ||
+    (to !== "/admin/dashboard" && to.length > 1 && pathname.startsWith(to));
+
   return (
-    <Link
-      to={to}
-      onClick={onClick}
-      className={`flex items-center gap-2.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all duration-150
-        ${
-          isActive
-            ? "text-violet-400 bg-violet-500/10"
-            : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60"
-        }`}
-    >
-      <Icon size={13} strokeWidth={isActive ? 2.2 : 1.8} className="shrink-0" />
-      <span className="truncate">{label}</span>
-    </Link>
+    <div className="relative group">
+      <Link
+        to={to}
+        onClick={onClick}
+        className={`relative flex items-center gap-3 rounded-lg text-sm font-medium
+          transition-all duration-150 cursor-pointer
+          ${collapsed ? "justify-center px-0 py-2.5 w-full" : "px-3 py-2.5"}
+          ${isActive ? tk.navActive : `${tk.navBase} ${tk.navHover}`}`}
+        style={{ fontFamily: "'DM Sans', sans-serif" }}
+      >
+        {isActive && !collapsed && (
+          <span
+            className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full ${tk.activeBar}`}
+          />
+        )}
+        <span className="relative shrink-0">
+          <Icon size={17} strokeWidth={isActive ? 2.2 : 1.8} />
+          {collapsed && <Badge badge={badge} forIcon />}
+        </span>
+        {!collapsed && (
+          <>
+            <span className="flex-1 truncate">{label}</span>
+            <Badge badge={badge} />
+          </>
+        )}
+      </Link>
+      {collapsed && <Tooltip label={label} tk={tk} />}
+    </div>
   );
 }
 
-function SidebarContent({
+/* ─── SECTION LABEL ─────────────────────────────────────────────── */
+function SectionLabel({ text, collapsed, tk }) {
+  if (collapsed)
+    return <div className={`my-2 mx-auto w-6 border-t ${tk.divider}`} />;
+  return (
+    <p
+      className={`text-[9px] font-bold uppercase tracking-[0.12em] px-3 mb-1.5 ${tk.label}`}
+      style={{ fontFamily: "'DM Sans', sans-serif" }}
+    >
+      {text}
+    </p>
+  );
+}
+
+/* ─── ACCORDION GROUP ───────────────────────────────────────────── */
+function AccordionGroup({
+  icon: Icon,
+  label,
+  groupKey,
+  badge,
   openGroups,
-  toggleGroup,
+  onToggle,
+  tk,
+  collapsed,
+  subItems,
   onItemClick,
-  showCloseBtn,
-  onClose,
 }) {
+  const { pathname } = useLocation();
+  const isOpen = !!openGroups[groupKey];
+  const hasActiveSub = subItems.some(
+    (s) => pathname === s.to || (s.to.length > 1 && pathname.startsWith(s.to)),
+  );
+
+  return (
+    <div className="relative group">
+      {collapsed ? (
+        <>
+          <button
+            className={`flex justify-center w-full py-2.5 rounded-lg transition-all duration-150 relative
+              ${hasActiveSub ? tk.navActive : `${tk.navBase} ${tk.navHover}`}`}
+          >
+            <span className="relative">
+              <Icon size={17} strokeWidth={hasActiveSub ? 2.2 : 1.8} />
+              {badge && <Badge badge={badge} forIcon />}
+            </span>
+          </button>
+          <Tooltip label={label} tk={tk} />
+        </>
+      ) : (
+        <>
+          <button
+            onClick={() => onToggle(groupKey)}
+            className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium
+              transition-all duration-150 ${hasActiveSub ? tk.navActive : `${tk.navBase} ${tk.navHover}`}`}
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            {hasActiveSub && (
+              <span
+                className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full ${tk.activeBar}`}
+              />
+            )}
+            <Icon
+              size={17}
+              strokeWidth={hasActiveSub ? 2.2 : 1.8}
+              className="shrink-0"
+            />
+            <span className="flex-1 text-left truncate">{label}</span>
+            {badge && <Badge badge={badge} />}
+            <motion.span
+              animate={{ rotate: isOpen ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+              className="shrink-0"
+            >
+              <ChevronDown size={13} strokeWidth={2} />
+            </motion.span>
+          </button>
+
+          <AnimatePresence initial={false}>
+            {isOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                className="overflow-hidden"
+              >
+                <div
+                  className={`mt-0.5 ml-[26px] pl-3 border-l ${tk.subBorder} space-y-0.5 pb-1`}
+                >
+                  {subItems.map((s) => {
+                    const SubIcon = s.icon;
+                    const isSubActive =
+                      pathname === s.to ||
+                      (s.to.length > 1 && pathname.startsWith(s.to));
+                    return (
+                      <Link
+                        key={s.to}
+                        to={s.to}
+                        onClick={onItemClick}
+                        className={`flex items-center gap-2.5 px-2 py-1.5 rounded-md text-xs font-medium
+                          transition-all duration-150
+                          ${isSubActive ? tk.subActive : tk.subBase}`}
+                        style={{ fontFamily: "'DM Sans', sans-serif" }}
+                      >
+                        <SubIcon
+                          size={13}
+                          strokeWidth={isSubActive ? 2.2 : 1.8}
+                          className="shrink-0"
+                        />
+                        <span className="truncate">{s.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ─── SIDEBAR CONTENT ───────────────────────────────────────────── */
+function SidebarContent({
+  collapsed,
+  openGroups,
+  onToggleGroup,
+  onToggleCollapsed,
+  onItemClick,
+  showClose,
+  onClose,
+  mobileView,
+}) {
+  const { isDark } = useTheme();
+  const tk = isDark ? T.dark : T.light;
   const navigate = useNavigate();
+
   const user = (() => {
     try {
       return JSON.parse(localStorage.getItem("user")) || {};
@@ -272,7 +487,15 @@ function SidebarContent({
       return {};
     }
   })();
-  const initials = (user.name || "A").charAt(0).toUpperCase();
+  const name = user.name || "Admin";
+  const email = user.email || "admin@academiq.com";
+  const initials = name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -280,92 +503,226 @@ function SidebarContent({
   };
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950">
-      <div className="flex items-center justify-between px-4 pt-5 pb-3">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center shrink-0">
-            <ShieldEllipsis size={16} className="text-white" />
+    <div
+      className={`flex flex-col h-full transition-colors duration-150 ${tk.bg} ${tk.border} border-r`}
+      style={{ fontFamily: "'DM Sans', sans-serif" }}
+    >
+      {/* ── HEADER: Logo + Role badge + Collapse toggle (always flex-row) ── */}
+      <div
+        className={`flex items-center justify-between border-b ${tk.divider} h-16 shrink-0
+        ${collapsed ? "px-2" : "px-3"}`}
+      >
+        {/* Logo — expanded */}
+        {!collapsed ? (
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            <img
+              src={isDark ? LOGO_DARK_MODE : LOGO_LIGHT_MODE}
+              alt="AcademiQ"
+              className="h-8 w-auto rounded-md object-contain shrink-0 transition-all duration-150"
+              onError={(e) => {
+                e.target.style.display = "none";
+                if (e.target.nextSibling)
+                  e.target.nextSibling.style.display = "flex";
+              }}
+            />
+            <div className="w-8 h-8 rounded-md bg-violet-600 items-center justify-center shrink-0 hidden">
+              <School size={15} className="text-white" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <p className={`text-sm font-bold leading-tight ${tk.brand}`}>
+                  AcademiQ
+                </p>
+                <span
+                  className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none ${tk.rolePill}`}
+                >
+                  ADMIN
+                </span>
+              </div>
+              <p className={`text-[10px] leading-tight ${tk.brandSub}`}>
+                Admin Portal
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-semibold text-white leading-tight">
-              AcademiQ
-            </p>
-            <p className="text-[10px] text-zinc-500 leading-tight">
-              Admin Portal
-            </p>
-          </div>
-        </div>
-        {showCloseBtn && (
+        ) : (
+          /* Logo — collapsed */
+          <>
+            <img
+              src={isDark ? LOGO_DARK_MODE : LOGO_LIGHT_MODE}
+              alt="AcademiQ"
+              className="w-8 h-8 rounded-md object-contain shrink-0 transition-all duration-150"
+              onError={(e) => {
+                e.target.style.display = "none";
+                if (e.target.nextSibling)
+                  e.target.nextSibling.style.display = "flex";
+              }}
+            />
+            <div className="w-8 h-8 rounded-md bg-violet-600 items-center justify-center shrink-0 hidden">
+              <School size={15} className="text-white" />
+            </div>
+          </>
+        )}
+
+        {/* Collapse toggle / Mobile close */}
+        {!mobileView ? (
+          <button
+            onClick={onToggleCollapsed}
+            className={`p-1.5 rounded-lg transition-all duration-150 ${tk.btn}`}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
+          </button>
+        ) : showClose ? (
           <button
             onClick={onClose}
-            className="p-1.5 rounded-md text-zinc-500 hover:text-white hover:bg-zinc-800 transition-all"
+            className={`p-1.5 rounded-lg transition-all duration-150 ${tk.btn}`}
           >
-            <X size={16} />
+            <X size={15} />
           </button>
+        ) : null}
+      </div>
+
+      {/* ── PRIMARY NAV — MAIN ── */}
+      <div
+        className={`${collapsed ? "px-2" : "px-3"} pt-3 pb-1 overflow-hidden`}
+      >
+        <SectionLabel text="Main" collapsed={collapsed} tk={tk} />
+        <nav className="space-y-0.5">
+          {PRIMARY.map((item) => (
+            <NavItem
+              key={item.key}
+              {...item}
+              collapsed={collapsed}
+              tk={tk}
+              onClick={onItemClick}
+            />
+          ))}
+        </nav>
+      </div>
+
+      <div className={`mx-3 border-t ${tk.divider} my-2`} />
+
+      {/* ── SECONDARY NAV — MANAGEMENT ── */}
+      <div
+        className={`flex-1 overflow-y-auto scrollbar-hide ${collapsed ? "px-2" : "px-3"} pb-2`}
+      >
+        <SectionLabel text="Management" collapsed={collapsed} tk={tk} />
+        <div className="space-y-0.5">
+          {SECONDARY.map((item) => (
+            <AccordionGroup
+              key={item.key}
+              groupKey={item.key}
+              icon={item.icon}
+              label={item.label}
+              badge={item.badge}
+              subItems={item.sub}
+              openGroups={openGroups}
+              onToggle={onToggleGroup}
+              tk={tk}
+              collapsed={collapsed}
+              onItemClick={onItemClick}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className={`mx-3 border-t ${tk.divider}`} />
+
+      {/* ── FOOTER — ACCOUNT ── */}
+      <div
+        className={`overflow-hidden ${collapsed ? "px-2 py-3 flex justify-center" : "px-3 py-3"}`}
+      >
+        {collapsed ? (
+          /* Collapsed: only red logout icon */
+          <div className="relative group">
+            <button
+              onClick={handleLogout}
+              title="Logout"
+              className="p-1.5 rounded-md text-red-500 hover:bg-red-500/10 transition-all duration-150"
+            >
+              <LogOut size={15} />
+            </button>
+            <Tooltip label="Logout" tk={tk} />
+          </div>
+        ) : (
+          /* Expanded: full account card */
+          <>
+            <SectionLabel text="Account" collapsed={false} tk={tk} />
+            <div className="flex items-center gap-2.5">
+              <div
+                className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0 ${tk.avatar}`}
+              >
+                <span className="text-xs font-bold leading-none">
+                  {initials}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p
+                  className={`text-xs font-semibold truncate leading-tight ${tk.userName}`}
+                >
+                  {name}
+                </p>
+                <p
+                  className={`text-[10px] truncate leading-tight mt-0.5 ${tk.email}`}
+                >
+                  {email}
+                </p>
+              </div>
+              <button
+                onClick={handleLogout}
+                title="Logout"
+                className="p-1.5 rounded-md text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150 shrink-0"
+              >
+                <LogOut size={14} />
+              </button>
+            </div>
+          </>
         )}
-      </div>
-      <div className="mx-3 border-t border-zinc-800 mb-2" />
-      <nav className="px-2 space-y-0.5">
-        {PRIMARY.map((item) => (
-          <NavItem key={item.to} {...item} onClick={onItemClick} />
-        ))}
-      </nav>
-      <div className="mx-3 border-t border-zinc-800 my-3" />
-      <div className="flex-1 overflow-y-auto px-2 space-y-0.5 pb-4 scrollbar-hide">
-        {SECONDARY.map((group) => (
-          <NavGroup
-            key={group.key}
-            groupKey={group.key}
-            icon={group.icon}
-            label={group.label}
-            openGroups={openGroups}
-            toggleGroup={toggleGroup}
-          >
-            {group.sub.map((s) => (
-              <SubItem key={s.to} {...s} onClick={onItemClick} />
-            ))}
-          </NavGroup>
-        ))}
-      </div>
-      <div className="mx-3 border-t border-zinc-800" />
-      <div className="p-3 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-violet-900/50 flex items-center justify-center shrink-0">
-          <span className="text-xs font-semibold text-violet-400">
-            {initials}
-          </span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-zinc-100 truncate">
-            {user.name || "Admin"}
-          </p>
-          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-sm bg-violet-900/40 text-violet-400">
-            Administrator
-          </span>
-        </div>
-        <button
-          onClick={handleLogout}
-          title="Logout"
-          className="p-1.5 rounded-md text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
-        >
-          <LogOut size={14} />
-        </button>
       </div>
     </div>
   );
 }
 
+/* ─── MAIN EXPORT ───────────────────────────────────────────────── */
 export default function AdminSidebar() {
-  const { mobileOpen, openGroups, toggleMobile, closeMobile, toggleGroup } =
-    useSidebar();
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("adm_sidebar_collapsed")) ?? false;
+    } catch {
+      return false;
+    }
+  });
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState({});
+
+  useEffect(() => {
+    injectFont();
+  }, []);
+
+  useEffect(() => {
+    setSidebarWidth(collapsed ? "72px" : "260px");
+    localStorage.setItem("adm_sidebar_collapsed", JSON.stringify(collapsed));
+    return () => setSidebarWidth("260px");
+  }, [collapsed]);
+
+  const toggleCollapsed = () => setCollapsed((p) => !p);
+  const toggleGroup = (key) =>
+    setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  const sidebarW = collapsed ? 72 : 260;
+
   return (
     <>
+      {/* Mobile hamburger */}
       <button
-        onClick={toggleMobile}
-        className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-lg bg-zinc-900 border border-zinc-700 shadow-lg text-zinc-400 hover:text-white transition-all"
-        aria-label="Open menu"
+        onClick={() => setMobileOpen(true)}
+        className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-lg
+          bg-zinc-900 border border-zinc-700 shadow-lg text-zinc-400 hover:text-white transition-all"
+        aria-label="Open sidebar"
       >
         <Menu size={18} />
       </button>
+
+      {/* Mobile overlay drawer */}
       <AnimatePresence>
         {mobileOpen && (
           <>
@@ -375,7 +732,7 @@ export default function AdminSidebar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              onClick={closeMobile}
+              onClick={() => setMobileOpen(false)}
               className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
             />
             <motion.aside
@@ -384,28 +741,41 @@ export default function AdminSidebar() {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 380, damping: 38 }}
-              className="fixed left-0 top-0 bottom-0 z-50 w-[260px] border-r border-zinc-800 shadow-2xl md:hidden"
+              className="fixed left-0 top-0 bottom-0 z-50 w-[260px] shadow-2xl md:hidden"
             >
               <SidebarContent
+                collapsed={false}
                 openGroups={openGroups}
-                toggleGroup={toggleGroup}
-                onItemClick={closeMobile}
-                showCloseBtn
-                onClose={closeMobile}
+                onToggleGroup={toggleGroup}
+                onToggleCollapsed={toggleCollapsed}
+                onItemClick={() => setMobileOpen(false)}
+                showClose
+                onClose={() => setMobileOpen(false)}
+                mobileView
               />
             </motion.aside>
           </>
         )}
       </AnimatePresence>
-      <aside className="fixed left-0 top-0 bottom-0 z-40 hidden md:flex flex-col w-[240px] border-r border-zinc-800">
+
+      {/* Desktop sidebar — top-0 full height; h-16 header matches navbar */}
+      <motion.aside
+        initial={false}
+        animate={{ width: sidebarW }}
+        transition={{ type: "spring", stiffness: 380, damping: 38 }}
+        className="fixed left-0 top-0 bottom-0 z-40 hidden md:block overflow-hidden"
+      >
         <SidebarContent
+          collapsed={collapsed}
           openGroups={openGroups}
-          toggleGroup={toggleGroup}
+          onToggleGroup={toggleGroup}
+          onToggleCollapsed={toggleCollapsed}
           onItemClick={null}
-          showCloseBtn={false}
+          showClose={false}
           onClose={null}
+          mobileView={false}
         />
-      </aside>
+      </motion.aside>
     </>
   );
 }
