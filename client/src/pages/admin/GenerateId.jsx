@@ -23,7 +23,7 @@ export default function GenerateId() {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/admin/generate-id",
+        (`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api/admin/generate-id`),
         formData,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -137,3 +137,4 @@ export default function GenerateId() {
     </div>
   );
 }
+

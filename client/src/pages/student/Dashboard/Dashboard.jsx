@@ -16,7 +16,7 @@ export default function Dashboard() {
     const fetchExams = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5000/api/exam", {
+        const res = await axios.get((`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api/exam`), {
           headers: { Authorization: `Bearer ${token}` },
         });
         // Filter to exams that have a future scheduled start
@@ -243,3 +243,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

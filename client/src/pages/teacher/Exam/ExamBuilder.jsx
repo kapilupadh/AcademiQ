@@ -137,7 +137,7 @@ export default function ExamBuilder() {
 
       // Do NOT set Content-Type manually — axios auto-sets multipart/form-data with boundary
       const res = await axios.post(
-        "http://localhost:5000/api/teacher/upload",
+        (`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api/teacher/upload`),
         formData,
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -222,7 +222,7 @@ export default function ExamBuilder() {
         );
       } else {
         const examRes = await axios.post(
-          "http://localhost:5000/api/teacher/exams",
+          (`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api/teacher/exams`),
           metadata,
           { headers },
         );
@@ -697,3 +697,4 @@ export default function ExamBuilder() {
     </div>
   );
 }
+

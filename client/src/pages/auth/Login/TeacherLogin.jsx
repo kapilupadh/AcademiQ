@@ -34,7 +34,7 @@ export default function TeacherLogin() {
     setError("");
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", {
+      const res = await axios.post((`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api/auth/login`), {
         login_id: formData.login_id,
         password: formData.password,
       });
@@ -166,3 +166,4 @@ export default function TeacherLogin() {
     </div>
   );
 }
+

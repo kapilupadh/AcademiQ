@@ -34,7 +34,16 @@ exports.generateUniqueId = async (req, res) => {
       return res.status(400).json({ message: 'Name and Email are required for Teacher ID generation.' });
     }
 
-    const prefix = role === 'teacher' ? 'TCH' : 'STD';
+    let roleInt = 3;
+    let prefix = 'STD';
+    if (role === 'admin') {
+      roleInt = 1;
+      prefix = 'ADM';
+    } else if (role === 'teacher') {
+      roleInt = 2;
+      prefix = 'TCH';
+    }
+
     const year = new Date().getFullYear();
     const randomPart = Math.floor(1000 + Math.random() * 9000);
     const uniqueString = `${prefix}-${year}-${randomPart}`;
@@ -48,7 +57,7 @@ exports.generateUniqueId = async (req, res) => {
 
     const newId = await UniqueId.create({
       unique_id: uniqueString,
-      role,
+      role: roleInt,
       student_name: name || null,
       student_email: email || null,
       expiry_date: expiryDate,
@@ -59,7 +68,7 @@ exports.generateUniqueId = async (req, res) => {
     res.status(201).json({
       message: 'Unique ID generated successfully',
       unique_id: newId.unique_id,
-      role: newId.role,
+      role: newId.role, // will return 1, 2 or 3
       bound_to: { name: newId.student_name, email: newId.student_email },
     });
   } catch (error) {

@@ -33,7 +33,7 @@ export default function ForgotPassword() {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/auth/forgot-password",
+        (`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api/auth/forgot-password`),
         {
           email: formData.email,
         }
@@ -58,7 +58,7 @@ export default function ForgotPassword() {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/auth/verify-otp",
+        (`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api/auth/verify-otp`),
         {
           email: formData.email,
           otp: formData.otp,
@@ -88,7 +88,7 @@ export default function ForgotPassword() {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/auth/reset-password",
+        (`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api/auth/reset-password`),
         {
           resetToken: resetToken,
           newPassword: formData.newPassword,
@@ -281,3 +281,4 @@ export default function ForgotPassword() {
     </div>
   );
 }
+

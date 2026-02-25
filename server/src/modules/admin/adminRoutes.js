@@ -28,3 +28,4 @@ router.post(
   adminController.bulkGenerateIds
 );
 
+module.exports = router;

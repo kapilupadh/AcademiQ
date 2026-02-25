@@ -48,7 +48,7 @@ export default function Profile() {
         return;
       }
 
-      const res = await axios.get("http://localhost:5000/api/auth/me", {
+      const res = await axios.get((`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api/auth/me`), {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -75,7 +75,7 @@ export default function Profile() {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.put(
-        "http://localhost:5000/api/auth/me",
+        (`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api/auth/me`),
         formData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -108,7 +108,7 @@ export default function Profile() {
     try {
       const token = localStorage.getItem("token");
       await axios.post(
-        "http://localhost:5000/api/auth/change-password",
+        (`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api/auth/change-password`),
         {
           currentPassword: passwordData.currentPassword,
           newPassword: passwordData.newPassword,
@@ -335,3 +335,4 @@ export default function Profile() {
     </div>
   );
 }
+
