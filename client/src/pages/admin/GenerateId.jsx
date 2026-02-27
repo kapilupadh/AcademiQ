@@ -121,10 +121,23 @@ export default function GenerateId() {
         const processedRows = rawRows.map((row, index) => {
           // Identify columns case-insensitively
           const getVal = (...keys) => {
+            const rowKeys = Object.keys(row);
             for (const key of keys) {
-              for (const col of Object.keys(row)) {
-                if (col.trim().toLowerCase() === key.toLowerCase())
+              const cleanKey = key.toLowerCase();
+              for (const col of rowKeys) {
+                const cleanCol = col.trim().toLowerCase();
+                if (cleanCol === cleanKey || cleanCol.startsWith(cleanKey)) {
                   return String(row[col]).trim();
+                }
+              }
+            }
+            // fuzzy fallback for email
+            if (keys.includes("email")) {
+              for (const col of rowKeys) {
+                const cleanCol = col.trim().toLowerCase();
+                if (cleanCol.includes("email") || cleanCol.includes("mail")) {
+                  return String(row[col]).trim();
+                }
               }
             }
             return "";
@@ -143,37 +156,47 @@ export default function GenerateId() {
             "student_email",
             "email address",
           );
+          const rollNo = getVal(
+            "roll no",
+            "roll number",
+            "roll_no",
+            "university roll no",
+            "exam roll no",
+            "roll",
+          );
 
           let isValid = true;
           let reason = "";
 
-          if (!name && !email) {
+          if (!name && !email && !rollNo) {
             isValid = false;
-            reason = "Missing name and email";
+            reason = "Missing name, email, and roll no";
           } else if (!name) {
             isValid = false;
             reason = "Missing name";
-          } else if (!email) {
+          } else if (!email && !rollNo) {
             isValid = false;
-            reason = "Missing email";
-          } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            reason = "Missing email or roll no";
+          } else if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             isValid = false;
             reason = "Invalid email format";
-          } else if (emailSet.has(email.toLowerCase())) {
+          } else if (email && emailSet.has(email.toLowerCase())) {
             isValid = false;
             reason = "Duplicate email in file";
-          } else {
+          } else if (email) {
             emailSet.add(email.toLowerCase());
           }
 
-          return { id: index, name, email, isValid, reason };
+          return { id: index, name, email, rollNo, isValid, reason };
         });
 
-        // Check if we couldn't find ANY name or email columns at all
-        const foundAnyValidData = processedRows.some((r) => r.name || r.email);
+        // Check if we couldn't find ANY name, email, or roll no columns at all
+        const foundAnyValidData = processedRows.some(
+          (r) => r.name || r.email || r.rollNo,
+        );
         if (!foundAnyValidData) {
           setBulkError(
-            "Could not detect Name and Email columns. Please make sure headers are named 'Name' and 'Email'.",
+            "Could not detect critical columns. Please make sure headers are named 'Name' and 'Email' or 'Roll Number'.",
           );
           setPreviewData([]);
           return;
@@ -196,6 +219,7 @@ export default function GenerateId() {
       .map((r) => ({
         name: r.name,
         email: r.email,
+        rollNo: r.rollNo,
       }));
 
     if (validStudents.length === 0) {
@@ -431,9 +455,9 @@ export default function GenerateId() {
             </h2>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
               Upload a `.csv` or `.xlsx` file containing valid{" "}
-              <strong>Name</strong> and <strong>Email</strong> columns. A unique
-              registration ID will be generated for every valid row directly in
-              the system.
+              <strong>Name</strong> and <strong>Email</strong> (or{" "}
+              <strong>Roll Number</strong>) columns. A unique registration ID
+              will be generated for every valid row directly in the system.
             </p>
           </div>
 
@@ -529,7 +553,7 @@ export default function GenerateId() {
                 </h3>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm mb-6">
                   CSV, XLS, or XLSX formats only. Make sure your file has
-                  headers for Name and Email.
+                  headers for Name and Email (or Roll Number).
                 </p>
                 <button className="px-5 py-2.5 bg-zinc-900 text-white rounded-lg font-bold dark:bg-zinc-100 dark:text-zinc-900 shadow-sm pointer-events-none">
                   Select File
@@ -573,9 +597,10 @@ export default function GenerateId() {
                 </div>
 
                 <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden flex-1 flex flex-col shadow-sm">
-                  <div className="bg-zinc-50 dark:bg-zinc-950 grid grid-cols-[auto_1fr_1fr_1.5fr] gap-4 p-3 border-b border-zinc-200 dark:border-zinc-800 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                  <div className="bg-zinc-50 dark:bg-zinc-950 grid grid-cols-[auto_1fr_1fr_1.5fr] md:grid-cols-[auto_1fr_1fr_1fr_1.5fr] gap-4 p-3 border-b border-zinc-200 dark:border-zinc-800 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                     <div className="w-8 text-center">Set</div>
                     <div>Name</div>
+                    <div className="hidden md:block">Roll No</div>
                     <div>Email</div>
                     <div>Status</div>
                   </div>
@@ -583,7 +608,7 @@ export default function GenerateId() {
                     {previewData.map((row) => (
                       <div
                         key={row.id}
-                        className={`grid grid-cols-[auto_1fr_1fr_1.5fr] gap-4 p-3 text-sm items-center border-b last:border-0 border-zinc-100 dark:border-zinc-800/50 ${
+                        className={`grid grid-cols-[auto_1fr_1fr_1.5fr] md:grid-cols-[auto_1fr_1fr_1fr_1.5fr] gap-4 p-3 text-sm items-center border-b last:border-0 border-zinc-100 dark:border-zinc-800/50 ${
                           !row.isValid ? "bg-red-50/50 dark:bg-red-900/10" : ""
                         }`}
                       >
@@ -603,9 +628,14 @@ export default function GenerateId() {
                           {row.name || "Missing Name"}
                         </div>
                         <div
+                          className={`truncate hidden md:block ${!row.rollNo ? "text-zinc-400 italic" : "text-zinc-600 dark:text-zinc-300"}`}
+                        >
+                          {row.rollNo || "N/A"}
+                        </div>
+                        <div
                           className={`truncate ${!row.email ? "text-zinc-400 italic" : "text-zinc-600 dark:text-zinc-300"}`}
                         >
-                          {row.email || "Missing Email"}
+                          {row.email || (row.rollNo ? "N/A" : "Missing Email")}
                         </div>
                         <div>
                           {row.isValid ? (

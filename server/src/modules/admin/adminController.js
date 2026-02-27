@@ -248,39 +248,55 @@ exports.bulkGenerateStudentsFrontend = async (req, res) => {
 
     const generatedIds = new Set(); // To prevent internal collisions within the same batch
     const processedEmails = new Set(); // To prevent duplicate emails within the SAME payload array
+    const processedRollNos = new Set();
 
     for (const student of students) {
       const email = student.email?.trim().toLowerCase();
       const name = student.name?.trim();
+      const rollNo = student.rollNo?.trim();
 
-      if (!name || !email) {
-        errors.push({ name, email, reason: 'Name and Email are required.' });
+      if (!name) {
+        errors.push({ name, email, rollNo, reason: 'Name is required.' });
+        continue;
+      }
+      if (!email && !rollNo) {
+        errors.push({ name, email, rollNo, reason: 'Email or Roll Number is required.' });
         continue;
       }
 
-      // Check internal duplicate in same payload
-      if (processedEmails.has(email)) {
-        errors.push({ name, email, reason: 'Duplicate email detected within this file.' });
-        continue;
-      }
-      processedEmails.add(email);
-
-      // Check if email already registered as User
-      if (existingEmailsRegex.has(email)) {
-        errors.push({ name, email, reason: 'Email already exists in Users table.' });
-        continue;
-      }
-
-      // Check if email already has an active Unique ID generated for them
-      const existingId = await UniqueId.findOne({
-        where: {
-          student_email: { [Op.iLike]: email }
+      if (email) {
+        // Check internal duplicate in same payload
+        if (processedEmails.has(email)) {
+          errors.push({ name, email, rollNo, reason: 'Duplicate email detected within this file.' });
+          continue;
         }
-      });
+        processedEmails.add(email);
 
-      if (existingId) {
-        errors.push({ name, email, reason: 'An ID has already been generated for this email.' });
-        continue;
+        // Check if email already registered as User
+        if (existingEmailsRegex.has(email)) {
+          errors.push({ name, email, rollNo, reason: 'Email already exists in Users table.' });
+          continue;
+        }
+
+        // Check if email already has an active Unique ID generated for them
+        const existingId = await UniqueId.findOne({
+          where: {
+            student_email: { [Op.iLike]: email }
+          }
+        });
+
+        if (existingId) {
+          errors.push({ name, email, rollNo, reason: 'An ID has already been generated for this email.' });
+          continue;
+        }
+      }
+
+      if (rollNo) {
+        if (processedRollNos.has(rollNo)) {
+          errors.push({ name, email, rollNo, reason: 'Duplicate roll number detected within this file.' });
+          continue;
+        }
+        processedRollNos.add(rollNo);
       }
 
       // Generate a collision-free Unique ID
@@ -316,16 +332,18 @@ exports.bulkGenerateStudentsFrontend = async (req, res) => {
         unique_id: uniqueString,
         role: 3, // Student
         student_name: name,
-        student_email: email,
+        student_email: email || null,
         status: 'ACTIVE',
         generated_by: req.user?.id || null,
+        _frontendRollNo: rollNo || '',
       });
       successCount++;
     }
 
     // Perform batch insert
     if (results.length > 0) {
-      await UniqueId.bulkCreate(results);
+      const insertData = results.map(({ _frontendRollNo, ...rest }) => rest);
+      await UniqueId.bulkCreate(insertData);
     }
 
     res.status(200).json({
@@ -334,11 +352,16 @@ exports.bulkGenerateStudentsFrontend = async (req, res) => {
       failedCount: errors.length,
       data: results.map(r => ({
         Name: r.student_name,
-        Email: r.student_email,
+        'Roll No': r._frontendRollNo,
+        Email: r.student_email || 'N/A',
         'Unique ID': r.unique_id,
         Role: 'Student'
       })),
-      errors,
+      errors: errors.map(e => ({
+        name: e.name,
+        email: e.email || (e.rollNo ? `Roll No: ${e.rollNo}` : 'N/A'),
+        reason: e.reason
+      })),
     });
   } catch (error) {
     console.error('bulkGenerateStudentsFrontend error:', error);
