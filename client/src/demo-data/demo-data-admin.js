@@ -145,7 +145,7 @@ export const recentActivity = [
   },
   {
     id: 5,
-    action: "Teacher ID generated for Karan Sharma (Electronics)",
+    action: "Teacher ID generated for Suraj Prakash Hazarika (Electronics)",
     role: "Admin",
     timestamp: "3 hr ago",
     dotColor: "bg-amber-500",

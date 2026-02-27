@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const API = (`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api`);
+const API = (`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api`);
 
 const RULES = [
   {

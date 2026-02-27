@@ -1,4 +1,6 @@
 const UniqueId = require('../../models/UniqueId');
+const User = require('../../models/User');
+const { Op } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
 const XLSX = require('xlsx');
 const multer = require('multer');
@@ -27,10 +29,15 @@ exports.excelUpload = excelUpload;
 // ── Single ID generation (existing) ────────────────────────────────────────
 exports.generateUniqueId = async (req, res) => {
   try {
+    console.log('[generateUniqueId] Request received. Body:', req.body);
     const { role, name, email, expiry_days } = req.body;
 
-    if (!role) return res.status(400).json({ message: 'Role is required' });
+    if (!role) {
+      console.error('[generateUniqueId] Role is missing.');
+      return res.status(400).json({ message: 'Role is required' });
+    }
     if (role === 'teacher' && (!name || !email)) {
+      console.error('[generateUniqueId] Missing name or email for teacher role.');
       return res.status(400).json({ message: 'Name and Email are required for Teacher ID generation.' });
     }
 
@@ -47,24 +54,50 @@ exports.generateUniqueId = async (req, res) => {
     const year = new Date().getFullYear();
     const randomPart = Math.floor(1000 + Math.random() * 9000);
     const uniqueString = `${prefix}-${year}-${randomPart}`;
+    
+    console.log('[generateUniqueId] Generated ID string:', uniqueString);
 
     const existing = await UniqueId.findOne({ where: { unique_id: uniqueString } });
-    if (existing) return res.status(409).json({ message: 'ID Collision. Try again.' });
+    if (existing) {
+      console.error('[generateUniqueId] ID Collision detected for string:', uniqueString);
+      return res.status(409).json({ message: 'ID Collision. Try again.' });
+    }
 
     const expiryDate = expiry_days
       ? new Date(Date.now() + expiry_days * 24 * 60 * 60 * 1000)
       : null;
 
-    const newId = await UniqueId.create({
-      unique_id: uniqueString,
-      role: roleInt,
-      student_name: name || null,
-      student_email: email || null,
-      expiry_date: expiryDate,
-      status: 'ACTIVE',
-      generated_by: req.user ? req.user.id : null,
+    console.log('[generateUniqueId] Attempting database insert. Payload:', {
+      unique_id: uniqueString, role: roleInt, student_name: name || null, student_email: email || null,
+      expiry_date: expiryDate, status: 'ACTIVE', generated_by: req.user ? req.user.id : null
     });
+    
+    let newId;
+    try {
+      newId = await UniqueId.create({
+        unique_id: uniqueString,
+        role: roleInt,
+        student_name: name || null,
+        student_email: email || null,
+        expiry_date: expiryDate,
+        status: 'ACTIVE',
+        generated_by: req.user ? req.user.id : null,
+      });
+      console.log('[generateUniqueId] Database insert successful. Inserted PK:', newId.id);
+    } catch (dbError) {
+      console.error('[generateUniqueId] FULL DB INSERT ERROR OBJECT:', dbError);
+      return res.status(500).json({ message: 'Database insert failed. Check logs.' });
+    }
 
+    console.log('[generateUniqueId] Explicitly verifying insert by running a SELECT query...');
+    const verifyInsert = await UniqueId.findOne({ where: { unique_id: uniqueString } });
+    if (!verifyInsert) {
+      console.error('[generateUniqueId] Verification failed! ID was not found after insert. Likely rolled back.');
+      return res.status(500).json({ message: 'Verification failed. Database rollback suspected.' });
+    }
+    console.log('[generateUniqueId] Verification successful. Confirmed ID is securely stored in DB.');
+
+    console.log('[generateUniqueId] Sending success response to frontend...');
     res.status(201).json({
       message: 'Unique ID generated successfully',
       unique_id: newId.unique_id,
@@ -72,7 +105,7 @@ exports.generateUniqueId = async (req, res) => {
       bound_to: { name: newId.student_name, email: newId.student_email },
     });
   } catch (error) {
-    console.error('Generate ID Error:', error);
+    console.error('[generateUniqueId] FULL FUNCTION ERROR OBJECT:', error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
@@ -193,5 +226,122 @@ exports.bulkGenerateIds = async (req, res) => {
   } catch (error) {
     console.error('bulkGenerateIds error:', error);
     res.status(500).json({ message: error.message || 'Server error during bulk generation.' });
+  }
+};
+
+// --- Frontend-Driven Bulk Generate Students Array ---
+exports.bulkGenerateStudentsFrontend = async (req, res) => {
+  try {
+    const { students } = req.body; // Expects array of { name, email }
+    if (!Array.isArray(students) || students.length === 0) {
+      return res.status(400).json({ message: 'Missing or invalid students array.' });
+    }
+
+    const year = new Date().getFullYear();
+    const results = [];
+    const errors = [];
+    let successCount = 0;
+    
+    // We fetch all existing emails from users to avoid generating IDs for already registered people
+    const existingUsers = await User.findAll({ attributes: ['email'] });
+    const existingEmailsRegex = new Set(existingUsers.map(u => u.email?.toLowerCase()).filter(Boolean));
+
+    const generatedIds = new Set(); // To prevent internal collisions within the same batch
+    const processedEmails = new Set(); // To prevent duplicate emails within the SAME payload array
+
+    for (const student of students) {
+      const email = student.email?.trim().toLowerCase();
+      const name = student.name?.trim();
+
+      if (!name || !email) {
+        errors.push({ name, email, reason: 'Name and Email are required.' });
+        continue;
+      }
+
+      // Check internal duplicate in same payload
+      if (processedEmails.has(email)) {
+        errors.push({ name, email, reason: 'Duplicate email detected within this file.' });
+        continue;
+      }
+      processedEmails.add(email);
+
+      // Check if email already registered as User
+      if (existingEmailsRegex.has(email)) {
+        errors.push({ name, email, reason: 'Email already exists in Users table.' });
+        continue;
+      }
+
+      // Check if email already has an active Unique ID generated for them
+      const existingId = await UniqueId.findOne({
+        where: {
+          student_email: { [Op.iLike]: email }
+        }
+      });
+
+      if (existingId) {
+        errors.push({ name, email, reason: 'An ID has already been generated for this email.' });
+        continue;
+      }
+
+      // Generate a collision-free Unique ID
+      let uniqueString;
+      let isUnique = false;
+      let attempts = 0;
+
+      while (!isUnique && attempts < 10) {
+        const randomPart = Math.floor(1000 + Math.random() * 9000);
+        uniqueString = `STD-${year}-${randomPart}`;
+        
+        if (generatedIds.has(uniqueString)) {
+          attempts++;
+          continue; // collision within the current batch
+        }
+
+        const collisionCheck = await UniqueId.findOne({ where: { unique_id: uniqueString } });
+        if (!collisionCheck) {
+          isUnique = true;
+          generatedIds.add(uniqueString);
+        } else {
+          attempts++;
+        }
+      }
+
+      if (!isUnique) {
+        errors.push({ name, email, reason: 'ID collision generation failed. System busy.' });
+        continue;
+      }
+
+      // Push to bulk insert queue
+      results.push({
+        unique_id: uniqueString,
+        role: 3, // Student
+        student_name: name,
+        student_email: email,
+        status: 'ACTIVE',
+        generated_by: req.user?.id || null,
+      });
+      successCount++;
+    }
+
+    // Perform batch insert
+    if (results.length > 0) {
+      await UniqueId.bulkCreate(results);
+    }
+
+    res.status(200).json({
+      message: 'Bulk generation process completed.',
+      successCount,
+      failedCount: errors.length,
+      data: results.map(r => ({
+        Name: r.student_name,
+        Email: r.student_email,
+        'Unique ID': r.unique_id,
+        Role: 'Student'
+      })),
+      errors,
+    });
+  } catch (error) {
+    console.error('bulkGenerateStudentsFrontend error:', error);
+    res.status(500).json({ message: error.message || 'Server error during bulk ID array generation.' });
   }
 };

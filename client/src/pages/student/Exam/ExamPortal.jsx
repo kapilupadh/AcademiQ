@@ -12,7 +12,7 @@ import {
   Circle,
 } from "lucide-react";
 
-const API = (`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}`);
+const API = (`${process.env.REACT_APP_API_URL || "http://localhost:5000"}`);
 
 export default function ExamPortal() {
   const { sessionId: examId } = useParams();

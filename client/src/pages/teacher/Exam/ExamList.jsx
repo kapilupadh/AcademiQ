@@ -12,7 +12,7 @@ export default function ExamList() {
     const fetchExams = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get((`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api/teacher/exams`), {
+        const res = await axios.get((`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/teacher/exams`), {
           headers: { Authorization: `Bearer ${token}` },
         });
         setExams(res.data);

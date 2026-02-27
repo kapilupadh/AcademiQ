@@ -43,7 +43,7 @@ export default function TeacherRegister() {
 
     try {
       const res = await axios.post(
-        (`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api/auth/validate-id`),
+        (`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/auth/validate-id`),
         {
           unique_id: formData.unique_id,
         },
@@ -119,7 +119,7 @@ export default function TeacherRegister() {
         dob: formData.dob,
       };
 
-      await axios.post((`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api/auth/register`), payload);
+      await axios.post((`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/auth/register`), payload);
       navigate("/teacher-login");
     } catch (err) {
       setError(

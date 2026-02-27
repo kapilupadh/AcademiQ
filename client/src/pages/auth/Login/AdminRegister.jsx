@@ -64,7 +64,7 @@ export default function AdminRegister() {
 
     setLoading(true);
     try {
-      await axios.post((`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api/auth/admin-register`), {
+      await axios.post((`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/auth/admin-register`), {
         full_name: formData.full_name,
         username: formData.username,
         email: formData.email,

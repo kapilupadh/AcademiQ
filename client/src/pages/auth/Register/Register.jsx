@@ -29,7 +29,7 @@ export default function Register() {
   useEffect(() => {
     // Fetch departments
     axios
-      .get((`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api/departments`))
+      .get((`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/departments`))
       .then((res) => setDepartments(res.data))
       .catch((err) => console.error("Failed to fetch departments", err));
   }, []);
@@ -55,7 +55,7 @@ export default function Register() {
 
     try {
       const res = await axios.post(
-        (`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api/auth/validate-id`),
+        (`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/auth/validate-id`),
         {
           unique_id: formData.unique_id,
         },
@@ -107,7 +107,7 @@ export default function Register() {
         department_id: formData.department_id,
       };
 
-      await axios.post((`${process.env.REACT_APP_API_URL || "http://10.201.249.129:5000"}/api/auth/register`), payload);
+      await axios.post((`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/auth/register`), payload);
 
       // Success
       // alert("Registration Successful! Please login.");

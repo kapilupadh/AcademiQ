@@ -28,4 +28,7 @@ router.post(
   adminController.bulkGenerateIds
 );
 
+// POST /api/admin/students/bulk-generate (Frontend parses file, sends array of students)
+router.post('/students/bulk-generate', authenticateToken, checkAdmin, adminController.bulkGenerateStudentsFrontend);
+
 module.exports = router;
