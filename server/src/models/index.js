@@ -11,6 +11,7 @@ const Exam = require('./Exam');
 const Question = require('./Question');
 const ExamAttempt = require('./ExamAttempt');
 const StudentAnswer = require('./StudentAnswer');
+const MaterialRequest = require('./MaterialRequest');
 const Violation = require('./Violation');
 const Attendance = require('./Attendance');
 const ActivityLog = require('./ActivityLog');
@@ -72,6 +73,13 @@ StudentAnswer.belongsTo(Question, { foreignKey: 'question_id' });
 ExamAttempt.hasMany(Violation, { foreignKey: 'attempt_id', onDelete: 'CASCADE' });
 Violation.belongsTo(ExamAttempt, { foreignKey: 'attempt_id' });
 
+// User <-> MaterialRequest
+User.hasMany(MaterialRequest, { foreignKey: 'student_id', as: 'requests' });
+MaterialRequest.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
+
+// Exam <-> MaterialRequest
+Exam.hasMany(MaterialRequest, { foreignKey: 'exam_id' });
+MaterialRequest.belongsTo(Exam, { foreignKey: 'exam_id', as: 'exam' });
 
 module.exports = {
   sequelize,
@@ -85,6 +93,7 @@ module.exports = {
   Question,
   ExamAttempt,
   StudentAnswer,
+  MaterialRequest,
   Violation,
   Attendance,
   ActivityLog,

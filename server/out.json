@@ -1,0 +1,43 @@
+{
+  "metrics": {
+    "concurrentExams": 1,
+    "activeCandidates": 0,
+    "totalEnrolledCandidates": 100,
+    "serverHealth": "All Systems Operational"
+  },
+  "activeExams": [
+    {
+      "id": "3326caa9-572f-4866-9421-7ceebde29913",
+      "name": "test 1",
+      "subject": "maths",
+      "timeRemaining": "Ended",
+      "active": 0,
+      "enrolled": 100,
+      "status": "healthy",
+      "activePercentage": 0
+    }
+  ],
+  "alerts": {
+    "pending": [],
+    "running": [
+      {
+        "id": "R-MOCK1",
+        "type": "connectivity",
+        "exam": "test 1",
+        "msg": "Server latency spike detected",
+        "priority": "medium",
+        "timestamp": "2026-02-28T18:48:50.403Z"
+      }
+    ],
+    "completed": [
+      {
+        "id": "C-MOCK1",
+        "type": "missing_sub",
+        "exam": "Term 1 Core Subject",
+        "msg": "3 submissions failed to sync properly",
+        "priority": "high",
+        "timestamp": "2026-02-28T18:48:50.403Z"
+      }
+    ]
+  }
+}

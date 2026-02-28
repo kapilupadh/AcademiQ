@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import api from "../../../services/api";
 import {
   AlertCircle,
   FileWarning,
@@ -7,74 +8,31 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-// Mock Data
-const ALERTS = {
-  pending: [
-    {
-      id: 1,
-      type: "missing_paper",
-      exam: "Economics 101",
-      msg: "Question Paper Not Uploaded",
-      priority: "high",
-    },
-    {
-      id: 2,
-      type: "unassigned",
-      exam: "Biology Finals",
-      msg: "Proctors unassigned for Room 3B",
-      priority: "medium",
-    },
-    {
-      id: 3,
-      type: "profile",
-      exam: "World History",
-      msg: "12 Students missing ID verification",
-      priority: "medium",
-    },
-  ],
-  running: [
-    {
-      id: 4,
-      type: "connectivity",
-      exam: "Mid-Term Physics",
-      msg: "Server latency spike across EU-Central",
-      priority: "high",
-    },
-    {
-      id: 5,
-      type: "ufm",
-      exam: "Organic Chemistry",
-      msg: "Mass UFM Alert: 14 students flagged in 2 mins",
-      priority: "critical",
-    },
-    {
-      id: 6,
-      type: "help",
-      exam: "Algebra Finals",
-      msg: "7 concurrent student help requests",
-      priority: "medium",
-    },
-  ],
-  completed: [
-    {
-      id: 7,
-      type: "discrepancy",
-      exam: "Philosophy 202",
-      msg: "Auto-grading variance detected",
-      priority: "high",
-    },
-    {
-      id: 8,
-      type: "missing_sub",
-      exam: "Computer Science",
-      msg: "3 submissions failed to sync",
-      priority: "high",
-    },
-  ],
-};
-
 export default function AlertsTracker() {
   const [activeTab, setActiveTab] = useState("running");
+  const [alerts, setAlerts] = useState({
+    pending: [],
+    running: [],
+    completed: [],
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAlerts = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await api.get(`/admin/exams/live-dashboard`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setAlerts(res.data.alerts);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAlerts();
+  }, []);
 
   const getPriorityClasses = (priority) => {
     switch (priority) {
@@ -103,6 +61,13 @@ export default function AlertsTracker() {
   };
 
   const renderAlertsList = (list) => {
+    if (loading) {
+      return (
+        <div className="flex justify-center py-16 text-zinc-500">
+          Loading alerts...
+        </div>
+      );
+    }
     if (list.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-16 text-zinc-500">
@@ -170,7 +135,7 @@ export default function AlertsTracker() {
         >
           Pending Exams{" "}
           <span className="ml-2 inline-flex items-center justify-center bg-zinc-200 dark:bg-zinc-800 text-[10px] px-1.5 py-0.5 rounded-full">
-            {ALERTS.pending.length}
+            {alerts.pending.length}
           </span>
         </button>
         <button
@@ -178,20 +143,26 @@ export default function AlertsTracker() {
           className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "running" ? "bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 shadow-sm" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-50"}`}
         >
           Running Exams
+          <span className="ml-2 inline-flex items-center justify-center bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[10px] px-1.5 py-0.5 rounded-full">
+            {alerts.running.length}
+          </span>
         </button>
         <button
           onClick={() => setActiveTab("completed")}
           className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "completed" ? "bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 shadow-sm" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-50"}`}
         >
           Completed
+          <span className="ml-2 inline-flex items-center justify-center bg-zinc-200 dark:bg-zinc-800 text-[10px] px-1.5 py-0.5 rounded-full">
+            {alerts.completed.length}
+          </span>
         </button>
       </div>
 
       {/* Content */}
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-        {activeTab === "pending" && renderAlertsList(ALERTS.pending)}
-        {activeTab === "running" && renderAlertsList(ALERTS.running)}
-        {activeTab === "completed" && renderAlertsList(ALERTS.completed)}
+        {activeTab === "pending" && renderAlertsList(alerts.pending)}
+        {activeTab === "running" && renderAlertsList(alerts.running)}
+        {activeTab === "completed" && renderAlertsList(alerts.completed)}
       </div>
     </div>
   );

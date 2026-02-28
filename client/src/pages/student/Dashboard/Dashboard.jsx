@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { BookOpen, Calendar, Clock, Award, CalendarClock } from "lucide-react";
-import axios from "axios";
+import api from "../../../services/api";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
@@ -16,7 +16,7 @@ export default function Dashboard() {
     const fetchExams = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get((`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/exam`), {
+        const res = await api.get(`/exam`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         // Filter to exams that have a future scheduled start
@@ -243,4 +243,3 @@ export default function Dashboard() {
     </div>
   );
 }
-

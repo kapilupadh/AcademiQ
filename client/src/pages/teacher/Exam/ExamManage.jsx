@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import axios from "axios";
+import api from "../../../services/api";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -36,8 +36,8 @@ export default function ExamManage() {
       const headers = { Authorization: `Bearer ${token}` };
 
       const [examRes, subRes] = await Promise.all([
-        axios.get(`http://localhost:5000/api/teacher/exams/${id}`, { headers }),
-        axios.get(`http://localhost:5000/api/teacher/exams/${id}/submissions`, {
+        api.get(`/teacher/exams/${id}`, { headers }),
+        api.get(`/teacher/exams/${id}/submissions`, {
           headers,
         }),
       ]);
@@ -84,8 +84,8 @@ export default function ExamManage() {
     setActionLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post(
-        `http://localhost:5000/api/teacher/exams/${id}/generate-otp`,
+      const res = await api.post(
+        `/teacher/exams/${id}/generate-otp`,
         { expiryMinutes },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -125,8 +125,8 @@ export default function ExamManage() {
     setActionLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post(
-        `http://localhost:5000/api/teacher/exams/${id}/end`,
+      const res = await api.post(
+        `/teacher/exams/${id}/end`,
         {},
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -151,8 +151,8 @@ export default function ExamManage() {
     setActionLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        `http://localhost:5000/api/teacher/exams/${id}/start`,
+      await api.post(
+        `/teacher/exams/${id}/start`,
         {},
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -520,4 +520,3 @@ export default function ExamManage() {
     </div>
   );
 }
-

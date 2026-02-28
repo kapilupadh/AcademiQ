@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import api from "../../../services/api";
 import {
   Search,
   Filter,
@@ -7,57 +8,35 @@ import {
   XCircle,
   Download,
   FileSpreadsheet,
+  CheckCircle2,
 } from "lucide-react";
-
-// MOCK DATA
-const MOCK_COMPLETED = [
-  {
-    id: "STU-1001",
-    name: "Alice Johnson",
-    exam: "Mid-Term Physics",
-    score: "88/100",
-    gradedBy: "AI & Dr. Smith",
-    date: "Oct 12, 10:45 AM",
-  },
-  {
-    id: "STU-1002",
-    name: "Bob Smith",
-    exam: "Mid-Term Physics",
-    score: "92/100",
-    gradedBy: "AI & Dr. Smith",
-    date: "Oct 12, 10:48 AM",
-  },
-  {
-    id: "STU-1003",
-    name: "Charlie Davis",
-    exam: "Mid-Term Physics",
-    score: "74/100",
-    gradedBy: "AI & Dr. Smith",
-    date: "Oct 12, 10:55 AM",
-  },
-];
-
-const MOCK_CANCELED = [
-  {
-    id: "STU-1004",
-    name: "Diana Prince",
-    exam: "Mid-Term Physics",
-    reason: "UFM Flagged (Multiple Faces)",
-    date: "Oct 12, 10:30 AM",
-  },
-  {
-    id: "STU-1005",
-    name: "Evan Wright",
-    exam: "Mid-Term Physics",
-    reason: "Connectivity Drop > 15mins",
-    date: "Oct 12, 10:15 AM",
-  },
-];
 
 export default function Evaluation() {
   const [activeTab, setActiveTab] = useState("completed");
   const [selectedRows, setSelectedRows] = useState([]);
   const [showModal, setShowModal] = useState(false);
+
+  const [completed, setCompleted] = useState([]);
+  const [canceled, setCanceled] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEvaluations = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await api.get(`/admin/evaluations/status`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setCompleted(res.data.completed);
+        setCanceled(res.data.canceled);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEvaluations();
+  }, []);
 
   // Toggle rows for report generation
   const toggleRow = (id) => {
@@ -67,9 +46,9 @@ export default function Evaluation() {
   };
   const toggleAll = () => {
     setSelectedRows(
-      selectedRows.length === MOCK_COMPLETED.length
+      selectedRows.length === completed.length
         ? []
-        : MOCK_COMPLETED.map((s) => s.id),
+        : completed.map((s) => s.id),
     );
   };
 
@@ -139,8 +118,19 @@ export default function Evaluation() {
               Cancel
             </button>
             <button
-              onClick={() => {
-                alert(`Generating ${selectedRows.length} Report Cards...`);
+              onClick={async () => {
+                try {
+                  const token = localStorage.getItem("token");
+                  const res = await api.post(
+                    `/admin/evaluations/generate`,
+                    { attemptIds: selectedRows, template: "standard" },
+                    { headers: { Authorization: `Bearer ${token}` } },
+                  );
+                  alert(res.data.message);
+                } catch (e) {
+                  console.error("Generate reports error:", e);
+                  alert("Failed to generate report cards.");
+                }
                 setShowModal(false);
                 setSelectedRows([]);
               }}
@@ -212,8 +202,8 @@ export default function Evaluation() {
                         type="checkbox"
                         className="rounded border-zinc-300 dark:border-zinc-700 w-4 h-4 text-violet-600"
                         checked={
-                          selectedRows.length === MOCK_COMPLETED.length &&
-                          MOCK_COMPLETED.length > 0
+                          selectedRows.length === completed.length &&
+                          completed.length > 0
                         }
                         onChange={toggleAll}
                       />
@@ -226,43 +216,59 @@ export default function Evaluation() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                  {MOCK_COMPLETED.map((stu) => (
-                    <tr
-                      key={stu.id}
-                      className={`hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors ${selectedRows.includes(stu.id) ? "bg-violet-50/50 dark:bg-violet-500/5" : ""}`}
-                    >
-                      <td className="p-4 text-center">
-                        <input
-                          type="checkbox"
-                          className="rounded border-zinc-300 dark:border-zinc-700 w-4 h-4 text-violet-600"
-                          checked={selectedRows.includes(stu.id)}
-                          onChange={() => toggleRow(stu.id)}
-                        />
+                  {loading ? (
+                    <tr>
+                      <td colSpan="6" className="p-8 text-center text-zinc-500">
+                        Loading evaluations...
                       </td>
-                      <td className="p-4">
-                        <div className="flex flex-col">
-                          <span className="font-semibold text-zinc-900 dark:text-zinc-50">
-                            {stu.name}
-                          </span>
-                          <span className="text-xs font-mono text-zinc-500">
-                            {stu.id}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="p-4 text-zinc-600 dark:text-zinc-300 font-medium">
-                        {stu.exam}
-                      </td>
-                      <td className="p-4">
-                        <span className="px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-500/20">
-                          {stu.score}
-                        </span>
-                      </td>
-                      <td className="p-4 text-zinc-500 text-xs">
-                        {stu.gradedBy}
-                      </td>
-                      <td className="p-4 text-zinc-500 text-xs">{stu.date}</td>
                     </tr>
-                  ))}
+                  ) : completed.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="p-8 text-center text-zinc-500">
+                        No completed evaluations found.
+                      </td>
+                    </tr>
+                  ) : (
+                    completed.map((stu) => (
+                      <tr
+                        key={stu.id}
+                        className={`hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors ${selectedRows.includes(stu.id) ? "bg-violet-50/50 dark:bg-violet-500/5" : ""}`}
+                      >
+                        <td className="p-4 text-center">
+                          <input
+                            type="checkbox"
+                            className="rounded border-zinc-300 dark:border-zinc-700 w-4 h-4 text-violet-600"
+                            checked={selectedRows.includes(stu.id)}
+                            onChange={() => toggleRow(stu.id)}
+                          />
+                        </td>
+                        <td className="p-4">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-zinc-900 dark:text-zinc-50">
+                              {stu.name}
+                            </span>
+                            <span className="text-xs font-mono text-zinc-500">
+                              {stu.studentId}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-zinc-600 dark:text-zinc-300 font-medium">
+                          {stu.exam}
+                        </td>
+                        <td className="p-4">
+                          <span className="px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-500/20">
+                            {stu.score}
+                          </span>
+                        </td>
+                        <td className="p-4 text-zinc-500 text-xs">
+                          {stu.gradedBy}
+                        </td>
+                        <td className="p-4 text-zinc-500 text-xs text-nowrap">
+                          {stu.date}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -285,37 +291,53 @@ export default function Evaluation() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                {MOCK_CANCELED.map((stu) => (
-                  <tr
-                    key={stu.id}
-                    className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors"
-                  >
-                    <td className="p-4">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-zinc-900 dark:text-zinc-50">
-                          {stu.name}
-                        </span>
-                        <span className="text-xs font-mono text-zinc-500">
-                          {stu.id}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="p-4 font-medium text-zinc-600 dark:text-zinc-300">
-                      {stu.exam}
-                    </td>
-                    <td className="p-4">
-                      <span className="text-xs font-medium text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-1 rounded">
-                        {stu.reason}
-                      </span>
-                    </td>
-                    <td className="p-4 text-zinc-500 text-xs">{stu.date}</td>
-                    <td className="p-4 text-center">
-                      <button className="px-3 py-1.5 text-xs font-semibold rounded bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:opacity-90 transition-opacity">
-                        Schedule Makeup
-                      </button>
+                {loading ? (
+                  <tr>
+                    <td colSpan="5" className="p-8 text-center text-zinc-500">
+                      Loading evaluations...
                     </td>
                   </tr>
-                ))}
+                ) : canceled.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="p-8 text-center text-zinc-500">
+                      No canceled evaluations found.
+                    </td>
+                  </tr>
+                ) : (
+                  canceled.map((stu) => (
+                    <tr
+                      key={stu.id}
+                      className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors"
+                    >
+                      <td className="p-4">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-zinc-900 dark:text-zinc-50">
+                            {stu.name}
+                          </span>
+                          <span className="text-xs font-mono text-zinc-500">
+                            {stu.studentId}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="p-4 font-medium text-zinc-600 dark:text-zinc-300">
+                        {stu.exam}
+                      </td>
+                      <td className="p-4">
+                        <span className="text-xs font-medium text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-1 rounded">
+                          {stu.reason}
+                        </span>
+                      </td>
+                      <td className="p-4 text-zinc-500 text-xs whitespace-nowrap">
+                        {stu.date}
+                      </td>
+                      <td className="p-4 text-center">
+                        <button className="px-3 py-1.5 text-xs font-semibold rounded bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:opacity-90 transition-opacity">
+                          Schedule Makeup
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

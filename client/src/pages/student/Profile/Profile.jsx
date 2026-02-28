@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../../../services/api";
 import {
   User,
   Mail,
@@ -48,7 +48,7 @@ export default function Profile() {
         return;
       }
 
-      const res = await axios.get((`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/auth/me`), {
+      const res = await api.get(`/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -74,11 +74,9 @@ export default function Profile() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.put(
-        (`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/auth/me`),
-        formData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await api.put(`/auth/me`, formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       setProfile(res.data.user);
       setIsEditing(false);
@@ -107,13 +105,13 @@ export default function Profile() {
 
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        (`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/auth/change-password`),
+      await api.post(
+        `/auth/change-password`,
         {
           currentPassword: passwordData.currentPassword,
           newPassword: passwordData.newPassword,
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       setSuccess("Password changed successfully!");
@@ -335,4 +333,3 @@ export default function Profile() {
     </div>
   );
 }
-

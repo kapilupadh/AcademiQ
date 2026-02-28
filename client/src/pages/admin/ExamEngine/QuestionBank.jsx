@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import api from "../../../services/api";
 import {
   Search,
   Filter,
@@ -11,60 +12,59 @@ import {
   X,
 } from "lucide-react";
 
-// MOCK DATA
-const MOCK_QUESTIONS = [
-  {
-    id: "QB-101",
-    title: "Mid-Term Physics Question Paper",
-    subject: "Physics",
-    teacher: "Dr. Smith",
-    uploads: 12,
-    uploadedAt: "Oct 12, 2023",
-  },
-  {
-    id: "QB-102",
-    title: "Algebra Finals - Set A",
-    subject: "Mathematics",
-    teacher: "Prof. Davis",
-    uploads: 4,
-    uploadedAt: "Nov 02, 2023",
-  },
-  {
-    id: "QB-103",
-    title: "Organic Chemistry Quizzes",
-    subject: "Chemistry",
-    teacher: "Dr. Banner",
-    uploads: 20,
-    uploadedAt: "Sep 15, 2023",
-  },
-];
-
-const MOCK_REQUESTS = [
-  {
-    id: "REQ-01",
-    studentId: "STU-4402",
-    studentName: "Alice Johnson",
-    requestedMaterial: "Mid-Term Physics Question Paper",
-    reason: "Preparing for re-test",
-    date: "Today, 10:45 AM",
-    status: "pending",
-  },
-  {
-    id: "REQ-02",
-    studentId: "STU-8812",
-    studentName: "Michael Chang",
-    requestedMaterial: "Algebra Finals - Set A",
-    reason: "Practice for finals",
-    date: "Yesterday, 2:15 PM",
-    status: "pending",
-  },
-];
-
 export default function QuestionBank() {
   const [activeTab, setActiveTab] = useState("repository");
   const [search, setSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
+
+  const [repository, setRepository] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch logic based on active tab
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        if (activeTab === "repository") {
+          const res = await api.get(`/admin/questions/repository`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setRepository(res.data);
+        } else {
+          const res = await api.get(`/admin/questions/requests`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setRequests(res.data);
+        }
+      } catch (err) {
+        console.error("Error fetching Question Bank data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [activeTab]);
+
+  const handleApprove = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      await api.post(
+        `/admin/questions/requests/${selectedRequest.id}/approve`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      // Remove from UI request list
+      setRequests((prev) => prev.filter((r) => r.id !== selectedRequest.id));
+      setSelectedRequest(null);
+      alert("Request Approved. Document distributed to student's dashboard.");
+    } catch (err) {
+      console.error("Failed to approve request:", err);
+      alert("Error approving request.");
+    }
+  };
 
   // Approval Sidebar Content
   const renderApprovalSheet = () => {
@@ -151,13 +151,7 @@ export default function QuestionBank() {
               Deny
             </button>
             <button
-              onClick={() => {
-                // Mock approval
-                setSelectedRequest(null);
-                alert(
-                  "Request Approved. Document distributed to student's dashboard.",
-                );
-              }}
+              onClick={handleApprove}
               className="flex-1 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-semibold transition-colors shadow-sm"
             >
               Approve & Send
@@ -185,7 +179,7 @@ export default function QuestionBank() {
           >
             Student Requests{" "}
             <span className="ml-2 inline-flex items-center justify-center bg-violet-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
-              {MOCK_REQUESTS.length}
+              {requests.length}
             </span>
           </button>
         </div>
@@ -232,46 +226,60 @@ export default function QuestionBank() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                  {MOCK_QUESTIONS.map((doc) => (
-                    <tr
-                      key={doc.id}
-                      className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors group cursor-pointer"
-                    >
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
-                            <FileText className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-zinc-900 dark:text-zinc-50 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                              {doc.title}
-                            </p>
-                            <p className="text-xs font-mono text-zinc-500 mt-0.5">
-                              {doc.id}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-4 text-zinc-600 dark:text-zinc-300">
-                        {doc.subject}
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-300">
-                          <User className="w-3.5 h-3.5 text-zinc-400" />{" "}
-                          {doc.teacher}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-300">
-                          <Calendar className="w-3.5 h-3.5 text-zinc-400" />{" "}
-                          {doc.uploadedAt}
-                        </div>
-                      </td>
-                      <td className="p-4 text-center text-zinc-900 dark:text-zinc-50 font-semibold">
-                        {doc.uploads} Items
+                  {loading ? (
+                    <tr>
+                      <td colSpan="5" className="p-8 text-center text-zinc-500">
+                        Loading master repository...
                       </td>
                     </tr>
-                  ))}
+                  ) : repository.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="p-8 text-center text-zinc-500">
+                        No documents found.
+                      </td>
+                    </tr>
+                  ) : (
+                    repository.map((doc) => (
+                      <tr
+                        key={doc.id}
+                        className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors group cursor-pointer"
+                      >
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                              <FileText className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-zinc-900 dark:text-zinc-50 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate max-w-[200px]">
+                                {doc.title}
+                              </p>
+                              <p className="text-xs font-mono text-zinc-500 mt-0.5">
+                                {doc.id.substring(0, 8).toUpperCase()}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4 text-zinc-600 dark:text-zinc-300">
+                          {doc.subject}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-300">
+                            <User className="w-3.5 h-3.5 text-zinc-400" />{" "}
+                            {doc.teacher}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-300 whitespace-nowrap">
+                            <Calendar className="w-3.5 h-3.5 text-zinc-400" />{" "}
+                            {doc.uploadedAt}
+                          </div>
+                        </td>
+                        <td className="p-4 text-center text-zinc-900 dark:text-zinc-50 font-semibold">
+                          {doc.uploads} Items
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -293,41 +301,55 @@ export default function QuestionBank() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                {MOCK_REQUESTS.map((req) => (
-                  <tr
-                    key={req.id}
-                    className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors group cursor-pointer"
-                    onClick={() => setSelectedRequest(req)}
-                  >
-                    <td className="p-4">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-zinc-900 dark:text-zinc-50">
-                          {req.studentName}
-                        </span>
-                        <span className="text-xs font-mono text-zinc-500">
-                          {req.studentId}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="p-4 font-medium text-blue-600 dark:text-blue-400">
-                      {req.requestedMaterial}
-                    </td>
-                    <td className="p-4 text-zinc-500 dark:text-zinc-400 text-xs">
-                      {req.date}
-                    </td>
-                    <td className="p-4 text-center">
-                      <button
-                        className="px-3 py-1.5 text-xs font-semibold rounded bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedRequest(req);
-                        }}
-                      >
-                        Review
-                      </button>
+                {loading ? (
+                  <tr>
+                    <td colSpan="4" className="p-8 text-center text-zinc-500">
+                      Loading requests...
                     </td>
                   </tr>
-                ))}
+                ) : requests.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="p-8 text-center text-zinc-500">
+                      No pending student requests.
+                    </td>
+                  </tr>
+                ) : (
+                  requests.map((req) => (
+                    <tr
+                      key={req.id}
+                      className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors group cursor-pointer"
+                      onClick={() => setSelectedRequest(req)}
+                    >
+                      <td className="p-4">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-zinc-900 dark:text-zinc-50">
+                            {req.studentName}
+                          </span>
+                          <span className="text-xs font-mono text-zinc-500">
+                            {req.studentId}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="p-4 font-medium text-blue-600 dark:text-blue-400 truncate max-w-[200px]">
+                        {req.requestedMaterial}
+                      </td>
+                      <td className="p-4 text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
+                        {req.date}
+                      </td>
+                      <td className="p-4 text-center">
+                        <button
+                          className="px-3 py-1.5 text-xs font-semibold rounded bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedRequest(req);
+                          }}
+                        >
+                          Review
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

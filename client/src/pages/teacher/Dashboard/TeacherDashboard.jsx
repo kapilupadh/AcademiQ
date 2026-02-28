@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../../services/api";
 import { Users, BookOpen, FileText, CheckCircle } from "lucide-react";
 
 // Using existing StatCard if it exists, otherwise inline

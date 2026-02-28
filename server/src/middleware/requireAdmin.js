@@ -17,9 +17,11 @@ const requireAdmin = (req, res, next) => {
     // Add user from payload
     req.user = decoded;
 
-    // Check if role is Admin (1)
-    if (decoded.role !== 1) {
-      return res.status(403).json({ message: 'Access Denied. Admins only.' });
+    // Check if role is Admin (1) or Teacher (2) for Exam Engine visibility
+    const roleNum = Number(decoded.role);
+    if (roleNum !== 1 && roleNum !== 2) {
+      console.warn(`[requireAdmin] Access Denied. User Role: ${decoded.role}`);
+      return res.status(403).json({ message: 'Access Denied. Admins or Teachers only.' });
     }
 
     next();

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Lock, Mail, Loader2, ShieldCheck } from "lucide-react";
-import axios from "axios";
+import api from "../../../services/api";
 import Alert from "../../../components/ui/Alert";
 
 export default function AdminLogin() {
@@ -15,7 +15,7 @@ export default function AdminLogin() {
     setLoading(true);
     setError("");
     try {
-      const res = await axios.post((`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/auth/login`), {
+      const res = await api.post(`/auth/login`, {
         login_id: formData.login_id,
         password: formData.password,
       });
@@ -141,4 +141,3 @@ export default function AdminLogin() {
     </div>
   );
 }
-

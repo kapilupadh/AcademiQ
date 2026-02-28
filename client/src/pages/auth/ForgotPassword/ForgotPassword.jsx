@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, ArrowRight, CheckCircle, Loader2 } from "lucide-react";
-import axios from "axios";
+import api from "../../../services/api";
 import Alert from "../../../components/ui/Alert";
 
 export default function ForgotPassword() {
@@ -32,12 +32,9 @@ export default function ForgotPassword() {
     setSuccess("");
 
     try {
-      const res = await axios.post(
-        (`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/auth/forgot-password`),
-        {
-          email: formData.email,
-        }
-      );
+      const res = await api.post(`/auth/forgot-password`, {
+        email: formData.email,
+      });
       setSuccess(res.data.message);
       setStep(2);
     } catch (err) {
@@ -57,13 +54,10 @@ export default function ForgotPassword() {
     setError("");
 
     try {
-      const res = await axios.post(
-        (`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/auth/verify-otp`),
-        {
-          email: formData.email,
-          otp: formData.otp,
-        }
-      );
+      const res = await api.post(`/auth/verify-otp`, {
+        email: formData.email,
+        otp: formData.otp,
+      });
       setResetToken(res.data.resetToken);
       setSuccess("OTP Verified!");
       setStep(3);
@@ -87,13 +81,10 @@ export default function ForgotPassword() {
     }
 
     try {
-      const res = await axios.post(
-        (`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/auth/reset-password`),
-        {
-          resetToken: resetToken,
-          newPassword: formData.newPassword,
-        }
-      );
+      const res = await api.post(`/auth/reset-password`, {
+        resetToken: resetToken,
+        newPassword: formData.newPassword,
+      });
       setSuccess(res.data.message);
       setTimeout(() => {
         navigate("/login");
@@ -281,4 +272,3 @@ export default function ForgotPassword() {
     </div>
   );
 }
-

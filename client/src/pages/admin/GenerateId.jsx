@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import axios from "axios";
+import api from "../../services/api";
 import * as XLSX from "xlsx";
 import {
   Upload,
@@ -44,13 +44,9 @@ export default function GenerateId() {
     setGeneratedId(null);
 
     try {
-      const res = await axios.post(
-        `http://localhost:5000/api/admin/generate-id`,
-        formData,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const res = await api.post(`/admin/generate-id`, formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setGeneratedId(res.data);
     } catch (err) {
       setErrorSingle(err.response?.data?.message || "Failed to generate ID");
@@ -231,8 +227,8 @@ export default function GenerateId() {
     setBulkError("");
 
     try {
-      const res = await axios.post(
-        `http://localhost:5000/api/admin/students/bulk-generate`,
+      const res = await api.post(
+        `/admin/students/bulk-generate`,
         { students: validStudents },
         {
           headers: { Authorization: `Bearer ${token}` },

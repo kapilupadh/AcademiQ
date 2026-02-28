@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import api from "../../../services/api";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Plus,
@@ -51,10 +51,9 @@ export default function ExamBuilder() {
         setFetchingExam(true);
         try {
           const token = localStorage.getItem("token");
-          const res = await axios.get(
-            `http://localhost:5000/api/teacher/exams/${id}`,
-            { headers: { Authorization: `Bearer ${token}` } },
-          );
+          const res = await api.get(`/teacher/exams/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
           const exam = res.data;
           setMetadata({
             title: exam.title,
@@ -136,11 +135,12 @@ export default function ExamBuilder() {
       formData.append("image", file);
 
       // Do NOT set Content-Type manually — axios auto-sets multipart/form-data with boundary
-      const res = await axios.post(
-        (`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/teacher/upload`),
-        formData,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const res = await api.post(`/teacher/upload`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       handleQuestionChange(index, "image_url", res.data.imageUrl);
       setUploadState(index, "success");
@@ -215,23 +215,15 @@ export default function ExamBuilder() {
       // 1. Create or Update Exam metadata
       let examId = id;
       if (isEditMode) {
-        await axios.put(
-          `http://localhost:5000/api/teacher/exams/${id}`,
-          metadata,
-          { headers },
-        );
+        await api.put(`/teacher/exams/${id}`, metadata, { headers });
       } else {
-        const examRes = await axios.post(
-          (`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/teacher/exams`),
-          metadata,
-          { headers },
-        );
+        const examRes = await api.post(`/teacher/exams`, metadata, { headers });
         examId = examRes.data.exam.id;
       }
 
       // 2. Save all questions (including image_url)
-      await axios.post(
-        `http://localhost:5000/api/teacher/exams/${examId}/questions`,
+      await api.post(
+        `/teacher/exams/${examId}/questions`,
         { questions },
         { headers },
       );
@@ -508,9 +500,9 @@ export default function ExamBuilder() {
                       {q.image_url ? (
                         /* Uploaded state */
                         <div className="flex items-start gap-3">
-                          <div className="relative group rounded-xl overflow-hidden border-2 border-emerald-400 dark:border-emerald-600 w-48 flex-shrink-0 shadow-sm">
+                          <div className="relative group rounded-xl overflow-hidden border-2 border-emerald-400 dark:border-emerald-600 w-48 shrink-0 shadow-sm">
                             <img
-                              src={`http://localhost:5000${q.image_url}`}
+                              src={`${(process.env.REACT_APP_API_URL || "http://localhost:5000/api").replace("/api", "")}${q.image_url}`}
                               alt="Question visual"
                               className="w-full h-auto object-cover"
                             />
@@ -697,4 +689,3 @@ export default function ExamBuilder() {
     </div>
   );
 }
-

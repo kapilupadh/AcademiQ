@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import axios from "axios";
+import api from "../../../services/api";
 import { useNavigate } from "react-router-dom";
 import {
   CircleAlert,
@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const API = (`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api`);
 
 const RULES = [
   {
@@ -167,8 +166,8 @@ export default function ExamInstructions() {
 
   // ── Fetch available exams ──────────────────────────────────────────────────
   useEffect(() => {
-    axios
-      .get(`${API}/exam`, { headers })
+    api
+      .get(`/exam`, { headers })
       .then((r) =>
         setExams(
           r.data.filter(
@@ -189,8 +188,8 @@ export default function ExamInstructions() {
     setLoadingDetails(true);
     setOtp("");
     setOtpError("");
-    axios
-      .get(`${API}/exam/${selectedExamId}/details`, { headers })
+    api
+      .get(`/exam/${selectedExamId}/details`, { headers })
       .then((r) => setExamDetails(r.data))
       .catch(console.error)
       .finally(() => setLoadingDetails(false));
@@ -214,11 +213,7 @@ export default function ExamInstructions() {
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = setInterval(async () => {
         try {
-          const res = await axios.post(
-            `${API}/exam/${examId}/start`,
-            {},
-            { headers },
-          );
+          const res = await api.post(`/exam/${examId}/start`, {}, { headers });
           if (res.data.status === "IN_PROGRESS") {
             clearInterval(pollRef.current);
             navigate(`/exam/portal/${examId}`);
@@ -249,7 +244,7 @@ export default function ExamInstructions() {
     if (phase !== "waiting_room" || !attemptId) return;
     const handler = () => {
       navigator.sendBeacon(
-        `${API}/exam/mark-absent`,
+        `${process.env.REACT_APP_API_URL || "http://localhost:5000/api"}/exam/mark-absent`,
         new Blob([JSON.stringify({ attemptId })], { type: "application/json" }),
       );
     };
@@ -263,8 +258,8 @@ export default function ExamInstructions() {
     setOtpError("");
     setJoining(true);
     try {
-      const res = await axios.post(
-        `${API}/exam/join`,
+      const res = await api.post(
+        `/exam/join`,
         { examId: selectedExamId, otp },
         { headers },
       );
@@ -451,7 +446,7 @@ export default function ExamInstructions() {
                 key={i}
                 className="flex gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800"
               >
-                <div className="flex-shrink-0 mt-0.5 w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
+                <div className="shrink-0 mt-0.5 w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
                   <Icon className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
@@ -573,4 +568,3 @@ export default function ExamInstructions() {
     </div>
   );
 }
-

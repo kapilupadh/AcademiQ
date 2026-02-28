@@ -11,7 +11,7 @@ import {
   EyeOff,
   CheckCircle,
 } from "lucide-react";
-import axios from "axios";
+import api from "../../../services/api";
 import Alert from "../../../components/ui/Alert";
 
 export default function AdminRegister() {
@@ -64,7 +64,7 @@ export default function AdminRegister() {
 
     setLoading(true);
     try {
-      await axios.post((`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/auth/admin-register`), {
+      await api.post(`/auth/admin-register`, {
         full_name: formData.full_name,
         username: formData.username,
         email: formData.email,
@@ -343,4 +343,3 @@ export default function AdminRegister() {
     </div>
   );
 }
-

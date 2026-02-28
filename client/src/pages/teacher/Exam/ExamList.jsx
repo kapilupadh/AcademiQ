@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../../services/api";
 import { Link, useNavigate } from "react-router-dom";
 import { Plus, Clock, FileText, ArrowRight, Edit3 } from "lucide-react";
 
@@ -12,7 +12,7 @@ export default function ExamList() {
     const fetchExams = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get((`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/teacher/exams`), {
+        const res = await api.get(`/teacher/exams`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setExams(res.data);
@@ -122,4 +122,3 @@ export default function ExamList() {
     </div>
   );
 }
-

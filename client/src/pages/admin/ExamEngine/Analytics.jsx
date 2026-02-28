@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import api from "../../../services/api";
 import {
   Users,
   Crosshair,
@@ -22,28 +23,6 @@ import {
   Cell,
 } from "recharts";
 
-// Mock Data
-const distributionData = [
-  { name: "0-10", count: 2 },
-  { name: "10-20", count: 5 },
-  { name: "20-30", count: 12 },
-  { name: "30-40", count: 35 },
-  { name: "40-50", count: 68 },
-  { name: "50-60", count: 120 },
-  { name: "60-70", count: 85 },
-  { name: "70-80", count: 42 },
-  { name: "80-90", count: 18 },
-  { name: "90-100", count: 5 },
-];
-
-const topicData = [
-  { name: "Q. Mechanics", score: 65 },
-  { name: "Thermodynamics", score: 82 },
-  { name: "Optics", score: 55 },
-  { name: "Relativity", score: 78 },
-  { name: "Electromagnetism", score: 45 },
-];
-
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
@@ -60,41 +39,78 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function Analytics() {
   const [exportOpen, setExportOpen] = useState(false);
+  const [metricsData, setMetricsData] = useState(null);
+  const [distributionData, setDistributionData] = useState([]);
+  const [topicData, setTopicData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const metrics = [
-    {
-      title: "Total Attendees",
-      value: "842",
-      sub: "+12% from last term",
-      icon: Users,
-      color: "text-blue-500",
-      bg: "bg-blue-500/10",
-    },
-    {
-      title: "Average Score",
-      value: "58.4%",
-      sub: "Passing threshold: 40%",
-      icon: Crosshair,
-      color: "text-emerald-500",
-      bg: "bg-emerald-500/10",
-    },
-    {
-      title: "Pass Rate",
-      value: "82.5%",
-      sub: "Top quartile: 18%",
-      icon: Award,
-      color: "text-violet-500",
-      bg: "bg-violet-500/10",
-    },
-    {
-      title: "UFM Flags",
-      value: "14",
-      sub: "3 Critical, 11 Warnings",
-      icon: ShieldAlert,
-      color: "text-rose-500",
-      bg: "bg-rose-500/10",
-    },
-  ];
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await api.get(`/admin/analytics/post-exam`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = res.data;
+        setMetricsData({
+          totalAttendees: data.totalAttendees,
+          averageScore: data.averageScore,
+          passRate: data.passRate,
+          ufmFlags: data.ufmFlags,
+        });
+        setDistributionData(data.gradeDistribution);
+        setTopicData(data.topicPerformance);
+      } catch (err) {
+        console.error("Failed to fetch analytics:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAnalytics();
+  }, []);
+
+  const metrics = metricsData
+    ? [
+        {
+          title: "Total Attendees",
+          value: metricsData.totalAttendees.toString(),
+          sub: "Completed attempts",
+          icon: Users,
+          color: "text-blue-500",
+          bg: "bg-blue-500/10",
+        },
+        {
+          title: "Average Score",
+          value: `${metricsData.averageScore}%`,
+          sub: "Passing threshold: 40%",
+          icon: Crosshair,
+          color: "text-emerald-500",
+          bg: "bg-emerald-500/10",
+        },
+        {
+          title: "Pass Rate",
+          value: `${metricsData.passRate}%`,
+          sub: "Exams passed vs total",
+          icon: Award,
+          color: "text-violet-500",
+          bg: "bg-violet-500/10",
+        },
+        {
+          title: "UFM Flags",
+          value: metricsData.ufmFlags.toString(),
+          sub: "Recorded violations",
+          icon: ShieldAlert,
+          color: "text-rose-500",
+          bg: "bg-rose-500/10",
+        },
+      ]
+    : [];
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center text-zinc-500">Loading Analytics...</div>
+    );
+  }
 
   return (
     <div className="space-y-6">

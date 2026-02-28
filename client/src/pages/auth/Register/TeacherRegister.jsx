@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CircleHelp, Loader2 } from "lucide-react";
-import axios from "axios";
+import api from "../../../services/api";
 import Alert from "../../../components/ui/Alert";
 
 export default function TeacherRegister() {
@@ -42,12 +42,9 @@ export default function TeacherRegister() {
     setError("");
 
     try {
-      const res = await axios.post(
-        (`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/auth/validate-id`),
-        {
-          unique_id: formData.unique_id,
-        },
-      );
+      const res = await api.post(`/auth/validate-id`, {
+        unique_id: formData.unique_id,
+      });
 
       if (res.data.valid) {
         if (res.data.role !== 2 && res.data.role !== "teacher") {
@@ -119,7 +116,7 @@ export default function TeacherRegister() {
         dob: formData.dob,
       };
 
-      await axios.post((`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/auth/register`), payload);
+      await api.post(`/auth/register`, payload);
       navigate("/teacher-login");
     } catch (err) {
       setError(
@@ -365,4 +362,3 @@ export default function TeacherRegister() {
     </div>
   );
 }
-

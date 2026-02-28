@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CircleHelp, Loader2 } from "lucide-react";
-import axios from "axios";
+import api from "../../../services/api";
 import Alert from "../../../components/ui/Alert";
 
 export default function Register() {
@@ -28,8 +28,8 @@ export default function Register() {
 
   useEffect(() => {
     // Fetch departments
-    axios
-      .get((`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/departments`))
+    api
+      .get(`/departments`)
       .then((res) => setDepartments(res.data))
       .catch((err) => console.error("Failed to fetch departments", err));
   }, []);
@@ -54,12 +54,9 @@ export default function Register() {
     setError("");
 
     try {
-      const res = await axios.post(
-        (`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/auth/validate-id`),
-        {
-          unique_id: formData.unique_id,
-        },
-      );
+      const res = await api.post(`/auth/validate-id`, {
+        unique_id: formData.unique_id,
+      });
 
       if (res.data.valid) {
         setFormData((prev) => ({
@@ -107,7 +104,7 @@ export default function Register() {
         department_id: formData.department_id,
       };
 
-      await axios.post((`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/auth/register`), payload);
+      await api.post(`/auth/register`, payload);
 
       // Success
       // alert("Registration Successful! Please login.");
@@ -386,4 +383,3 @@ export default function Register() {
     </div>
   );
 }
-

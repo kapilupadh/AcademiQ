@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Lock, Mail, Loader2 } from "lucide-react"; // Added Icons
-import axios from "axios";
+import api from "../../../services/api";
 import Alert from "../../../components/ui/Alert";
 
 export default function Login() {
@@ -35,7 +35,7 @@ export default function Login() {
     setError("");
 
     try {
-      const res = await axios.post(`http://localhost:5000/api/auth/login`, {
+      const res = await api.post(`/auth/login`, {
         login_id: formData.login_id,
         password: formData.password,
       });

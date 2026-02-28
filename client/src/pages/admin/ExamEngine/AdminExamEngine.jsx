@@ -15,7 +15,7 @@ import Evaluation from "./Evaluation";
 import Analytics from "./Analytics";
 
 export default function AdminExamEngine() {
-  const [activeTab, setActiveTab] = useState("monitoring");
+  const [activeTab, setActiveTab] = useState("overview");
   const [cmdOpen, setCmdOpen] = useState(false);
 
   // Command Palette listener

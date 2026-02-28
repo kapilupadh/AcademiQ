@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import api from "../../../services/api";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
@@ -11,8 +11,6 @@ import {
   CheckCircle,
   Circle,
 } from "lucide-react";
-
-const API = (`${process.env.REACT_APP_API_URL || "http://localhost:5000"}`);
 
 export default function ExamPortal() {
   const { sessionId: examId } = useParams();
@@ -47,8 +45,8 @@ export default function ExamPortal() {
     const load = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.post(
-          `${API}/api/exam/${examId}/start`,
+        const res = await api.post(
+          `/exam/${examId}/start`,
           {},
           { headers: { Authorization: `Bearer ${token}` } },
         );
@@ -94,8 +92,8 @@ export default function ExamPortal() {
       setAnswers((prev) => ({ ...prev, [questionId]: option }));
       try {
         const token = localStorage.getItem("token");
-        await axios.post(
-          `${API}/api/exam/answer`,
+        await api.post(
+          `/exam/answer`,
           { attemptId: data.attemptId, questionId, selectedOption: option },
           { headers: { Authorization: `Bearer ${token}` } },
         );
@@ -111,8 +109,8 @@ export default function ExamPortal() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        `${API}/api/exam/submit`,
+      await api.post(
+        `/exam/submit`,
         { attemptId: data?.attemptId },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -260,7 +258,7 @@ export default function ExamPortal() {
                 {q.image_url && !imgError[q.id] && (
                   <div className="rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950">
                     <img
-                      src={`${API}${q.image_url}`}
+                      src={`${(process.env.REACT_APP_API_URL || "http://localhost:5000/api").replace("/api", "")}${q.image_url}`}
                       alt="Question visual"
                       className="w-full max-h-72 object-contain"
                       onError={() =>
@@ -424,4 +422,3 @@ export default function ExamPortal() {
     </div>
   );
 }
-
