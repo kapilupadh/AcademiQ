@@ -22,6 +22,7 @@ import TeacherSidebar from "./components/layout/TeacherSidebar";
 import ExamList from "./pages/teacher/Exam/ExamList";
 import ExamBuilder from "./pages/teacher/Exam/ExamBuilder";
 import ExamManage from "./pages/teacher/Exam/ExamManage";
+import AdminExamEngine from "./pages/admin/ExamEngine/AdminExamEngine";
 
 export default function App() {
   return (
@@ -143,6 +144,23 @@ export default function App() {
               >
                 <Layout header={<Navbar page="public" />}>
                   <AdminDashboard />
+                </Layout>
+              </div>
+            </>
+          }
+        />
+
+        <Route
+          path="/admin/exams"
+          element={
+            <>
+              <AdminSidebar />
+              <div
+                className="transition-all duration-300"
+                style={{ paddingLeft: "var(--admin-sidebar-w, 260px)" }}
+              >
+                <Layout header={<Navbar page="public" />}>
+                  <AdminExamEngine />
                 </Layout>
               </div>
             </>
