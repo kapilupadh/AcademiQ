@@ -23,6 +23,7 @@ import ExamList from "./pages/teacher/Exam/ExamList";
 import ExamBuilder from "./pages/teacher/Exam/ExamBuilder";
 import ExamManage from "./pages/teacher/Exam/ExamManage";
 import AdminExamEngine from "./pages/admin/ExamEngine/AdminExamEngine";
+import ProtectedRoute from "./components/layout/ProtectedRoute";
 
 export default function App() {
   return (
@@ -102,7 +103,7 @@ export default function App() {
         <Route
           path="/dashboard"
           element={
-            <>
+            <ProtectedRoute allowedRoles={[3]}>
               <Sidebar />
               <div
                 className="transition-all duration-300"
@@ -112,14 +113,14 @@ export default function App() {
                   <Dashboard />
                 </Layout>
               </div>
-            </>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/admin/generate-id"
           element={
-            <>
+            <ProtectedRoute allowedRoles={[1]}>
               <AdminSidebar />
               <div
                 className="transition-all duration-300"
@@ -129,14 +130,14 @@ export default function App() {
                   <GenerateId />
                 </Layout>
               </div>
-            </>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/admin/dashboard"
           element={
-            <>
+            <ProtectedRoute allowedRoles={[1]}>
               <AdminSidebar />
               <div
                 className="transition-all duration-300"
@@ -146,14 +147,14 @@ export default function App() {
                   <AdminDashboard />
                 </Layout>
               </div>
-            </>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/admin/exams"
           element={
-            <>
+            <ProtectedRoute allowedRoles={[1]}>
               <AdminSidebar />
               <div
                 className="transition-all duration-300"
@@ -163,7 +164,7 @@ export default function App() {
                   <AdminExamEngine />
                 </Layout>
               </div>
-            </>
+            </ProtectedRoute>
           }
         />
 
@@ -171,7 +172,7 @@ export default function App() {
         <Route
           path="/teacher/dashboard"
           element={
-            <>
+            <ProtectedRoute allowedRoles={[2]}>
               <TeacherSidebar />
               <div
                 className="transition-all duration-300"
@@ -181,14 +182,14 @@ export default function App() {
                   <TeacherDashboard />
                 </Layout>
               </div>
-            </>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/teacher/exams"
           element={
-            <>
+            <ProtectedRoute allowedRoles={[2]}>
               <TeacherSidebar />
               <div
                 className="transition-all duration-300"
@@ -198,14 +199,14 @@ export default function App() {
                   <ExamList />
                 </Layout>
               </div>
-            </>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/teacher/exams/create"
           element={
-            <>
+            <ProtectedRoute allowedRoles={[2]}>
               <TeacherSidebar />
               <div
                 className="transition-all duration-300"
@@ -215,14 +216,14 @@ export default function App() {
                   <ExamBuilder />
                 </Layout>
               </div>
-            </>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/teacher/exams/edit/:id"
           element={
-            <>
+            <ProtectedRoute allowedRoles={[2]}>
               <TeacherSidebar />
               <div
                 className="transition-all duration-300"
@@ -232,14 +233,14 @@ export default function App() {
                   <ExamBuilder />
                 </Layout>
               </div>
-            </>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/teacher/exams/:id/manage"
           element={
-            <>
+            <ProtectedRoute allowedRoles={[2]}>
               <TeacherSidebar />
               <div
                 className="transition-all duration-300"
@@ -249,14 +250,14 @@ export default function App() {
                   <ExamManage />
                 </Layout>
               </div>
-            </>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/profile"
           element={
-            <>
+            <ProtectedRoute allowedRoles={[3]}>
               <Sidebar />
               <div
                 className="transition-all duration-300"
@@ -266,7 +267,7 @@ export default function App() {
                   <Profile />
                 </Layout>
               </div>
-            </>
+            </ProtectedRoute>
           }
         />
 
@@ -276,7 +277,7 @@ export default function App() {
         <Route
           path="/exam/instructions"
           element={
-            <>
+            <ProtectedRoute allowedRoles={[3]}>
               <Sidebar />
               <div
                 className="transition-all duration-300"
@@ -286,7 +287,7 @@ export default function App() {
                   <ExamInstructions />
                 </Layout>
               </div>
-            </>
+            </ProtectedRoute>
           }
         />
 
@@ -294,9 +295,11 @@ export default function App() {
         <Route
           path="/exam/portal/:sessionId"
           element={
-            <ExamLayout>
-              <ExamPortal />
-            </ExamLayout>
+            <ProtectedRoute allowedRoles={[3]}>
+              <ExamLayout>
+                <ExamPortal />
+              </ExamLayout>
+            </ProtectedRoute>
           }
         />
       </Routes>

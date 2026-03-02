@@ -19,7 +19,14 @@ export default function Navbar({ page = "public" }) {
   // Load user from localStorage
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    if (storedUser) setUser(JSON.parse(storedUser));
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error("Failed to parse user from localStorage:", e);
+        localStorage.removeItem("user");
+      }
+    }
   }, []);
 
   // Close dropdown when clicking outside

@@ -10,6 +10,7 @@ import {
   User,
   Calendar,
   X,
+  Download,
 } from "lucide-react";
 
 export default function QuestionBank() {
@@ -21,6 +22,12 @@ export default function QuestionBank() {
   const [repository, setRepository] = useState([]);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // New states for filtering and viewing
+  const [selectedSubject, setSelectedSubject] = useState("All");
+  const [selectedExamForView, setSelectedExamForView] = useState(null);
+  const [examQuestions, setExamQuestions] = useState(null);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
 
   // Fetch logic based on active tab
   useEffect(() => {
@@ -67,6 +74,95 @@ export default function QuestionBank() {
   };
 
   // Approval Sidebar Content
+
+  // -- New specific logic for Filtering --
+  const subjects = [
+    "All",
+    ...new Set(repository.map((doc) => doc.subject)),
+  ].filter(Boolean);
+
+  const filteredRepository = repository.filter((doc) => {
+    const matchesSearch = doc.title
+      .toLowerCase()
+      .includes(search.toLowerCase());
+    const matchesSubject =
+      selectedSubject === "All" || doc.subject === selectedSubject;
+    return matchesSearch && matchesSubject;
+  });
+
+  // -- View Modal Logic --
+  const openExamView = async (exam) => {
+    setSelectedExamForView(exam);
+    setLoadingQuestions(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await api.get(`/admin/questions/repository/${exam.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setExamQuestions(res.data.questions);
+    } catch (err) {
+      console.error("Failed to fetch exam questions:", err);
+      alert("Error loading questions.");
+    } finally {
+      setLoadingQuestions(false);
+    }
+  };
+
+  const closeExamView = () => {
+    setSelectedExamForView(null);
+    setExamQuestions(null);
+  };
+
+  const generatePDF = () => {
+    if (!examQuestions || !selectedExamForView) return;
+
+    let printContents = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h1 style="text-align: center; color: #333;">${selectedExamForView.title}</h1>
+        <h3 style="text-align: center; color: #666; margin-bottom: 30px;">Subject: ${selectedExamForView.subject} | ID: ${selectedExamForView.id.substring(0, 8).toUpperCase()}</h3>
+        <hr style="margin-bottom: 20px;" />
+    `;
+
+    examQuestions.forEach((q, index) => {
+      printContents += `
+        <div style="margin-bottom: 20px; page-break-inside: avoid;">
+          <p style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">Q${index + 1}. ${q.question_text}</p>
+          <ul style="list-style-type: none; padding-left: 20px; margin-bottom: 10px;">
+      `;
+      if (q.options && Array.isArray(q.options)) {
+        q.options.forEach((opt, oIndex) => {
+          const isCorrect =
+            String(opt) === String(q.correct_answer) ||
+            String(oIndex) === String(q.correct_answer);
+          printContents += `
+            <li style="margin-bottom: 5px; ${isCorrect ? "font-weight: bold; color: #16a34a;" : ""}">
+              ${String.fromCharCode(65 + oIndex)}) ${opt} ${isCorrect ? " (Correct Answer)" : ""}
+            </li>
+          `;
+        });
+      }
+      printContents += `
+          </ul>
+        </div>
+      `;
+    });
+
+    printContents += `</div>`;
+
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${selectedExamForView.title} - Question Bank</title>
+        </head>
+        <body onload="window.print(); window.close();">
+          ${printContents}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const renderApprovalSheet = () => {
     if (!selectedRequest) return null;
 
@@ -162,6 +258,106 @@ export default function QuestionBank() {
     );
   };
 
+  const renderViewModal = () => {
+    if (!selectedExamForView) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div
+          className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={closeExamView}
+        />
+        <div className="relative w-full max-w-4xl max-h-[90vh] bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
+          <div className="p-4 sm:p-6 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/50 rounded-t-2xl">
+            <div>
+              <h2 className="font-bold text-xl text-zinc-900 dark:text-zinc-50">
+                {selectedExamForView.title}
+              </h2>
+              <p className="text-sm font-medium text-violet-600 dark:text-violet-400">
+                {selectedExamForView.subject} •{" "}
+                {selectedExamForView.id.substring(0, 8).toUpperCase()}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={generatePDF}
+                disabled={loadingQuestions || !examQuestions}
+                className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 text-white text-sm font-semibold rounded-lg transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Download PDF
+              </button>
+              <button
+                onClick={closeExamView}
+                className="p-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-50 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-zinc-50/50 dark:bg-zinc-950">
+            {loadingQuestions ? (
+              <div className="flex flex-col items-center justify-center h-40 text-zinc-500">
+                <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mb-4" />
+                <p>Loading questions...</p>
+              </div>
+            ) : examQuestions && examQuestions.length > 0 ? (
+              <div className="space-y-6">
+                {examQuestions.map((q, idx) => (
+                  <div
+                    key={q.id}
+                    className="p-5 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm"
+                  >
+                    <div className="flex items-start gap-3 mb-4">
+                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 text-sm font-bold shrink-0 mt-0.5">
+                        {idx + 1}
+                      </span>
+                      <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                        {q.question_text}
+                      </p>
+                    </div>
+                    {q.options && Array.isArray(q.options) && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-9">
+                        {q.options.map((opt, oIdx) => {
+                          const isCorrect =
+                            String(opt) === String(q.correct_answer) ||
+                            String(oIdx) === String(q.correct_answer);
+                          return (
+                            <div
+                              key={oIdx}
+                              className={`p-3 rounded-lg border text-sm flex items-center gap-3 ${
+                                isCorrect
+                                  ? "border-green-500/50 bg-green-50 dark:bg-green-500/10 text-green-800 dark:text-green-300 font-medium"
+                                  : "border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400"
+                              }`}
+                            >
+                              <span className="w-5 h-5 flex items-center justify-center rounded bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-xs font-bold text-zinc-500 shrink-0">
+                                {String.fromCharCode(65 + oIdx)}
+                              </span>
+                              {opt}
+                              {isCorrect && (
+                                <Check className="w-4 h-4 ml-auto text-green-600 dark:text-green-400" />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-zinc-500">
+                No questions found for this exam.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Header & Tabs */}
@@ -206,10 +402,50 @@ export default function QuestionBank() {
                 className="h-10 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-9 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500"
               />
             </div>
-            <button className="flex items-center gap-2 h-10 px-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-sm font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors">
-              <Filter className="w-4 h-4" /> Filter{" "}
-              <ChevronsUpDown className="w-3 h-3 text-zinc-400" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setFilterOpen(!filterOpen)}
+                className="flex items-center gap-2 h-10 px-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-sm font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
+              >
+                <Filter className="w-4 h-4" />
+                <span className="hidden sm:inline">
+                  {selectedSubject === "All"
+                    ? "Subject Filter"
+                    : selectedSubject}
+                </span>
+                <ChevronsUpDown className="w-3 h-3 text-zinc-400" />
+              </button>
+
+              {filterOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setFilterOpen(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-lg overflow-hidden z-50 py-1">
+                    {subjects.map((subj) => (
+                      <button
+                        key={subj}
+                        onClick={() => {
+                          setSelectedSubject(subj);
+                          setFilterOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between ${
+                          selectedSubject === subj
+                            ? "bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 font-medium"
+                            : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                        }`}
+                      >
+                        <span className="truncate">{subj}</span>
+                        {selectedSubject === subj && (
+                          <Check className="w-4 h-4" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           {/* DataTable */}
@@ -232,16 +468,17 @@ export default function QuestionBank() {
                         Loading master repository...
                       </td>
                     </tr>
-                  ) : repository.length === 0 ? (
+                  ) : filteredRepository.length === 0 ? (
                     <tr>
                       <td colSpan="5" className="p-8 text-center text-zinc-500">
-                        No documents found.
+                        No documents found matching your filters.
                       </td>
                     </tr>
                   ) : (
-                    repository.map((doc) => (
+                    filteredRepository.map((doc) => (
                       <tr
                         key={doc.id}
+                        onClick={() => openExamView(doc)}
                         className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors group cursor-pointer"
                       >
                         <td className="p-4">
@@ -358,6 +595,9 @@ export default function QuestionBank() {
 
       {/* Draw the Approval Sheet if a request is selected */}
       {renderApprovalSheet()}
+
+      {/* Draw the View Questions Modal */}
+      {renderViewModal()}
     </div>
   );
 }

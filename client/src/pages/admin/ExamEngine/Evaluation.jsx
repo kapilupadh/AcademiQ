@@ -15,6 +15,7 @@ export default function Evaluation() {
   const [activeTab, setActiveTab] = useState("completed");
   const [selectedRows, setSelectedRows] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [teacherName, setTeacherName] = useState("");
 
   const [completed, setCompleted] = useState([]);
   const [canceled, setCanceled] = useState([]);
@@ -101,6 +102,19 @@ export default function Evaluation() {
               </div>
             </div>
 
+            <div className="space-y-4">
+              <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                Class Teacher Name (Optional)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Dr. Jane Smith"
+                value={teacherName}
+                onChange={(e) => setTeacherName(e.target.value)}
+                className="w-full h-11 px-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              />
+            </div>
+
             <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-sm">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>
@@ -126,7 +140,108 @@ export default function Evaluation() {
                     { attemptIds: selectedRows, template: "standard" },
                     { headers: { Authorization: `Bearer ${token}` } },
                   );
-                  alert(res.data.message);
+
+                  const reports = res.data.reports;
+                  if (!reports || reports.length === 0) {
+                    alert("No report data received.");
+                    return;
+                  }
+
+                  let printContents = `
+                    <div style="font-family: Arial, sans-serif; background: #f9f9fb; padding: 20px;">
+                  `;
+
+                  reports.forEach((report, index) => {
+                    printContents += `
+                      <div style="background: white; border: 1px solid #ccc; padding: 40px; border-radius: 8px; max-width: 800px; margin: 0 auto; margin-bottom: 20px; page-break-after: always; position: relative;">
+                        <!-- HEADER WITH LOGO AND BRANDING -->
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 20px; border-bottom: 2px solid #8b5cf6; padding-bottom: 15px; margin-bottom: 30px;">
+                           <img src="/Icons/Dark-Logo.jpg" alt="AcademiQ Logo" style="width: 50px; height: auto; object-fit: contain;" />
+                           <div style="text-align: center;">
+                              <h1 style="color: #111827; margin: 0; font-size: 20px; font-weight: 800; text-transform: uppercase;">Dibrugarh Hanumanbax Surajmall Kanoi College (Autonomous)</h1>
+                              <p style="color: #6b7280; font-size: 14px; margin-top: 5px; font-weight: bold;">Academic Evaluation Report</p>
+                           </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+                           <div style="width: 48%;">
+                              <h3 style="color: #4c1d95; margin-bottom: 10px; font-size: 16px; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px;">Student Details</h3>
+                              <p style="margin: 5px 0;"><strong>Name:</strong> ${report.student.name}</p>
+                              <p style="margin: 5px 0;"><strong>Roll No / ID:</strong> ${report.student.rollNo}</p>
+                           </div>
+                           <div style="width: 48%;">
+                              <h3 style="color: #4c1d95; margin-bottom: 10px; font-size: 16px; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px;">Exam Details</h3>
+                              <p style="margin: 5px 0;"><strong>Exam Title:</strong> ${report.exam.title}</p>
+                              <p style="margin: 5px 0;"><strong>Subject:</strong> ${report.exam.subject}</p>
+                              <p style="margin: 5px 0;"><strong>Semester:</strong> ${report.exam.semester}</p>
+                              <p style="margin: 5px 0;"><strong>Date:</strong> ${report.exam.date}</p>
+                              <p style="margin: 5px 0;"><strong>Class Teacher:</strong> ${teacherName || "Not Assigned"}</p>
+                           </div>
+                        </div>
+
+                        <div style="margin-bottom: 30px;">
+                           <h3 style="color: #4c1d95; margin-bottom: 15px; font-size: 16px; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px;">Performance Summary</h3>
+                           
+                           <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                             <thead>
+                               <tr>
+                                 <th style="border: 1px solid #e5e7eb; padding: 10px; background: #f3f4f6; text-align: left;">Metric</th>
+                                 <th style="border: 1px solid #e5e7eb; padding: 10px; background: #f3f4f6; text-align: center;">Value</th>
+                               </tr>
+                             </thead>
+                             <tbody>
+                               <tr>
+                                 <td style="border: 1px solid #e5e7eb; padding: 10px;">Total Questions</td>
+                                 <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: center; font-weight: bold;">${report.score.totalQuestions}</td>
+                               </tr>
+                               <tr>
+                                 <td style="border: 1px solid #e5e7eb; padding: 10px; color: #16a34a;">Total Correct Answers</td>
+                                 <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: center; font-weight: bold; color: #16a34a;">${report.score.correct}</td>
+                               </tr>
+                               <tr>
+                                 <td style="border: 1px solid #e5e7eb; padding: 10px; color: #dc2626;">Total Wrong Answers</td>
+                                 <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: center; font-weight: bold; color: #dc2626;">${report.score.wrong}</td>
+                               </tr>
+                               <tr>
+                                 <td style="border: 1px solid #e5e7eb; padding: 10px; color: #d97706;">Unanswered</td>
+                                 <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: center; font-weight: bold; color: #d97706;">${report.score.unanswered}</td>
+                               </tr>
+                               <tr>
+                                 <td style="border: 1px solid #e5e7eb; padding: 10px; font-weight: bold; font-size: 16px;">Final Score</td>
+                                 <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: center; font-weight: bold; font-size: 16px; color: #4c1d95;">${report.score.totalMarks}</td>
+                               </tr>
+                             </tbody>
+                           </table>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; margin-top: 50px; padding-top: 20px;">
+                           <div style="width: 30%; border-top: 1px solid #333; text-align: center; padding-top: 5px; font-size: 14px; font-weight: bold;">Student Signature</div>
+                           <div style="width: 30%; border-top: 1px solid #333; text-align: center; padding-top: 5px; font-size: 14px; font-weight: bold;">Class Teacher Signature<br/><span style="font-weight: normal; color: #666; font-size: 12px;">${teacherName || " "}</span></div>
+                        </div>
+
+                        <!-- COPYRIGHT FOOTER -->
+                        <div style="text-align: center; margin-top: 40px; padding-top: 15px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 12px;">
+                          &copy; 2026. Generated by <strong>AcademiQ Evaluation Engine</strong>. All rights reserved. <br/>
+                          Document ID: ${report.id.substring(0, 8).toUpperCase()}
+                        </div>
+                      </div>
+                    `;
+                  });
+
+                  printContents += `</div>`;
+
+                  const printWindow = window.open("", "_blank");
+                  printWindow.document.write(`
+                    <html>
+                      <head>
+                        <title>Academic Evaluation Reports</title>
+                      </head>
+                      <body onload="setTimeout(() => { window.print(); window.close(); }, 500);">
+                        ${printContents}
+                      </body>
+                    </html>
+                  `);
+                  printWindow.document.close();
                 } catch (e) {
                   console.error("Generate reports error:", e);
                   alert("Failed to generate report cards.");

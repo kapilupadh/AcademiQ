@@ -53,13 +53,13 @@ export default function Analytics() {
         });
         const data = res.data;
         setMetricsData({
-          totalAttendees: data.totalAttendees,
-          averageScore: data.averageScore,
-          passRate: data.passRate,
-          ufmFlags: data.ufmFlags,
+          totalAttendees: data.metrics?.totalAttendees ?? 0,
+          averageScore: data.metrics?.avgScore?.replace("%", "") ?? 0,
+          passRate: data.metrics?.passRate?.replace("%", "") ?? 0,
+          ufmFlags: data.metrics?.ufmFlags ?? 0,
         });
-        setDistributionData(data.gradeDistribution);
-        setTopicData(data.topicPerformance);
+        setDistributionData(data.distributionData || []);
+        setTopicData(data.topicData || []);
       } catch (err) {
         console.error("Failed to fetch analytics:", err);
       } finally {

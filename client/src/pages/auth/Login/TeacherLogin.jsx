@@ -37,29 +37,13 @@ export default function TeacherLogin() {
       const res = await api.post(`/auth/login`, {
         login_id: formData.login_id,
         password: formData.password,
+        expected_role: 2, // Teacher Role
       });
-
-      // Check if role is teacher (2) or admin (1)
-      const role = res.data.user.role; // Now an integer: 1=Admin, 2=Teacher, 3=Student
-      if (role !== 2 && role !== 1) {
-        // Fallback for students trying to use this portal, though backend might allow it.
-        // If you want strict separation:
-        // throw new Error("This portal is for Teachers and Admins only.");
-
-        // For now, we allow them but log it.
-        console.warn("Student logged in via Teacher Portal");
-      }
 
       localStorage.setItem("user", JSON.stringify(res.data.user));
       localStorage.setItem("token", res.data.token);
 
-      if (res.data.user.role === 1) {
-        navigate("/admin/generate-id");
-      } else if (res.data.user.role === 2) {
-        navigate("/teacher/dashboard");
-      } else {
-        navigate("/dashboard");
-      }
+      navigate("/teacher/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Login Failed");
     } finally {

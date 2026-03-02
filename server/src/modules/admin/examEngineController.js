@@ -1,4 +1,4 @@
-const { Exam, ExamAttempt, Violation, Subject, User, Question, StudentSubject, MaterialRequest, sequelize } = require('../../models');
+const { Exam, ExamAttempt, Violation, Subject, User, Question, StudentSubject, MaterialRequest, StudentAnswer, sequelize } = require('../../models');
 const { Op } = require('sequelize');
 
 // --- 1. Live Monitoring & Alerts Provider ---
@@ -176,6 +176,28 @@ exports.getQuestionBankRepository = async (req, res) => {
   }
 };
 
+exports.getExamQuestionsAdmin = async (req, res) => {
+  try {
+    const { examId } = req.params;
+    
+    const exam = await Exam.findByPk(examId, {
+      attributes: ['id', 'title', 'subject', 'status', 'createdAt']
+    });
+
+    if (!exam) return res.status(404).json({ message: 'Exam not found' });
+
+    const questions = await Question.findAll({
+      where: { exam_id: examId },
+      attributes: ['id', 'question_text', 'question_type', 'image_url', 'options', 'correct_answer', 'marks']
+    });
+
+    res.json({ exam, questions });
+  } catch (error) {
+    console.error('getExamQuestionsAdmin error:', error);
+    res.status(500).json({ message: 'Error fetching exam questions' });
+  }
+};
+
 // --- 3. Student Requests APIs ---
 exports.getStudentRequests = async (req, res) => {
   try {
@@ -274,14 +296,77 @@ exports.getEvaluationStatus = async (req, res) => {
 exports.generateReportCards = async (req, res) => {
   try {
     const { attemptIds, template } = req.body;
-    if (!attemptIds || !Array.isArray(attemptIds)) {
+    if (!attemptIds || !Array.isArray(attemptIds) || attemptIds.length === 0) {
       return res.status(400).json({ message: 'Missing attempt array' });
     }
 
-    // Since real PDF generation logic requires libraries like Puppeteer/jsPDF, we'll mock the success response.
+    // Fetch the detailed Attempts with their full relationships
+    const attempts = await ExamAttempt.findAll({
+      where: { id: { [Op.in]: attemptIds } },
+      include: [
+        { model: User, as: 'student', attributes: ['id', 'full_name', 'unique_id', 'college_roll_number'] },
+        { model: Exam, attributes: ['id', 'title', 'subject', 'semester'] },
+        { 
+          model: StudentAnswer, 
+          include: [{ model: Question, attributes: ['id', 'correct_answer'] }]
+        }
+      ]
+    });
+
+    const reports = attempts.map(attempt => {
+      // Safely count
+      let totalQuestions = Array.isArray(attempt.assigned_questions) ? attempt.assigned_questions.length : 0;
+      let totalCorrect = 0;
+      let totalWrong = 0;
+      
+      // Look through their submitted answers
+      if (attempt.StudentAnswers && attempt.StudentAnswers.length > 0) {
+        attempt.StudentAnswers.forEach(ans => {
+           if (!ans.Question) return; // DB inconsistency failsafe
+           
+           if (!ans.selected_option || ans.selected_option.trim() === '') {
+              // Answer blank but recorded
+              return;
+           }
+
+           const isCorrect = String(ans.selected_option) === String(ans.Question.correct_answer);
+           if (isCorrect) {
+              totalCorrect++;
+           } else {
+              totalWrong++;
+           }
+        });
+      }
+
+      let unanswered = totalQuestions - (totalCorrect + totalWrong);
+      if (unanswered < 0) unanswered = 0;
+
+      return {
+        id: attempt.id,
+        student: {
+          name: attempt.student?.full_name || 'Unknown',
+          rollNo: attempt.student?.college_roll_number || attempt.student?.unique_id || 'N/A'
+        },
+        exam: {
+          title: attempt.Exam?.title || 'Unknown Exam',
+          subject: attempt.Exam?.subject || 'General',
+          semester: attempt.Exam?.semester || 'N/A',
+          date: attempt.end_time ? attempt.end_time.toLocaleDateString() : 'N/A'
+        },
+        score: {
+          totalMarks: attempt.score || 0,
+          totalQuestions,
+          correct: totalCorrect,
+          wrong: totalWrong,
+          unanswered: unanswered
+        }
+      };
+    });
+
     res.json({
-      message: `${attemptIds.length} Report Cards generated successfully using ${template} template.`,
-      downloadUrl: '/api/admin/evaluations/download-zip' // mocked endpoint
+      message: `${reports.length} Report Cards verified and generated successfully.`,
+      reports: reports,
+      template: template
     });
   } catch (error) {
     console.error('generateReportCards error:', error);

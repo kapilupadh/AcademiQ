@@ -258,7 +258,7 @@ export default function ExamPortal() {
                 {q.image_url && !imgError[q.id] && (
                   <div className="rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950">
                     <img
-                      src={`${(process.env.REACT_APP_API_URL || "http://localhost:5000/api").replace("/api", "")}${q.image_url}`}
+                      src={`${(api.defaults.baseURL || "http://localhost:5000/api").replace("/api", "")}${q.image_url}`}
                       alt="Question visual"
                       className="w-full max-h-72 object-contain"
                       onError={() =>

@@ -4,6 +4,8 @@ const RegistrationSession = require('../../models/RegistrationSession');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const { Op } = require('sequelize');
+const sequelize = require('../../config/database');
+const crypto = require('crypto');
 
 // ── Admin Registration ──────────────────────────────────────────────────────
 // Uses a server-held secret code instead of the unique_id flow.
@@ -11,12 +13,15 @@ const { Op } = require('sequelize');
 exports.adminRegister = async (req, res) => {
   try {
     const { full_name, username, email, password, admin_code } = req.body;
-    const expectedCode = process.env.ADMIN_SETUP_CODE || 'ACADEMIQ_ADMIN_2025';
+    const expectedCode = process.env.ADMIN_SETUP_CODE;
+    if (!expectedCode) {
+      console.error('ADMIN_SETUP_CODE environment variable is not configured');
+      return res.status(500).json({ message: 'Admin registration is not configured.' });
+    }
 
     if (!admin_code || admin_code !== expectedCode) {
       return res.status(403).json({ message: 'Invalid admin setup code. Contact the system owner.' });
     }
-
     // Check uniqueness
     if (await User.findOne({ where: { email } })) {
       return res.status(400).json({ message: 'This email is already registered.' });
@@ -133,10 +138,12 @@ exports.register = async (req, res) => {
       password, 
       full_name, 
       dob,
-      department_id 
-    } = req.body;
-
-    console.log('--- Register Attempt ---');
+    } = req.body;  
+    if (process.env.NODE_ENV === 'development') {
+      console.log('--- Register Attempt ---');
+      console.log('Payload:', { unique_id, email });
+      console.log('Current Time:', new Date());
+    }    
     console.log('Payload:', { unique_id, session_token, email });
     console.log('Checking Session for:', { unique_id, session_token });
     console.log('Current Time:', new Date());
@@ -189,39 +196,48 @@ exports.register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // 4. Create User (Ideally use Transaction)
-    // Create User
-    const newUser = await User.create({
-      unique_id,
-      username,
-      email,
-      password_hash: hashedPassword,
-      full_name,
-      dob,
-      role: idRecord.role, // Use role from UniqueId (admin, teacher, student)
-      is_active: true,
-      email_verified: false, // Default false until verify
-      registered_date: new Date(),
-      department_id: department_id || null
-    });
+    // 4. Create User using transaction
+    const t = await sequelize.transaction();
+    try {
+      // Create User
+      const newUser = await User.create({
+        unique_id,
+        username,
+        email,
+        password_hash: hashedPassword,
+        full_name,
+        dob,
+        role: idRecord.role, // Use role from UniqueId (admin, teacher, student)
+        is_active: true,
+        email_verified: false, // Default false until verify
+        registered_date: new Date(),
+        department_id: department_id || null
+      }, { transaction: t });
 
-    // Mark ID as Used
-    await idRecord.update({
-      is_used: true,
-      used_date: new Date()
-    });
+      // Mark ID as Used
+      await idRecord.update({
+        is_used: true,
+        used_date: new Date()
+      }, { transaction: t });
 
-    // Invalidate Session
-    await session.update({ status: 'COMPLETED' });
+      // Invalidate Session
+      await session.update({ status: 'COMPLETED' }, { transaction: t });
 
-    // 5. Generate JWT (Mock for now)
-    // In a real app, you would sign a token here:
-    // const token = jwt.sign({ id: newUser.id, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    
-    res.status(201).json({ 
-      message: 'Registration successful. Please login.',
-      userId: newUser.id
-    });
+      // Commit transaction
+      await t.commit();
+
+      // 5. Generate JWT (Mock for now)
+      // In a real app, you would sign a token here:
+      // const token = jwt.sign({ id: newUser.id, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      
+      res.status(201).json({ 
+        message: 'Registration successful. Please login.',
+        userId: newUser.id
+      });
+    } catch (dbError) {
+      await t.rollback();
+      throw dbError; // Pass to the outer catch handler
+    }
 
   } catch (error) {
     console.error('Registration Error:', error);
@@ -234,7 +250,7 @@ const jwt = require('jsonwebtoken');
 
 exports.login = async (req, res) => {
   try {
-    const { login_id, password } = req.body; // login_id can be username or email
+    const { login_id, password, expected_role } = req.body; // login_id can be username or email
 
     // 1. Find User
     const user = await User.findOne({
@@ -261,10 +277,18 @@ exports.login = async (req, res) => {
       return res.status(403).json({ message: 'Account is inactive. Contact Admin.' });
     }
 
+    // 3.5 Check Role Constraints (if passed by specific portal) 
+    if (expected_role && Number(user.role) !== Number(expected_role)) {
+       return res.status(403).json({ message: 'Access denied: Please use the correct login portal for your role.' });
+    }
+
     // 4. Generate Token
-    const JWT_SECRET = process.env.JWT_SECRET || 'temp_secret_key_123';
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
-    
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+      console.error('JWT_SECRET environment variable is not configured');
+      return res.status(500).json({ message: 'Authentication service is misconfigured.' });
+    }
+    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });    
     res.json({
       message: 'Login successful',
       user: {
@@ -299,7 +323,7 @@ exports.forgotPassword = async (req, res) => {
     }
 
     // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otp = crypto.randomInt(100000, 1000000).toString();
     const otpExpiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
 
     // Hash OTP for security (optional but good practice, here we store plain for simplicity/debugging as per plan to just log)
@@ -314,8 +338,9 @@ exports.forgotPassword = async (req, res) => {
       otp_expires_at: otpExpiresAt
     });
 
-    console.log(`[DEV ONLY] OTP for ${email}: ${otp}`); // For manual testing if email fails
-
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[DEV ONLY] OTP for ${email}: ${otp}`);
+    }
     // Send Email
     const emailResult = await sendOTP(email, otp);
     

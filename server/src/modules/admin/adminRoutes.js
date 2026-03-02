@@ -20,6 +20,7 @@ router.get('/dashboard/activities', authenticateToken, checkAdmin, dashboardCont
 // Exam Engine Routes (Redesigned UI)
 router.get('/exams/live-dashboard', authenticateToken, checkAdmin, examEngineController.getLiveDashboard);
 router.get('/questions/repository', authenticateToken, checkAdmin, examEngineController.getQuestionBankRepository);
+router.get('/questions/repository/:examId', authenticateToken, checkAdmin, examEngineController.getExamQuestionsAdmin);
 router.get('/questions/requests', authenticateToken, checkAdmin, examEngineController.getStudentRequests);
 router.post('/questions/requests/:id/approve', authenticateToken, checkAdmin, examEngineController.approveStudentRequest);
 router.get('/evaluations/status', authenticateToken, checkAdmin, examEngineController.getEvaluationStatus);

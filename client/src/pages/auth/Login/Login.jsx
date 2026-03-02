@@ -38,21 +38,15 @@ export default function Login() {
       const res = await api.post(`/auth/login`, {
         login_id: formData.login_id,
         password: formData.password,
+        expected_role: 3, // Student Role
       });
 
       // Store user info / token in localStorage or Context
       localStorage.setItem("user", JSON.stringify(res.data.user)); // User details
       localStorage.setItem("token", res.data.token); // JWT Token
 
-      // alert(`Welcome back, ${res.data.user.full_name}!`);
-      const role = res.data.user.role; // 1=Admin, 2=Teacher, 3=Student
-
-      if (role === 1) {
-        navigate("/admin/generate-id"); // detailed admin page
-      } else {
-        // Student and Teacher default to dashboard
-        navigate("/dashboard");
-      }
+      // Student defaults to dashboard
+      navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Login Failed");
     } finally {

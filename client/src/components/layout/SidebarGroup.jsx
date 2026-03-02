@@ -49,6 +49,8 @@ export default function SidebarGroup({
     return (
       <div className="relative group">
         <button
+          type="button"
+          aria-label={label}
           className={`
             flex items-center justify-center w-full px-3 py-2 rounded-lg transition-all duration-200
             ${hasActive ? `${colors.activeBg} ${colors.activeText}` : `text-zinc-600 dark:text-zinc-400 ${colors.hoverBg} hover:text-zinc-900 dark:hover:text-zinc-100`}

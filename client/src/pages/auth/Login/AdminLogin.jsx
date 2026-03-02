@@ -18,13 +18,10 @@ export default function AdminLogin() {
       const res = await api.post(`/auth/login`, {
         login_id: formData.login_id,
         password: formData.password,
+        expected_role: 1, // Admin Role
       });
 
       const user = res.data.user;
-      if (user.role !== 1) {
-        setError("Access denied. This portal is for administrators only.");
-        return;
-      }
 
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("token", res.data.token);

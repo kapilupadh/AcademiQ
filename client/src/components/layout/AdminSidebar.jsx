@@ -76,7 +76,7 @@ const PRIMARY = [
 ];
 
 /* ─── SECONDARY NAV (all accordion) ────────────────────────────── */
-const SECONDARY = [
+const getSecondaryNav = (notificationsCount = 0) => [
   {
     key: "dashboard-details",
     label: "Dashboard Details",
@@ -154,7 +154,7 @@ const SECONDARY = [
     icon: MessageSquare,
     badge: {
       type: "count",
-      text: "5",
+      text: String(notificationsCount || 0),
       style: "bg-violet-600 text-white",
     },
     sub: [
@@ -475,6 +475,7 @@ function SidebarContent({
   showClose,
   onClose,
   mobileView,
+  notificationsCount = 0,
 }) {
   const { isDark } = useTheme();
   const tk = isDark ? T.dark : T.light;
@@ -608,7 +609,7 @@ function SidebarContent({
       >
         <SectionLabel text="Management" collapsed={collapsed} tk={tk} />
         <div className="space-y-0.5">
-          {SECONDARY.map((item) => (
+          {getSecondaryNav(notificationsCount).map((item) => (
             <AccordionGroup
               key={item.key}
               groupKey={item.key}
@@ -694,6 +695,31 @@ export default function AdminSidebar() {
   });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState({});
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchUnreadCount = async () => {
+      try {
+        setIsLoading(true);
+        // Simulate API call to fetch unread count
+        // const res = await api.get('/admin/notifications/unread');
+        // if (isMounted) setUnreadCount(res.data.count || 0);
+
+        if (isMounted) setUnreadCount(0); // Fallback to 0
+      } catch (error) {
+        console.error("Failed to fetch unread count:", error);
+        if (isMounted) setUnreadCount(0);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+    fetchUnreadCount();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     injectFont();
@@ -752,6 +778,7 @@ export default function AdminSidebar() {
                 showClose
                 onClose={() => setMobileOpen(false)}
                 mobileView
+                notificationsCount={isLoading ? 0 : unreadCount}
               />
             </motion.aside>
           </>
@@ -774,6 +801,7 @@ export default function AdminSidebar() {
           showClose={false}
           onClose={null}
           mobileView={false}
+          notificationsCount={isLoading ? 0 : unreadCount}
         />
       </motion.aside>
     </>
