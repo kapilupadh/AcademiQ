@@ -138,15 +138,13 @@ exports.register = async (req, res) => {
       password, 
       full_name, 
       dob,
-    } = req.body;  
+      department_id,
+    } = req.body;
     if (process.env.NODE_ENV === 'development') {
       console.log('--- Register Attempt ---');
       console.log('Payload:', { unique_id, email });
       console.log('Current Time:', new Date());
-    }    
-    console.log('Payload:', { unique_id, session_token, email });
-    console.log('Checking Session for:', { unique_id, session_token });
-    console.log('Current Time:', new Date());
+    }
 
     // 1. Validate Session Token
     const session = await RegistrationSession.findOne({
@@ -378,8 +376,11 @@ exports.verifyOTP = async (req, res) => {
     }
 
     // OTP Verified. Generate Reset Token (valid for 5 mins)
-    // NOTE: In production, store this secret in .env
-    const JWT_SECRET = process.env.JWT_SECRET || 'temp_secret_key_123';
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+      console.error('[verifyOTP] JWT_SECRET is not configured');
+      return res.status(500).json({ message: 'Authentication service misconfigured' });
+    }
     
     const resetToken = jwt.sign(
       { id: user.id, email: user.email, purpose: 'password_reset' }, 
@@ -406,7 +407,11 @@ exports.resetPassword = async (req, res) => {
   try {
     const { resetToken, newPassword } = req.body;
 
-    const JWT_SECRET = process.env.JWT_SECRET || 'temp_secret_key_123';
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+      console.error('[resetPassword] JWT_SECRET is not configured');
+      return res.status(500).json({ message: 'Authentication service misconfigured' });
+    }
 
     let decoded;
     try {

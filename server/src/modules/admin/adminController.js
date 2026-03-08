@@ -28,16 +28,15 @@ exports.excelUpload = excelUpload;
 
 // ── Single ID generation (existing) ────────────────────────────────────────
 exports.generateUniqueId = async (req, res) => {
+  const isDev = process.env.NODE_ENV === 'development';
   try {
-    console.log('[generateUniqueId] Request received. Body:', req.body);
+    if (isDev) console.log('[generateUniqueId] Request received. Body:', req.body);
     const { role, name, email, expiry_days } = req.body;
 
     if (!role) {
-      console.error('[generateUniqueId] Role is missing.');
       return res.status(400).json({ message: 'Role is required' });
     }
     if (role === 'teacher' && (!name || !email)) {
-      console.error('[generateUniqueId] Missing name or email for teacher role.');
       return res.status(400).json({ message: 'Name and Email are required for Teacher ID generation.' });
     }
 
@@ -54,12 +53,9 @@ exports.generateUniqueId = async (req, res) => {
     const year = new Date().getFullYear();
     const randomPart = Math.floor(1000 + Math.random() * 9000);
     const uniqueString = `${prefix}-${year}-${randomPart}`;
-    
-    console.log('[generateUniqueId] Generated ID string:', uniqueString);
 
     const existing = await UniqueId.findOne({ where: { unique_id: uniqueString } });
     if (existing) {
-      console.error('[generateUniqueId] ID Collision detected for string:', uniqueString);
       return res.status(409).json({ message: 'ID Collision. Try again.' });
     }
 
@@ -67,11 +63,6 @@ exports.generateUniqueId = async (req, res) => {
       ? new Date(Date.now() + expiry_days * 24 * 60 * 60 * 1000)
       : null;
 
-    console.log('[generateUniqueId] Attempting database insert. Payload:', {
-      unique_id: uniqueString, role: roleInt, student_name: name || null, student_email: email || null,
-      expiry_date: expiryDate, status: 'ACTIVE', generated_by: req.user ? req.user.id : null
-    });
-    
     let newId;
     try {
       newId = await UniqueId.create({
@@ -83,29 +74,20 @@ exports.generateUniqueId = async (req, res) => {
         status: 'ACTIVE',
         generated_by: req.user ? req.user.id : null,
       });
-      console.log('[generateUniqueId] Database insert successful. Inserted PK:', newId.id);
+      if (isDev) console.log('[generateUniqueId] Insert successful. ID:', newId.unique_id);
     } catch (dbError) {
-      console.error('[generateUniqueId] FULL DB INSERT ERROR OBJECT:', dbError);
+      console.error('[generateUniqueId] DB insert error:', dbError.message);
       return res.status(500).json({ message: 'Database insert failed. Check logs.' });
     }
 
-    console.log('[generateUniqueId] Explicitly verifying insert by running a SELECT query...');
-    const verifyInsert = await UniqueId.findOne({ where: { unique_id: uniqueString } });
-    if (!verifyInsert) {
-      console.error('[generateUniqueId] Verification failed! ID was not found after insert. Likely rolled back.');
-      return res.status(500).json({ message: 'Verification failed. Database rollback suspected.' });
-    }
-    console.log('[generateUniqueId] Verification successful. Confirmed ID is securely stored in DB.');
-
-    console.log('[generateUniqueId] Sending success response to frontend...');
     res.status(201).json({
       message: 'Unique ID generated successfully',
       unique_id: newId.unique_id,
-      role: newId.role, // will return 1, 2 or 3
+      role: newId.role,
       bound_to: { name: newId.student_name, email: newId.student_email },
     });
   } catch (error) {
-    console.error('[generateUniqueId] FULL FUNCTION ERROR OBJECT:', error);
+    console.error('[generateUniqueId] Error:', error.message);
     res.status(500).json({ message: 'Server Error' });
   }
 };

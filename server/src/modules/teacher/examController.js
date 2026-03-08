@@ -82,7 +82,11 @@ const generateOtp = () => {
 
 exports.getTeacherExams = async (req, res) => {
   try {
+    const isAdmin = req.user.role === 1;
+    // Admins see all exams; teachers only see their own
+    const where = isAdmin ? {} : { created_by: req.user.id };
     const exams = await Exam.findAll({
+      where,
       order: [['createdAt', 'DESC']]
     });
     res.json(exams);
@@ -129,7 +133,8 @@ exports.createExam = async (req, res) => {
       passing_percentage, subject, type, start_time,
       scheduled_start_at: scheduled_start_at || null,
       scheduled_end_at: scheduled_end_at || null,
-      status: 'Draft'
+      status: 'Draft',
+      created_by: req.user.id  // Track ownership
     });
 
     // Notify students if schedule provided
@@ -151,6 +156,10 @@ exports.updateExam = async (req, res) => {
     const exam = await Exam.findByPk(id);
     if (!exam) return res.status(404).json({ message: 'Exam not found' });
     if (exam.status === 'Completed') return res.status(400).json({ message: 'Cannot update completed exam' });
+    // Ownership check — admins can update any exam, teachers only their own
+    if (req.user.role !== 1 && exam.created_by !== req.user.id) {
+      return res.status(403).json({ message: 'Access denied. You can only edit your own exams.' });
+    }
 
     // Validate schedule if being updated
     const newStart = updateData.scheduled_start_at;
@@ -260,8 +269,19 @@ exports.startExam = async (req, res) => {
     const { id } = req.params;
     const exam = await Exam.findByPk(id);
     if (!exam) return res.status(404).json({ message: 'Exam not found' });
-    if (exam.status !== 'Scheduled' && exam.status !== 'Draft') {
-        return res.status(400).json({ message: 'Exam already started or completed' });
+
+    // Only a Scheduled exam (OTP generated) can go Live
+    if (exam.status !== 'Scheduled') {
+      if (exam.status === 'Draft') {
+        return res.status(400).json({ message: 'Cannot start a Draft exam. Generate an OTP first to move it to Scheduled.' });
+      }
+      return res.status(400).json({ message: 'Exam already started or completed' });
+    }
+
+    // Guard: ensure questions exist before going Live
+    const questionCount = await Question.count({ where: { exam_id: id } });
+    if (questionCount === 0) {
+      return res.status(400).json({ message: 'Cannot start exam: no questions have been added yet.' });
     }
 
     await exam.update({ status: 'Live', start_time: new Date() });
@@ -333,7 +353,9 @@ exports.endExam = async (req, res) => {
     await exam.update({ status: 'Completed', is_active: false });
 
     // Auto-submit all active and waiting attempts
-    await ExamAttempt.update(
+    // Sequelize update() returns [affectedCount] — capture it directly
+    // (avoids a separate count query that would include previously force-submitted attempts)
+    const [affectedCount] = await ExamAttempt.update(
       { status: 'FORCE_SUBMITTED' },
       {
         where: {
@@ -342,10 +364,6 @@ exports.endExam = async (req, res) => {
         }
       }
     );
-
-    const affectedCount = await ExamAttempt.count({
-      where: { exam_id: id, status: 'FORCE_SUBMITTED' }
-    });
 
     res.json({ message: 'Exam force-ended successfully', affectedStudents: affectedCount });
   } catch (error) {

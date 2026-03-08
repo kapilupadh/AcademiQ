@@ -15,6 +15,7 @@ router.get('/exams', teacherExamController.getTeacherExams);
 router.post('/exams', teacherExamController.createExam);
 router.get('/exams/:id', teacherExamController.getExamDetails);
 router.put('/exams/:id', teacherExamController.updateExam);
+router.delete('/exams/:id', teacherExamController.deleteExam);
 router.post('/exams/:id/questions', teacherExamController.addOrUpdateQuestions);
 router.post('/exams/:id/generate-otp', teacherExamController.generateExamOtp);
 router.post('/exams/:id/start', teacherExamController.startExam);

@@ -1,11 +1,25 @@
-const { Exam, Question, ExamAttempt, StudentAnswer, Violation, sequelize } = require('../../models');
+const { Exam, Question, ExamAttempt, StudentAnswer, Violation, User, sequelize } = require('../../models');
 const { Op } = require('sequelize');
 
 exports.getAvailableExams = async (req, res) => {
   try {
+    // Fetch the student's department so we can filter relevant exams
+    const student = await User.findByPk(req.user.id, { attributes: ['department_id'] });
+
+    const where = { is_active: true };
+
+    // If the exam has a department set, only show it to students from that department.
+    // Exams with no department_id are shown to everyone (e.g. general college-wide tests).
+    if (student?.department_id) {
+      where[Op.or] = [
+        { department_id: student.department_id },
+        { department_id: null }
+      ];
+    }
+
     const exams = await Exam.findAll({
-      where: { is_active: true },
-      attributes: ['id', 'title', 'description', 'duration_minutes', 'total_questions_to_ask', 'status', 'subject', 'type', 'passing_percentage']
+      where,
+      attributes: ['id', 'title', 'description', 'duration_minutes', 'total_questions_to_ask', 'status', 'subject', 'type', 'passing_percentage', 'scheduled_start_at']
     });
     res.json(exams);
   } catch (error) {
@@ -272,5 +286,113 @@ exports.logViolation = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ message: 'Error logging violation', error: error.message });
+  }
+};
+
+// GET /api/exam/results — all past attempts for the logged-in student
+exports.getMyResults = async (req, res) => {
+  const studentId = req.user.id;
+  try {
+    const attempts = await ExamAttempt.findAll({
+      where: {
+        student_id: studentId,
+        status: { [Op.in]: ['SUBMITTED', 'AUTO_SUBMITTED', 'FORCE_SUBMITTED', 'TERMINATED', 'ABSENT'] }
+      },
+      include: [{
+        model: Exam,
+        attributes: ['id', 'title', 'subject', 'type', 'passing_percentage', 'total_questions_to_ask']
+      }],
+      order: [['updatedAt', 'DESC']]
+    });
+
+    const results = attempts.map(a => {
+      const totalQuestions = Array.isArray(a.assigned_questions) ? a.assigned_questions.length : 0;
+      const passed = a.score !== null && a.Exam
+        ? (a.score / (totalQuestions || 1)) * 100 >= a.Exam.passing_percentage
+        : false;
+
+      return {
+        attemptId: a.id,
+        examId: a.exam_id,
+        examTitle: a.Exam?.title || 'Unknown',
+        subject: a.Exam?.subject || 'N/A',
+        type: a.Exam?.type || 'N/A',
+        score: a.score,
+        totalQuestions,
+        status: a.status,
+        passed,
+        submittedAt: a.updatedAt
+      };
+    });
+
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching results', error: error.message });
+  }
+};
+
+// GET /api/exam/:examId/result — detailed result for one exam
+exports.getMyExamResult = async (req, res) => {
+  const studentId = req.user.id;
+  const { examId } = req.params;
+  try {
+    const attempt = await ExamAttempt.findOne({
+      where: { student_id: studentId, exam_id: examId },
+      include: [{
+        model: Exam,
+        attributes: ['id', 'title', 'subject', 'type', 'passing_percentage']
+      }]
+    });
+
+    if (!attempt) return res.status(404).json({ message: 'No attempt found for this exam' });
+
+    const isFinished = ['SUBMITTED', 'AUTO_SUBMITTED', 'FORCE_SUBMITTED', 'TERMINATED', 'ABSENT'].includes(attempt.status);
+    if (!isFinished) {
+      return res.status(400).json({ message: 'Exam not yet submitted' });
+    }
+
+    // Fetch student's answers with correct answers for review
+    const answers = await StudentAnswer.findAll({
+      where: { attempt_id: attempt.id },
+      include: [{
+        model: Question,
+        attributes: ['id', 'question_text', 'options', 'correct_answer', 'marks', 'image_url']
+      }]
+    });
+
+    const answerReview = answers.map(a => ({
+      questionId: a.question_id,
+      questionText: a.Question?.question_text,
+      options: a.Question?.options,
+      selectedOption: a.selected_option,
+      correctAnswer: a.Question?.correct_answer,
+      marks: a.Question?.marks || 1,
+      isCorrect: a.selected_option === a.Question?.correct_answer
+    }));
+
+    const totalQuestions = Array.isArray(attempt.assigned_questions) ? attempt.assigned_questions.length : 0;
+    const passed = attempt.score !== null && attempt.Exam
+      ? (attempt.score / (totalQuestions || 1)) * 100 >= attempt.Exam.passing_percentage
+      : false;
+
+    res.json({
+      attemptId: attempt.id,
+      exam: {
+        id: attempt.Exam?.id,
+        title: attempt.Exam?.title,
+        subject: attempt.Exam?.subject,
+        type: attempt.Exam?.type,
+        passingPercentage: attempt.Exam?.passing_percentage
+      },
+      score: attempt.score,
+      totalQuestions,
+      status: attempt.status,
+      passed,
+      violationCount: attempt.violation_count,
+      submittedAt: attempt.updatedAt,
+      answerReview
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching result', error: error.message });
   }
 };

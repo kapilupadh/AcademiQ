@@ -28,8 +28,10 @@ exports.getLiveDashboard = async (req, res) => {
       let timeRemaining = "Pending";
       if (exam.status === 'Live' && exam.start_time) {
          const endTime = new Date(exam.start_time.getTime() + exam.duration_minutes * 60000);
-         const diffMins = Math.round((endTime - new Date()) / 60000);
-         timeRemaining = diffMins > 0 ? `${diffMins}m ${Math.floor(Math.random() * 60)}s` : 'Ended';
+         const diffMs = endTime - new Date();
+         const diffMins = Math.floor(diffMs / 60000);
+         const diffSecs = Math.floor((diffMs % 60000) / 1000);
+         timeRemaining = diffMs > 0 ? `${diffMins}m ${diffSecs}s` : 'Ended';
       }
 
       return {
@@ -252,16 +254,29 @@ exports.getEvaluationStatus = async (req, res) => {
       },
       include: [
         { model: User, as: 'student', attributes: ['id', 'full_name'] },
-        { model: Exam, attributes: ['id', 'title'] },
+        { model: Exam, attributes: ['id', 'title', 'total_questions_to_ask'] },
         { model: Violation, attributes: ['type'] }
       ],
       order: [['end_time', 'DESC']]
     });
 
+    // Build a cache of max scores per exam to avoid N+1 queries
+    const examMaxScoreCache = {};
+    const getMaxScore = async (examId) => {
+      if (examMaxScoreCache[examId] !== undefined) return examMaxScoreCache[examId];
+      const result = await Question.findAll({
+        where: { exam_id: examId },
+        attributes: ['marks']
+      });
+      const total = result.reduce((sum, q) => sum + (q.marks || 1), 0);
+      examMaxScoreCache[examId] = total || 'N/A';
+      return examMaxScoreCache[examId];
+    };
+
     const completed = [];
     const canceled = [];
 
-    attempts.forEach(attempt => {
+    for (const attempt of attempts) {
       const isCanceled = attempt.status === 'TERMINATED' || attempt.status === 'ABSENT' || attempt.Violations?.length > 3;
 
       if (isCanceled) {
@@ -274,17 +289,18 @@ exports.getEvaluationStatus = async (req, res) => {
           date: attempt.end_time ? attempt.end_time.toLocaleDateString() + ' ' + attempt.end_time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'
         });
       } else {
+        const maxScore = attempt.exam_id ? await getMaxScore(attempt.exam_id) : 'N/A';
         completed.push({
           id: attempt.id,
           studentId: attempt.student_id ? attempt.student_id.substring(0, 8).toUpperCase() : 'UNKNOWN',
           name: attempt.student?.full_name || 'Unknown',
           exam: attempt.Exam?.title || 'Unknown',
-          score: `${attempt.score}/100`, // Assume max score 100 for now
+          score: `${attempt.score}/${maxScore}`,
           gradedBy: 'AI Engine',
           date: attempt.end_time ? attempt.end_time.toLocaleDateString()  + ' ' + attempt.end_time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'
         });
       }
-    });
+    }
 
     res.json({ completed, canceled });
   } catch (error) {
@@ -440,5 +456,3 @@ exports.getPostExamAnalytics = async (req, res) => {
     res.status(500).json({ message: 'Error fetching analytics' });
   }
 };
-
-

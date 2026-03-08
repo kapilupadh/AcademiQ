@@ -84,6 +84,11 @@ const Exam = sequelize.define('Exam', {
     allowNull: true,
     comment: 'FK to Subject — used for enrollment-level email filtering',
   },
+  created_by: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    comment: 'User ID of the teacher who created this exam',
+  },
 }, {
   timestamps: true,
   tableName: 'exams'

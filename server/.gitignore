@@ -1,0 +1,26 @@
+# Environment variables — NEVER commit this
+.env
+.env.local
+.env.production
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+error.log
+logs/
+
+# Uploads (user-generated content)
+public/uploads/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build output
+dist/
+build/
+
+# Misc
+out.json
