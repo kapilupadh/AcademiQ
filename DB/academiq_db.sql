@@ -1,6 +1,3 @@
---
--- PostgreSQL database dump
---
 
 \restrict yGEc5LDsUhP4QU7qLA3yJZHvR22fZLZyZBg2VwtkHLEu4f1jLm0iSxuzEkgMXle
 

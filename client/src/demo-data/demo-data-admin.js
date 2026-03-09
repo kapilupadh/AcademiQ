@@ -23,7 +23,7 @@ export const platformStats = [
     label: "Active Teachers",
     value: "86",
     delta: "+3%",
-    deltaType: "positive",
+    deltaType: "positive", 
     icon: "GraduationCap",
     accentColor: "violet",
   },

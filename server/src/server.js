@@ -46,7 +46,7 @@ const startServer = async () => {
     
     // Sync models (force: false means it won't drop existing tables)
     // Use { alter: true } only in dev if you want to update columns without dropping
-    await sequelize.sync({ alter: true }); 
+    await sequelize.sync({ alter: false });
     console.log('✅ Models synchronized.');
 
     app.listen(PORT, "0.0.0.0", () => {

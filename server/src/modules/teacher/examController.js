@@ -371,3 +371,28 @@ exports.endExam = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+exports.deleteExam = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const exam = await Exam.findByPk(id);
+    
+    if (!exam) return res.status(404).json({ message: 'Exam not found' });
+    
+    // Ownership check — admins can delete any exam, teachers only their own
+    if (req.user.role !== 1 && exam.created_by !== req.user.id) {
+      return res.status(403).json({ message: 'Access denied. You can only delete your own exams.' });
+    }
+
+    // Optional: Prevent deleting exams that are already live or completed
+    if (exam.status === 'Live' || exam.status === 'Completed') {
+        return res.status(400).json({ message: 'Cannot delete an exam that is currently live or already completed.' });
+    }
+
+    await exam.destroy();
+    
+    res.json({ message: 'Exam deleted successfully' });
+  } catch (error) {
+    console.error('deleteExam error:', error);
+    res.status(500).json({ message: 'Server error deleting exam' });
+  }
+};

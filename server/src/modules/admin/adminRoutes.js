@@ -16,6 +16,7 @@ router.get('/dashboard/stats', authenticateToken, checkAdmin, dashboardControlle
 router.get('/dashboard/trends', authenticateToken, checkAdmin, dashboardController.getSessionalTrends);
 router.get('/dashboard/heatmap', authenticateToken, checkAdmin, dashboardController.getAttendanceHeatmap);
 router.get('/dashboard/activities', authenticateToken, checkAdmin, dashboardController.getRecentActivities);
+router.get('/dashboard/overview', authenticateToken, checkAdmin, dashboardController.getDashboardOverview);
 
 // Exam Engine Routes (Redesigned UI)
 router.get('/exams/live-dashboard', authenticateToken, checkAdmin, examEngineController.getLiveDashboard);
