@@ -1,3 +1,4 @@
+// client/sec/pages/student/Dashbaord/Dashboard.jsx
 import React, { useEffect, useState } from "react";
 import { BookOpen, Calendar, Clock, Award, CalendarClock } from "lucide-react";
 import api from "../../../services/api";

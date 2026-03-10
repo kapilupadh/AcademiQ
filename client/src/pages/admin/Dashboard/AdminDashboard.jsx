@@ -61,6 +61,14 @@ function Panel({ children, className = "" }) {
   );
 }
 
+function Card({ children, className = "" }) {
+  return (
+    <div className={`rounded-xl border border-white/10 bg-white/[0.02] shadow-sm ${className}`}>
+      {children}
+    </div>
+  );
+}
+
 function SectionHeading({ children }) {
   return (
     <h3 className="font-semibold leading-none tracking-tight text-slate-50 mb-4">
@@ -87,30 +95,25 @@ function DeltaBadge({ delta, deltaType }) {
   );
 }
 
-// ── Fixed Core Shadcn Card Primitives ─────────────────────────────────────────
-
-// ── Fixed Precise Shadcn KPI Cards ───────────────────────────────────────────
+// ── KPI Stat Card ─────────────────────────────────────────────────────────────
 function StatCard({ stat }) {
   const Icon = ICON_MAP[stat.icon] || Activity;
   return (
     <Card>
-      {/* Tight header: p-6 pb-2 */}
       <div className="flex flex-row items-center justify-between space-y-0 p-6 pb-2">
         <h3 className="tracking-tight text-sm font-medium text-[var(--muted-foreground)]">
           {stat.label}
         </h3>
         <Icon className="h-4 w-4 text-[var(--muted-foreground)]" />
       </div>
-      {/* Content: p-6 pt-0 */}
       <div className="p-6 pt-0">
-        {/* Using var(--fg) ensures the number is dark in light mode and light in dark mode */}
         <div className="text-2xl font-bold text-[var(--fg)] tracking-tight">
           {stat.value}
         </div>
         <p className="text-xs mt-1 flex items-center gap-1">
           <DeltaBadge delta={stat.delta} deltaType={stat.deltaType} />
           <span className="text-[var(--muted-foreground)]">
-             {stat.key === 'attendance' ? 'vs yesterday' : 'vs last month'}
+            {stat.key === "attendance" ? "vs yesterday" : "vs last month"}
           </span>
         </p>
       </div>
@@ -133,6 +136,7 @@ function CustomTooltip({ active, payload, label }) {
     </div>
   );
 }
+
 function DonutLegend({ data }) {
   return (
     <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-4">
@@ -160,6 +164,7 @@ function SkeletonCard() {
     </div>
   );
 }
+
 // ── MAIN DASHBOARD ────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const { isDark } = useTheme();
@@ -167,7 +172,6 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Dashboard data state
   const [stats, setStats] = useState(null);
   const [upcomingExams, setUpcomingExams] = useState([]);
   const [departmentDistribution, setDepartmentDistribution] = useState([]);
@@ -203,24 +207,23 @@ export default function AdminDashboard() {
     fetchOverview();
   }, []);
 
-  // ── Build platformStats from real API data ──────────────────────────────────
   const platformStats = stats
     ? [
-      { key: "students", label: "Total Students", value: stats.totalStudents, delta: "Live", deltaType: "neutral", icon: "Users", accentColor: "violet" },
-      { key: "teachers", label: "Active Teachers", value: stats.activeTeachers, delta: "Live", deltaType: "neutral", icon: "GraduationCap", accentColor: "violet" },
-      { key: "exams", label: "Active Exams", value: stats.currentExams, delta: "Live", deltaType: stats.currentExams > 0 ? "positive" : "neutral", icon: "FileText", accentColor: "violet" },
-      { key: "avg", label: "Avg Score", value: `${stats.avgSessionalMarks}`, delta: "All Time", deltaType: "neutral", icon: "TrendingUp", accentColor: "violet" },
-      { key: "attendance", label: "Today's Attendance", value: `${stats.attendancePercentage}%`, delta: "Today", deltaType: parseFloat(stats.attendancePercentage) >= 75 ? "positive" : "negative", icon: "Building2", accentColor: "violet" },
-      { key: "violations", label: "UFM Violations", value: stats.totalViolations, delta: "All Time", deltaType: stats.totalViolations > 0 ? "negative" : "neutral", icon: "AlertTriangle", accentColor: stats.totalViolations > 0 ? "red" : "violet" },
-    ]
+        { key: "students", label: "Total Students", value: stats.totalStudents, delta: "Live", deltaType: "neutral", icon: "Users" },
+        { key: "teachers", label: "Active Teachers", value: stats.activeTeachers, delta: "Live", deltaType: "neutral", icon: "GraduationCap" },
+        { key: "exams", label: "Active Exams", value: stats.currentExams, delta: "Live", deltaType: stats.currentExams > 0 ? "positive" : "neutral", icon: "FileText" },
+        { key: "avg", label: "Avg Score", value: `${stats.avgSessionalMarks}`, delta: "All Time", deltaType: "neutral", icon: "TrendingUp" },
+        { key: "attendance", label: "Today's Attendance", value: `${stats.attendancePercentage}%`, delta: "Today", deltaType: parseFloat(stats.attendancePercentage) >= 75 ? "positive" : "negative", icon: "Building2" },
+        { key: "violations", label: "UFM Violations", value: stats.totalViolations, delta: "All Time", deltaType: stats.totalViolations > 0 ? "negative" : "neutral", icon: "AlertTriangle" },
+      ]
     : [];
 
-  // ── CSS variable injection ──────────────────────────────────────────────────
   const cssVars = useMemo(() => ({
     "--panel-bg": isDark ? "#0f1117" : "#ffffff",
     "--border": isDark ? "rgb(39,39,42)" : "rgb(228,228,231)",
     "--fg": isDark ? "#f4f4f5" : "#18181b",
     "--muted": isDark ? "#71717a" : "#71717a",
+    "--muted-foreground": isDark ? "#71717a" : "#71717a",
   }), [isDark]);
 
   const chartTheme = {
@@ -233,7 +236,6 @@ export default function AdminDashboard() {
     catch { return "Admin"; }
   })();
 
-  // ── Scheduled exams count for subtitle ─────────────────────────────────────
   const scheduledCount = stats?.currentExams || 0;
 
   return (
@@ -249,20 +251,15 @@ export default function AdminDashboard() {
           </h1>
           <p className="text-sm text-slate-400 flex items-center gap-2">
             <span className={`w-2 h-2 rounded-full ${loading ? "bg-amber-500" : "bg-emerald-500 animate-pulse"}`} />
-            {loading
-              ? "Loading dashboard data..."
-              : scheduledCount > 0
-                ? `AcademiQ is running — ${scheduledCount} exam${scheduledCount > 1 ? "s" : ""} active`
-                : "AcademiQ is running — no active exams right now"}
+            {loading ? "Loading data..." : scheduledCount > 0 ? `AcademiQ is running — ${scheduledCount} active` : "AcademiQ is running — no active exams"}
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm font-medium text-slate-400 bg-white/[0.02] border border-white/10 px-4 py-2 rounded-md shadow-sm">
-          <CalendarDays size={16} className="text-slate-400" />
+          <CalendarDays size={16} />
           {getFormattedDate()}
         </div>
       </div>
 
-      {/* ── Error Banner ───────────────────────────────────────────────────── */}
       {error && (
         <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
           ⚠ {error}
@@ -277,14 +274,12 @@ export default function AdminDashboard() {
         }
       </div>
 
-      {/* ── Charts Row 1: Enrollment Trend + Department Donut ──────────────── */}
+      {/* ── Charts Row 1 ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Panel className="lg:col-span-2 p-5">
           <SectionHeading>Student Enrollment Trend</SectionHeading>
           {loading ? (
-            <div className="h-[240px] flex items-center justify-center text-[var(--muted)]">
-              <Loader2 size={24} className="animate-spin" />
-            </div>
+            <div className="h-[240px] flex items-center justify-center"><Loader2 className="animate-spin" /></div>
           ) : (
             <ResponsiveContainer width="100%" height={240}>
               <AreaChart data={enrollmentTrend} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
@@ -293,17 +288,13 @@ export default function AdminDashboard() {
                     <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
                     <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
                   </linearGradient>
-                  <linearGradient id="gradNew" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
-                  </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} vertical={false} />
                 <XAxis dataKey="month" tick={{ fill: chartTheme.axis, fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: chartTheme.axis, fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip content={props => <CustomTooltip {...props} isDark={isDark} />} />
-                <Area type="monotone" dataKey="totalActive" name="Total Active" stroke="#8b5cf6" strokeWidth={2} fill="url(#gradTotal)" dot={false} activeDot={{ r: 4 }} />
-                <Area type="monotone" dataKey="newEnrollments" name="New Enrollments" stroke="#06b6d4" strokeWidth={2} fill="url(#gradNew)" dot={false} activeDot={{ r: 4 }} />
+                <Tooltip content={props => <CustomTooltip {...props} />} />
+                <Area type="monotone" dataKey="totalActive" name="Total Active" stroke="#8b5cf6" fill="url(#gradTotal)" />
+                <Area type="monotone" dataKey="newEnrollments" name="New Enrollments" stroke="#06b6d4" fill="transparent" />
               </AreaChart>
             </ResponsiveContainer>
           )}
@@ -312,22 +303,15 @@ export default function AdminDashboard() {
         <Panel className="p-5 flex flex-col">
           <SectionHeading>Department Distribution</SectionHeading>
           {loading ? (
-            <div className="h-[200px] flex items-center justify-center text-[var(--muted)]">
-              <Loader2 size={24} className="animate-spin" />
-            </div>
-          ) : departmentDistribution.length === 0 ? (
-            <div className="h-[200px] flex items-center justify-center text-[var(--muted)] text-sm">
-              No department data yet
-            </div>
+            <div className="h-[200px] flex items-center justify-center"><Loader2 className="animate-spin" /></div>
           ) : (
             <>
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
-                  <Pie data={departmentDistribution} cx="50%" cy="50%" innerRadius={55} outerRadius={80}
-                    dataKey="studentCount" strokeWidth={0} paddingAngle={3}>
+                  <Pie data={departmentDistribution} cx="50%" cy="50%" innerRadius={55} outerRadius={80} dataKey="studentCount" strokeWidth={0} paddingAngle={3}>
                     {departmentDistribution.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip content={props => <CustomTooltip {...props} isDark={isDark} />} formatter={v => [v, "Students"]} />
+                  <Tooltip content={props => <CustomTooltip {...props} />} />
                 </PieChart>
               </ResponsiveContainer>
               <DonutLegend data={departmentDistribution} />
@@ -336,134 +320,92 @@ export default function AdminDashboard() {
         </Panel>
       </div>
 
-      {/* ── Charts Row 2: Attendance + Exam Performance ────────────────────── */}
+      {/* ── Charts Row 2 ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Panel className="p-5">
           <SectionHeading>Attendance Trend (This Week)</SectionHeading>
-          {loading ? (
-            <div className="h-[230px] flex items-center justify-center text-[var(--muted)]"><Loader2 size={24} className="animate-spin" /></div>
-          ) : (
-            <ResponsiveContainer width="100%" height={230}>
-              <BarChart data={attendanceTrend} margin={{ top: 5, right: 10, left: -20, bottom: 0 }} barGap={3}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} vertical={false} />
-                <XAxis dataKey="day" tick={{ fill: chartTheme.axis, fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 100]} tick={{ fill: chartTheme.axis, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
-                <Tooltip content={props => <CustomTooltip {...props} isDark={isDark} />} />
-                <Bar dataKey="studentAttendance" name="Students" fill="#8b5cf6" radius={[3, 3, 0, 0]} maxBarSize={14} />
-                <Bar dataKey="overall" name="Overall" fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={14} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
+          <ResponsiveContainer width="100%" height={230}>
+            <BarChart data={attendanceTrend} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} vertical={false} />
+              <XAxis dataKey="day" tick={{ fill: chartTheme.axis, fontSize: 11 }} />
+              <YAxis domain={[0, 100]} tick={{ fill: chartTheme.axis, fontSize: 11 }} tickFormatter={v => `${v}%`} />
+              <Tooltip content={props => <CustomTooltip {...props} />} />
+              <Bar dataKey="studentAttendance" name="Students" fill="#8b5cf6" radius={[3, 3, 0, 0]} maxBarSize={14} />
+              <Bar dataKey="overall" name="Overall" fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={14} />
+            </BarChart>
+          </ResponsiveContainer>
         </Panel>
 
         <Panel className="p-5">
           <SectionHeading>Exam Performance Summary</SectionHeading>
-          {loading ? (
-            <div className="h-[230px] flex items-center justify-center text-[var(--muted)]"><Loader2 size={24} className="animate-spin" /></div>
-          ) : examPerformance.length === 0 ? (
-            <div className="h-[230px] flex items-center justify-center text-[var(--muted)] text-sm">No exam results yet</div>
-          ) : (
-            <ResponsiveContainer width="100%" height={230}>
-              <LineChart data={examPerformance} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} vertical={false} />
-                <XAxis dataKey="examName" tick={{ fill: chartTheme.axis, fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 100]} tick={{ fill: chartTheme.axis, fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip content={props => <CustomTooltip {...props} isDark={isDark} />} />
-                <ReferenceLine y={40} stroke="#ef4444" strokeDasharray="4 3"
-                  label={{ value: "Pass Threshold", position: "insideTopRight", fill: "#ef4444", fontSize: 10 }} />
-                <Line type="monotone" dataKey="averageScore" name="Avg Score" stroke="#8b5cf6" strokeWidth={2.5}
-                  dot={{ r: 4, fill: "#8b5cf6", strokeWidth: 0 }} activeDot={{ r: 5, fill: "#a78bfa" }} />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
+          <ResponsiveContainer width="100%" height={230}>
+            <LineChart data={examPerformance} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} vertical={false} />
+              <XAxis dataKey="examName" tick={{ fill: chartTheme.axis, fontSize: 10 }} />
+              <YAxis domain={[0, 100]} tick={{ fill: chartTheme.axis, fontSize: 11 }} />
+              <Tooltip content={props => <CustomTooltip {...props} />} />
+              <ReferenceLine y={40} stroke="#ef4444" strokeDasharray="4 3" label={{ value: "Pass", fill: "#ef4444", fontSize: 10 }} />
+              <Line type="monotone" dataKey="averageScore" name="Avg Score" stroke="#8b5cf6" strokeWidth={2.5} dot={{ r: 4 }} />
+            </LineChart>
+          </ResponsiveContainer>
         </Panel>
       </div>
 
-      {/* ── Bottom Row: Activity + Upcoming Exams + Top Students ───────────── */}
+      {/* ── Bottom Row ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {/* Recent Activity */}
         <Panel className="p-5 flex flex-col">
           <SectionHeading>Recent Activity</SectionHeading>
-          {loading ? (
-            <div className="flex items-center justify-center h-40 text-[var(--muted)]"><Loader2 size={20} className="animate-spin" /></div>
-          ) : recentActivity.length === 0 ? (
-            <div className="flex items-center justify-center h-40 text-[var(--muted)] text-sm">No activity logs yet</div>
-          ) : (
-            <div className="flex-1 overflow-y-auto space-y-3 max-h-72 scrollbar-hide pr-1">
-              {recentActivity.map(item => (
-                <div key={item.id} className="flex items-start gap-3 rounded-lg p-2 hover:bg-violet-500/5 transition-all">
-                  <span className={`mt-1 w-2 h-2 rounded-full shrink-0 ${item.dotColor}`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-[var(--fg)] leading-snug line-clamp-2">{item.action}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold border ${getRoleTag(item.role)}`}>{item.role}</span>
-                      <span className="text-[10px] text-[var(--muted)]">{item.timestamp}</span>
-                    </div>
+          <div className="flex-1 overflow-y-auto space-y-3 max-h-72 pr-1">
+            {recentActivity.map(item => (
+              <div key={item.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-violet-500/5">
+                <span className={`mt-1 w-2 h-2 rounded-full shrink-0 ${item.dotColor}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs leading-snug">{item.action}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={getRoleTag(item.role)}>{item.role}</span>
+                    <span className="text-[10px] text-slate-500">{item.timestamp}</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
         </Panel>
 
-        {/* Upcoming Exams */}
         <Panel className="p-5 flex flex-col">
           <SectionHeading>Upcoming Exams</SectionHeading>
-          {loading ? (
-            <div className="flex items-center justify-center h-40 text-[var(--muted)]"><Loader2 size={20} className="animate-spin" /></div>
-          ) : upcomingExams.length === 0 ? (
-            <div className="flex items-center justify-center h-40 text-[var(--muted)] text-sm">No upcoming exams scheduled</div>
-          ) : (
-            <div className="flex-1 space-y-3 overflow-y-auto max-h-72 scrollbar-hide pr-1">
-              {upcomingExams.map((exam, i) => (
-                <div key={i} className="flex items-start justify-between gap-3 p-2 rounded-lg hover:bg-violet-500/5 transition-all">
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-[var(--fg)] truncate">{exam.name}</p>
-                    <p className="text-[10px] text-[var(--muted)] mt-0.5">{exam.subject}</p>
-                    <p className="text-[10px] text-[var(--muted)]">{exam.date} · {exam.time}</p>
-                  </div>
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0 ${getStatusBadge(exam.status)}`}>
-                    {exam.status}
-                  </span>
+          <div className="flex-1 space-y-3 overflow-y-auto max-h-72 pr-1">
+            {upcomingExams.map((exam, i) => (
+              <div key={i} className="flex items-start justify-between p-2 rounded-lg hover:bg-violet-500/5">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold truncate">{exam.name}</p>
+                  <p className="text-[10px] text-slate-400">{exam.subject}</p>
+                  <p className="text-[10px] text-slate-500">{exam.date} · {exam.time}</p>
                 </div>
-              ))}
-            </div>
-          )}
+                <span className={getStatusBadge(exam.status)}>{exam.status}</span>
+              </div>
+            ))}
+          </div>
         </Panel>
 
-        {/* Top Students */}
         <Panel className="p-5 flex flex-col">
           <SectionHeading>Top Performing Students</SectionHeading>
-          {loading ? (
-            <div className="flex items-center justify-center h-40 text-[var(--muted)]"><Loader2 size={20} className="animate-spin" /></div>
-          ) : topStudents.length === 0 ? (
-            <div className="flex items-center justify-center h-40 text-[var(--muted)] text-sm">No exam results to rank yet</div>
-          ) : (
-            <div className="flex-1 space-y-4 overflow-y-auto max-h-72 scrollbar-hide pr-1">
-              {topStudents.map(student => (
-                <div key={student.rank} className="space-y-1.5">
-                  <div className="flex items-center gap-3">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0
-                      ${student.rank === 1 ? "bg-amber-500/20 text-amber-400"
-                        : student.rank === 2 ? "bg-zinc-400/15 text-zinc-400"
-                          : student.rank === 3 ? "bg-orange-400/15 text-orange-400"
-                            : "bg-violet-500/10 text-violet-400"}`}>
-                      {student.rank}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-[var(--fg)] truncate">{student.name}</p>
-                      <p className="text-[10px] text-[var(--muted)]">{student.department}</p>
-                    </div>
-                    <span className="text-xs font-bold text-violet-400 shrink-0">{student.avgScore}%</span>
+          <div className="flex-1 space-y-4 overflow-y-auto max-h-72 pr-1">
+            {topStudents.map(student => (
+              <div key={student.rank} className="space-y-1.5">
+                <div className="flex items-center gap-3">
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${student.rank === 1 ? "bg-amber-500/20 text-amber-400" : "bg-violet-500/10 text-violet-400"}`}>{student.rank}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold truncate">{student.name}</p>
+                    <p className="text-[10px] text-slate-500">{student.department}</p>
                   </div>
-                  <div className="h-1 rounded-full bg-[var(--border)] overflow-hidden ml-9">
-                    <div className="h-full rounded-full bg-violet-500 transition-all duration-500"
-                      style={{ width: `${student.avgScore}%` }} />
-                  </div>
+                  <span className="text-xs font-bold text-violet-400">{student.avgScore}%</span>
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="h-1 rounded-full bg-white/5 overflow-hidden ml-9">
+                  <div className="h-full bg-violet-500" style={{ width: `${student.avgScore}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
         </Panel>
       </div>
     </div>

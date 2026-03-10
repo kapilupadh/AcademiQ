@@ -1,3 +1,4 @@
+// client/src/components/layout/Sidebar.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,8 +39,8 @@ const setSidebarWidth = (w) =>
   document.documentElement.style.setProperty("--student-sidebar-w", w);
 
 /* ─── Logo paths ────────────────────────────────────────────────── */
-const LOGO_DARK_MODE = "/Icons/Untitled.png"; // isDark = true  → dark bg
-const LOGO_LIGHT_MODE = "/Icons/Dark-Logo.jpg"; // isDark = false → light bg
+const LOGO_DARK_MODE = "/Icons/Untitled.png"; 
+const LOGO_LIGHT_MODE = "/Icons/Dark-Logo.jpg"; 
 
 /* ─── PRIMARY NAV (flat, top) ───────────────────────────────────── */
 const PRIMARY = [
@@ -54,6 +55,13 @@ const PRIMARY = [
     label: "Examination",
     icon: BookOpen,
     to: "/exam/instructions",
+  },
+  {
+    // NEW: Promoted Results to Primary Nav
+    key: "result",
+    label: "Result",
+    icon: ClipboardList,
+    to: "/exams/result", 
   },
   {
     key: "assignment",
@@ -84,11 +92,7 @@ const SECONDARY = [
     icon: BookMarked,
     accordion: true,
     sub: [
-      {
-        label: "Examination Results",
-        icon: ClipboardList,
-        to: "/exams/results",
-      },
+      // Removed "Examination Results" from here since it's now in PRIMARY
       {
         label: "Examination Guidelines",
         icon: FileText,
@@ -377,12 +381,11 @@ function SidebarContent({
       className={`flex flex-col h-full transition-colors duration-150 ${tk.bg} ${tk.border} border-r`}
       style={{ fontFamily: "'DM Sans', sans-serif" }}
     >
-      {/* ── HEADER: Logo + Role badge + Collapse toggle (always flex-row) ── */}
+      {/* ── HEADER: Logo + Role badge + Collapse toggle ── */}
       <div
         className={`flex items-center justify-between border-b ${tk.divider} h-16 shrink-0
         ${collapsed ? "px-2" : "px-3"}`}
       >
-        {/* Logo */}
         {!collapsed ? (
           <div className="flex items-center gap-2.5 flex-1 min-w-0">
             <img
@@ -432,7 +435,6 @@ function SidebarContent({
           </>
         )}
 
-        {/* Collapse toggle / Close */}
         {!mobileView ? (
           <button
             onClick={onToggleCollapsed}
@@ -613,7 +615,6 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile hamburger */}
       <button
         onClick={() => setMobileOpen(true)}
         className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-lg
@@ -623,7 +624,6 @@ export default function Sidebar() {
         <Menu size={18} />
       </button>
 
-      {/* Mobile overlay drawer */}
       <AnimatePresence>
         {mobileOpen && (
           <>
@@ -659,7 +659,6 @@ export default function Sidebar() {
         )}
       </AnimatePresence>
 
-      {/* Desktop sidebar — top-0, h-16 header matches navbar */}
       <motion.aside
         initial={false}
         animate={{ width: sidebarW }}

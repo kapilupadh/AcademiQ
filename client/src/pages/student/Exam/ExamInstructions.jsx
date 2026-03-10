@@ -1,3 +1,4 @@
+// client/src/pages/student/Exam/ExamInstructions.jsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import api from "../../../services/api";
 import { useNavigate } from "react-router-dom";
@@ -125,7 +126,7 @@ function ExamDetailCard({ icon: Icon, label, value, color }) {
     emerald:
       "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300",
     amber:
-      "bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-800 text-amber-700 dark:text-amber-300",
+      "bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-800 text-amber-700 dark:text-amber-400",
   };
   return (
     <div
@@ -143,8 +144,6 @@ function ExamDetailCard({ icon: Icon, label, value, color }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ExamInstructions() {
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
 
   // Exam selection
   const [exams, setExams] = useState([]);
@@ -162,12 +161,13 @@ export default function ExamInstructions() {
   // Waiting room state
   const [phase, setPhase] = useState("idle"); // idle | waiting_room | blocked
   const [attemptId, setAttemptId] = useState(null);
+  const [waitingExamId, setWaitingExamId] = useState(null);
   const pollRef = useRef(null);
 
   // ── Fetch available exams ──────────────────────────────────────────────────
   useEffect(() => {
     api
-      .get(`/exam`, { headers })
+      .get(`/exam`)
       .then((r) =>
         setExams(
           r.data.filter(
@@ -189,7 +189,7 @@ export default function ExamInstructions() {
     setOtp("");
     setOtpError("");
     api
-      .get(`/exam/${selectedExamId}/details`, { headers })
+      .get(`/exam/${selectedExamId}/details`)
       .then((r) => setExamDetails(r.data))
       .catch(console.error)
       .finally(() => setLoadingDetails(false));
@@ -207,30 +207,29 @@ export default function ExamInstructions() {
           ? "otp_active"
           : "waiting_for_teacher";
 
-  // ── Polling once in waiting room ───────────────────────────────────────────
+  // ── Polling via GET /exam/:id/status (safe — does NOT create attempt) ──────
+  // Only polls exam status, never touches the attempt. When exam goes Live,
+  // we navigate to portal where POST /exam/:id/start is called exactly once.
   const startPolling = useCallback(
     (examId) => {
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = setInterval(async () => {
         try {
-          const res = await api.post(`/exam/${examId}/start`, {}, { headers });
-          if (res.data.status === "IN_PROGRESS") {
+          const res = await api.get(`/exam/${examId}/status`);
+          const { status } = res.data;
+
+          if (status === "Live") {
             clearInterval(pollRef.current);
             navigate(`/exam/portal/${examId}`);
-          }
-        } catch (err) {
-          const msg = err.response?.data?.message || "";
-          if (
-            msg.includes("expired") ||
-            msg.includes("ended") ||
-            msg.includes("Completed")
-          ) {
+          } else if (status === "Completed" || status === "Cancelled") {
             clearInterval(pollRef.current);
             setPhase("idle");
             alert(
               "Exam has ended before it could start. Please contact your teacher.",
             );
           }
+        } catch (err) {
+          console.error("Status poll error:", err);
         }
       }, 3000);
     },
@@ -258,18 +257,19 @@ export default function ExamInstructions() {
     setOtpError("");
     setJoining(true);
     try {
-      const res = await api.post(
-        `/exam/join`,
-        { examId: selectedExamId, otp },
-        { headers },
-      );
+      const res = await api.post(`/exam/join`, {
+        examId: selectedExamId,
+        otp,
+      });
       const { status, attemptId: aId } = res.data;
       setAttemptId(aId);
+      setWaitingExamId(selectedExamId);
 
       if (status === "WAITING_ROOM") {
         setPhase("waiting_room");
         startPolling(selectedExamId);
       } else if (status === "IN_PROGRESS") {
+        // Exam already live when joining — go straight in
         navigate(`/exam/portal/${selectedExamId}`);
       }
     } catch (err) {
@@ -397,9 +397,7 @@ export default function ExamInstructions() {
               <SkeletonCard />
             ) : examDetails ? (
               <>
-                {/* Status pill */}
                 {uiState && <StatusPill state={uiState} />}
-
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <ExamDetailCard
                     icon={Clock}

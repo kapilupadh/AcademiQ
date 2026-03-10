@@ -1,3 +1,4 @@
+// client/src/pages/student/Exam/ExamPortal.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import api from "../../../services/api";
 import { useParams, useNavigate } from "react-router-dom";
@@ -9,7 +10,6 @@ import {
   Clock,
   Send,
   CheckCircle,
-  Circle,
 } from "lucide-react";
 
 export default function ExamPortal() {
@@ -41,15 +41,12 @@ export default function ExamPortal() {
   };
 
   // ── Load exam data ───────────────────────────────────────────────────────
+  // POST /exam/:id/start is called exactly once here — the single source of truth.
+  // ExamInstructions now polls GET /exam/:id/status instead, so no double-call.
   useEffect(() => {
     const load = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const res = await api.post(
-          `/exam/${examId}/start`,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
+        const res = await api.post(`/exam/${examId}/start`, {});
         setData(res.data);
         const remaining = Math.max(
           0,
@@ -91,12 +88,11 @@ export default function ExamPortal() {
     async (questionId, option) => {
       setAnswers((prev) => ({ ...prev, [questionId]: option }));
       try {
-        const token = localStorage.getItem("token");
-        await api.post(
-          `/exam/answer`,
-          { attemptId: data.attemptId, questionId, selectedOption: option },
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
+        await api.post(`/exam/answer`, {
+          attemptId: data.attemptId,
+          questionId,
+          selectedOption: option,
+        });
       } catch (err) {
         console.error("Failed to save answer", err);
       }
@@ -108,12 +104,7 @@ export default function ExamPortal() {
   const doSubmit = useCallback(async () => {
     setSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
-      await api.post(
-        `/exam/submit`,
-        { attemptId: data?.attemptId },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      await api.post(`/exam/submit`, { attemptId: data?.attemptId });
     } catch (e) {
       console.error(e);
     } finally {
@@ -169,7 +160,7 @@ export default function ExamPortal() {
   const totalAnswered = Object.keys(answers).length;
   const isLast = currentIndex === questions.length - 1;
   const isFirst = currentIndex === 0;
-  const isWarning = timeLeft !== null && timeLeft < 300; // < 5 min
+  const isWarning = timeLeft !== null && timeLeft < 300;
 
   return (
     <div className="h-screen w-full flex flex-col bg-zinc-50 dark:bg-zinc-950 overflow-hidden">
@@ -198,7 +189,6 @@ export default function ExamPortal() {
         </div>
 
         <div className="flex items-center gap-4 shrink-0">
-          {/* Answered count */}
           <span className="text-xs text-zinc-500 hidden md:block">
             <span className="font-bold text-zinc-900 dark:text-white">
               {totalAnswered}
@@ -206,7 +196,6 @@ export default function ExamPortal() {
             /{questions.length} answered
           </span>
 
-          {/* Timer */}
           <div
             className={`flex items-center gap-1.5 font-mono font-bold text-lg px-3 py-1 rounded-xl ${
               isWarning
@@ -229,14 +218,12 @@ export default function ExamPortal() {
         </div>
       </div>
 
-      {/* ─── Body: Question + Palette ─────────────────────────────────── */}
+      {/* ─── Body ─────────────────────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
         {/* ─── Main Question Area ──────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-[760px] mx-auto space-y-6">
-            {/* Question card */}
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
-              {/* Question header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
                 <span className="text-sm font-semibold text-zinc-500">
                   Question {currentIndex + 1} of {questions.length}
@@ -247,14 +234,12 @@ export default function ExamPortal() {
               </div>
 
               <div className="p-6 space-y-5">
-                {/* Question text */}
                 {q.question_text && (
                   <p className="text-zinc-900 dark:text-white text-lg font-medium leading-relaxed">
                     {q.question_text}
                   </p>
                 )}
 
-                {/* Question image */}
                 {q.image_url && !imgError[q.id] && (
                   <div className="rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950">
                     <img
@@ -268,7 +253,6 @@ export default function ExamPortal() {
                   </div>
                 )}
 
-                {/* Options */}
                 <div className="space-y-3">
                   {q.options.map((opt, oIdx) => {
                     const isSelected = answers[q.id] === opt;
@@ -290,7 +274,6 @@ export default function ExamPortal() {
                           onChange={() => handleOptionSelect(q.id, opt)}
                           className="sr-only"
                         />
-                        {/* Letter badge */}
                         <div
                           className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 transition-colors ${
                             isSelected
@@ -319,7 +302,7 @@ export default function ExamPortal() {
               </div>
             </div>
 
-            {/* ─── Navigation Controls ────────────────────────────── */}
+            {/* Navigation */}
             <div className="flex items-center justify-between gap-3">
               <button
                 onClick={() => go(-1)}
@@ -329,7 +312,6 @@ export default function ExamPortal() {
                 <ChevronLeft className="w-4 h-4" /> Previous
               </button>
 
-              {/* Quick jump: answered count */}
               <span className="text-xs text-zinc-400 md:hidden">
                 {totalAnswered}/{questions.length}
               </span>
@@ -354,7 +336,7 @@ export default function ExamPortal() {
           </div>
         </div>
 
-        {/* ─── Question Palette (Right Sidebar) ──────────────────────── */}
+        {/* ─── Question Palette ──────────────────────────────────────── */}
         <div className="hidden md:flex flex-col w-64 bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 p-4 gap-4 shrink-0">
           <div>
             <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">
@@ -384,7 +366,6 @@ export default function ExamPortal() {
             </div>
           </div>
 
-          {/* Legend */}
           <div className="space-y-2 text-xs">
             <div className="flex items-center gap-2 text-zinc-500">
               <div className="w-4 h-4 rounded bg-emerald-100 dark:bg-emerald-900/30" />
@@ -400,7 +381,6 @@ export default function ExamPortal() {
             </div>
           </div>
 
-          {/* Progress bar */}
           <div className="mt-auto space-y-2">
             <div className="flex justify-between text-xs text-zinc-500">
               <span>Progress</span>

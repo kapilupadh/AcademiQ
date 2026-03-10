@@ -1,3 +1,4 @@
+// App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/auth/Login/Login";
 import Register from "./pages/auth/Register/Register";
@@ -10,6 +11,7 @@ import ExamInstructions from "./pages/student/Exam/ExamInstructions";
 import ExamPortal from "./pages/student/Exam/ExamPortal";
 import ExamLayout from "./components/layout/ExamLayout";
 import Profile from "./pages/student/Profile/Profile";
+import Result from "./pages/student/Result/Result";
 import TeacherLogin from "./pages/auth/Login/TeacherLogin";
 import TeacherRegister from "./pages/auth/Register/TeacherRegister";
 import GenerateId from "./pages/admin/GenerateId";
@@ -25,273 +27,74 @@ import ExamManage from "./pages/teacher/Exam/ExamManage";
 import AdminExamEngine from "./pages/admin/ExamEngine/AdminExamEngine";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 
+// Shared wrapper for student pages (sidebar + layout)
+function StudentPage({ children }) {
+  return (
+    <ProtectedRoute allowedRoles={[3]}>
+      <Sidebar />
+      <div
+        className="transition-all duration-300"
+        style={{ paddingLeft: "var(--student-sidebar-w, 260px)" }}
+      >
+        <Layout header={<Navbar page="student" />}>{children}</Layout>
+      </div>
+    </ProtectedRoute>
+  );
+}
+
+// Shared wrapper for teacher pages
+function TeacherPage({ children }) {
+  return (
+    <ProtectedRoute allowedRoles={[2]}>
+      <TeacherSidebar />
+      <div
+        className="transition-all duration-300"
+        style={{ paddingLeft: "var(--teacher-sidebar-w, 240px)" }}
+      >
+        <Layout header={<Navbar page="teacher" />}>{children}</Layout>
+      </div>
+    </ProtectedRoute>
+  );
+}
+
+// Shared wrapper for admin pages
+function AdminPage({ children }) {
+  return (
+    <ProtectedRoute allowedRoles={[1]}>
+      <AdminSidebar />
+      <div
+        className="transition-all duration-300"
+        style={{ paddingLeft: "var(--admin-sidebar-w, 260px)" }}
+      >
+        <Layout header={<Navbar page="public" />}>{children}</Layout>
+      </div>
+    </ProtectedRoute>
+  );
+}
+
 export default function App() {
   return (
-    // 1. Router must be the TOP level parent
     <BrowserRouter>
       <Routes>
-        {/* LOGIN: Wrapped in Layout with Navbar */}
-        <Route
-          path="/login"
-          element={
-            <Layout header={<Navbar page="login" />}>
-              <Login />
-            </Layout>
-          }
-        />
+        {/* ── Public / Auth ── */}
+        <Route path="/login" element={<Layout header={<Navbar page="login" />}><Login /></Layout>} />
+        <Route path="/register" element={<Layout header={<Navbar page="public" />}><Register /></Layout>} />
+        <Route path="/forgot-password" element={<Layout header={<Navbar page="public" />}><ForgotPassword /></Layout>} />
+        <Route path="/teacher-login" element={<Layout header={<Navbar page="public" />}><TeacherLogin /></Layout>} />
+        <Route path="/teacher-register" element={<Layout header={<Navbar page="public" />}><TeacherRegister /></Layout>} />
+        <Route path="/admin/login" element={<Layout header={<Navbar page="public" />}><AdminLogin /></Layout>} />
+        <Route path="/admin/register" element={<Layout header={<Navbar page="public" />}><AdminRegister /></Layout>} />
 
-        {/* REGISTER: Wrapped in Layout with Navbar */}
-        <Route
-          path="/register"
-          element={
-            <Layout header={<Navbar page="public" />}>
-              <Register />
-            </Layout>
-          }
-        />
-
-        {/* FORGOT PASSWORD: Wrapped in Layout with Navbar */}
-        <Route
-          path="/forgot-password"
-          element={
-            <Layout header={<Navbar page="public" />}>
-              <ForgotPassword />
-            </Layout>
-          }
-        />
-
-        {/* TEACHER ROUTING */}
-        <Route
-          path="/teacher-login"
-          element={
-            <Layout header={<Navbar page="public" />}>
-              <TeacherLogin />
-            </Layout>
-          }
-        />
-        <Route
-          path="/teacher-register"
-          element={
-            <Layout header={<Navbar page="public" />}>
-              <TeacherRegister />
-            </Layout>
-          }
-        />
-
-        {/* ADMIN AUTH ROUTING */}
-        <Route
-          path="/admin/login"
-          element={
-            <Layout header={<Navbar page="public" />}>
-              <AdminLogin />
-            </Layout>
-          }
-        />
-        <Route
-          path="/admin/register"
-          element={
-            <Layout header={<Navbar page="public" />}>
-              <AdminRegister />
-            </Layout>
-          }
-        />
-
-        {/* DEFAULT: Redirect to Login */}
+        {/* Default redirect */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* PROTECTED PAGES: Wrapped in Layout with Navbar */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute allowedRoles={[3]}>
-              <Sidebar />
-              <div
-                className="transition-all duration-300"
-                style={{ paddingLeft: "var(--student-sidebar-w, 260px)" }}
-              >
-                <Layout header={<Navbar page="student" />}>
-                  <Dashboard />
-                </Layout>
-              </div>
-            </ProtectedRoute>
-          }
-        />
+        {/* ── Student Pages ── */}
+        <Route path="/dashboard" element={<StudentPage><Dashboard /></StudentPage>} />
+        <Route path="/profile" element={<StudentPage><Profile /></StudentPage>} />
+        <Route path="/exams/result" element={<StudentPage><Result /></StudentPage>} />
+        <Route path="/exam/instructions" element={<StudentPage><ExamInstructions /></StudentPage>} />
 
-        <Route
-          path="/admin/generate-id"
-          element={
-            <ProtectedRoute allowedRoles={[1]}>
-              <AdminSidebar />
-              <div
-                className="transition-all duration-300"
-                style={{ paddingLeft: "var(--admin-sidebar-w, 260px)" }}
-              >
-                <Layout header={<Navbar page="public" />}>
-                  <GenerateId />
-                </Layout>
-              </div>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/dashboard"
-          element={
-            <ProtectedRoute allowedRoles={[1]}>
-              <AdminSidebar />
-              <div
-                className="transition-all duration-300"
-                style={{ paddingLeft: "var(--admin-sidebar-w, 260px)" }}
-              >
-                <Layout header={<Navbar page="public" />}>
-                  <AdminDashboard />
-                </Layout>
-              </div>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/exams"
-          element={
-            <ProtectedRoute allowedRoles={[1]}>
-              <AdminSidebar />
-              <div
-                className="transition-all duration-300"
-                style={{ paddingLeft: "var(--admin-sidebar-w, 260px)" }}
-              >
-                <Layout header={<Navbar page="public" />}>
-                  <AdminExamEngine />
-                </Layout>
-              </div>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* TEACHER DASHBOARD */}
-        <Route
-          path="/teacher/dashboard"
-          element={
-            <ProtectedRoute allowedRoles={[2]}>
-              <TeacherSidebar />
-              <div
-                className="transition-all duration-300"
-                style={{ paddingLeft: "var(--teacher-sidebar-w, 240px)" }}
-              >
-                <Layout header={<Navbar page="teacher" />}>
-                  <TeacherDashboard />
-                </Layout>
-              </div>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/teacher/exams"
-          element={
-            <ProtectedRoute allowedRoles={[2]}>
-              <TeacherSidebar />
-              <div
-                className="transition-all duration-300"
-                style={{ paddingLeft: "var(--teacher-sidebar-w, 240px)" }}
-              >
-                <Layout header={<Navbar page="teacher" />}>
-                  <ExamList />
-                </Layout>
-              </div>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/teacher/exams/create"
-          element={
-            <ProtectedRoute allowedRoles={[2]}>
-              <TeacherSidebar />
-              <div
-                className="transition-all duration-300"
-                style={{ paddingLeft: "var(--teacher-sidebar-w, 240px)" }}
-              >
-                <Layout header={<Navbar page="teacher" />}>
-                  <ExamBuilder />
-                </Layout>
-              </div>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/teacher/exams/edit/:id"
-          element={
-            <ProtectedRoute allowedRoles={[2]}>
-              <TeacherSidebar />
-              <div
-                className="transition-all duration-300"
-                style={{ paddingLeft: "var(--teacher-sidebar-w, 240px)" }}
-              >
-                <Layout header={<Navbar page="teacher" />}>
-                  <ExamBuilder />
-                </Layout>
-              </div>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/teacher/exams/:id/manage"
-          element={
-            <ProtectedRoute allowedRoles={[2]}>
-              <TeacherSidebar />
-              <div
-                className="transition-all duration-300"
-                style={{ paddingLeft: "var(--teacher-sidebar-w, 240px)" }}
-              >
-                <Layout header={<Navbar page="teacher" />}>
-                  <ExamManage />
-                </Layout>
-              </div>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute allowedRoles={[3]}>
-              <Sidebar />
-              <div
-                className="transition-all duration-300"
-                style={{ paddingLeft: "var(--student-sidebar-w, 260px)" }}
-              >
-                <Layout header={<Navbar page="student" />}>
-                  <Profile />
-                </Layout>
-              </div>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* EXAM MODULE ROUTES */}
-        {/* Instructions Page - Wrapped in Standard Layout (Optional, or ExamLayout) */}
-        {/* Let's keep instructions in standard layout so they feel still "in app" */}
-        <Route
-          path="/exam/instructions"
-          element={
-            <ProtectedRoute allowedRoles={[3]}>
-              <Sidebar />
-              <div
-                className="transition-all duration-300"
-                style={{ paddingLeft: "var(--student-sidebar-w, 260px)" }}
-              >
-                <Layout header={<Navbar page="student" />}>
-                  <ExamInstructions />
-                </Layout>
-              </div>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* The Actual Exam Portal - NO Sidebar, NO Navbar, Custom Layout */}
+        {/* Exam portal — no sidebar/navbar, isolated layout */}
         <Route
           path="/exam/portal/:sessionId"
           element={
@@ -302,6 +105,18 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* ── Admin Pages ── */}
+        <Route path="/admin/generate-id" element={<AdminPage><GenerateId /></AdminPage>} />
+        <Route path="/admin/dashboard" element={<AdminPage><AdminDashboard /></AdminPage>} />
+        <Route path="/admin/exams" element={<AdminPage><AdminExamEngine /></AdminPage>} />
+
+        {/* ── Teacher Pages ── */}
+        <Route path="/teacher/dashboard" element={<TeacherPage><TeacherDashboard /></TeacherPage>} />
+        <Route path="/teacher/exams" element={<TeacherPage><ExamList /></TeacherPage>} />
+        <Route path="/teacher/exams/create" element={<TeacherPage><ExamBuilder /></TeacherPage>} />
+        <Route path="/teacher/exams/edit/:id" element={<TeacherPage><ExamBuilder /></TeacherPage>} />
+        <Route path="/teacher/exams/:id/manage" element={<TeacherPage><ExamManage /></TeacherPage>} />
       </Routes>
     </BrowserRouter>
   );
