@@ -350,3 +350,16 @@ exports.bulkGenerateStudentsFrontend = async (req, res) => {
     res.status(500).json({ message: error.message || 'Server error during bulk ID array generation.' });
   }
 };
+exports.getDepartments = async (req, res) => {
+  try {
+    const { Department } = require('../../models');
+    const depts = await Department.findAll({
+      where: { status: 'active' },
+      attributes: ['id', 'name', 'code'],
+      order: [['name', 'ASC']],
+    });
+    res.json(depts);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching departments' });
+  }
+};

@@ -11,6 +11,9 @@ const requireAdmin = require('../../middleware/requireAdmin');
 // We use requireAdmin instead of local checkAdmin
 const checkAdmin = requireAdmin;
 
+
+// GET /api/admin/departments - Fetch departments for ExamBuilder dropdown
+router.get('/departments', authenticateToken, adminController.getDepartments);
 // Dashboard Routes
 router.get('/dashboard/stats', authenticateToken, checkAdmin, dashboardController.getDashboardStats);
 router.get('/dashboard/trends', authenticateToken, checkAdmin, dashboardController.getSessionalTrends);

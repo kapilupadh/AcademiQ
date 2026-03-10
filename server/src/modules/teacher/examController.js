@@ -1,23 +1,20 @@
+// server/src/modules/teacher/examController.js
+// Changes from previous version:
+//   1. getTeacherExams  — also returns exams where created_by IS NULL (legacy) for teachers in same dept
+//   2. createExam       — saves department_id, semester, subject_id from req.body
+//   3. updateExam       — allows updating department_id, semester, subject_id
+//   4. getExamStatus    — NEW: safe polling endpoint (no attempt creation)
+
 const { Exam, Question, ExamAttempt, StudentAnswer, User, Department, Subject, StudentSubject } = require('../../models');
 const { Op } = require('sequelize');
-const crypto = require('crypto');
 const { sendExamScheduleNotification } = require('../../utils/emailService');
 
-/**
- * Strict email targeting:
- * Tier 1 (preferred) — subject_id set on exam:
- *   Query StudentSubject where subject_id = exam.subject_id AND is_eligible = true,
- *   join User where is_active = true AND same department as exam.
- * Tier 2 (fallback for legacy exams with no subject_id):
- *   All active students in the same department + same semester.
- * Guard: if recipient list is empty, log a warning and skip sending.
- */
+// ─── Email Notification Helper ────────────────────────────────────────────────
 const notifyStudentsAboutExam = async (exam, isUpdate = false) => {
   try {
     let emails = [];
     let tierUsed = 'none';
 
-    // Re-fetch exam with associations to get department name
     const fullExam = await Exam.findByPk(exam.id, {
       include: [
         { model: Department, attributes: ['name'] },
@@ -26,7 +23,6 @@ const notifyStudentsAboutExam = async (exam, isUpdate = false) => {
     });
 
     if (exam.subject_id) {
-      // ── Tier 1: enrollment-level targeting ─────────────────────────────
       const enrollments = await StudentSubject.findAll({
         where: { subject_id: exam.subject_id, is_eligible: true },
         include: [{
@@ -43,19 +39,19 @@ const notifyStudentsAboutExam = async (exam, isUpdate = false) => {
       emails = enrollments.map(e => e.student?.email).filter(Boolean);
       tierUsed = 'subject-enrollment';
     } else if (exam.department_id) {
-      // ── Tier 2: department + semester fallback ──────────────────────────
-      const where = { role: 3, is_active: true, department_id: exam.department_id };
-      const students = await User.findAll({ where, attributes: ['email'] });
+      const students = await User.findAll({
+        where: { role: 3, is_active: true, department_id: exam.department_id },
+        attributes: ['email'],
+      });
       emails = students.map(s => s.email).filter(Boolean);
       tierUsed = 'department-fallback';
     }
 
     if (emails.length === 0) {
-      console.warn(`[Email] No eligible recipients found for exam "${exam.title}" (tier: ${tierUsed}). Skipping notification.`);
+      console.warn(`[Email] No eligible recipients for exam "${exam.title}" (tier: ${tierUsed}). Skipping.`);
       return;
     }
 
-    // Enrich exam data with resolved department/subject names for email
     const enrichedExam = {
       ...exam.dataValues,
       departmentName: fullExam?.Department?.name || null,
@@ -63,9 +59,6 @@ const notifyStudentsAboutExam = async (exam, isUpdate = false) => {
       semester: exam.semester || null,
     };
 
-    console.log(`[Email] Sending exam notification (${isUpdate ? 'update' : 'new'}) to ${emails.length} students via tier: ${tierUsed}`);
-
-    // Fire-and-forget — don't block API response
     sendExamScheduleNotification(emails, enrichedExam, isUpdate)
       .then(r => console.log(`[Email] Done: sent=${r.sent}, failed=${r.failed}`))
       .catch(err => console.error('[Email] Notification error:', err));
@@ -75,20 +68,42 @@ const notifyStudentsAboutExam = async (exam, isUpdate = false) => {
   }
 };
 
-// Helpers
-const generateOtp = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
-};
+const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
+// ─── GET /teacher/exams ───────────────────────────────────────────────────────
+// Teachers see:
+//   (a) exams they created (created_by = their id)
+//   (b) legacy exams with null created_by that belong to their department
+// Admins see everything.
 exports.getTeacherExams = async (req, res) => {
   try {
-    const isAdmin = req.user.role === 1;
-    // Admins see all exams; teachers only see their own
-    const where = isAdmin ? {} : { created_by: req.user.id };
+    const { role, id: userId, department_id } = req.user;
+
+    let where = {};
+
+    if (role !== 1) {
+      // Teacher: their own exams OR legacy null-created_by exams in same dept
+      const conditions = [{ created_by: userId }];
+
+      if (department_id) {
+        conditions.push({
+          created_by: null,
+          department_id: department_id,
+        });
+      } else {
+        // No dept set on teacher — just show null created_by exams as fallback
+        conditions.push({ created_by: null });
+      }
+
+      where = { [Op.or]: conditions };
+    }
+    // Admin: where = {} → sees all
+
     const exams = await Exam.findAll({
       where,
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']],
     });
+
     res.json(exams);
   } catch (error) {
     console.error('getTeacherExams error:', error);
@@ -96,11 +111,12 @@ exports.getTeacherExams = async (req, res) => {
   }
 };
 
+// ─── GET /teacher/exams/:id ───────────────────────────────────────────────────
 exports.getExamDetails = async (req, res) => {
   try {
     const { id } = req.params;
     const exam = await Exam.findByPk(id, {
-      include: [{ model: Question, as: 'questions' }]
+      include: [{ model: Question, as: 'questions' }],
     });
     if (!exam) return res.status(404).json({ message: 'Exam not found' });
     res.json(exam);
@@ -110,15 +126,21 @@ exports.getExamDetails = async (req, res) => {
   }
 };
 
+// ─── POST /teacher/exams ──────────────────────────────────────────────────────
+// Now saves department_id, semester, subject_id from body
+// Falls back to teacher's own department_id if not provided
 exports.createExam = async (req, res) => {
   try {
     const {
       title, description, duration_minutes, total_questions_to_ask,
       passing_percentage, subject, type, start_time,
-      scheduled_start_at, scheduled_end_at
+      scheduled_start_at, scheduled_end_at,
+      department_id, semester, subject_id,
     } = req.body;
 
-    // Validate schedule if provided
+    // Use provided department_id, or fall back to the teacher's own dept
+    const resolvedDeptId = department_id || req.user.department_id || null;
+
     if (scheduled_start_at && scheduled_end_at) {
       if (new Date(scheduled_start_at) >= new Date(scheduled_end_at)) {
         return res.status(400).json({ message: 'Scheduled start time must be before end time' });
@@ -129,15 +151,23 @@ exports.createExam = async (req, res) => {
     }
 
     const newExam = await Exam.create({
-      title, description, duration_minutes, total_questions_to_ask,
-      passing_percentage, subject, type, start_time,
+      title,
+      description,
+      duration_minutes,
+      total_questions_to_ask,
+      passing_percentage,
+      subject,
+      type,
+      start_time,
       scheduled_start_at: scheduled_start_at || null,
       scheduled_end_at: scheduled_end_at || null,
       status: 'Draft',
-      created_by: req.user.id  // Track ownership
+      created_by: req.user.id,
+      department_id: resolvedDeptId,
+      semester: semester || null,
+      subject_id: subject_id || null,
     });
 
-    // Notify students if schedule provided
     if (scheduled_start_at && scheduled_end_at) {
       notifyStudentsAboutExam(newExam, false);
     }
@@ -149,19 +179,21 @@ exports.createExam = async (req, res) => {
   }
 };
 
+// ─── PUT /teacher/exams/:id ───────────────────────────────────────────────────
 exports.updateExam = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
     const exam = await Exam.findByPk(id);
+
     if (!exam) return res.status(404).json({ message: 'Exam not found' });
-    if (exam.status === 'Completed') return res.status(400).json({ message: 'Cannot update completed exam' });
-    // Ownership check — admins can update any exam, teachers only their own
+    if (exam.status === 'Completed') {
+      return res.status(400).json({ message: 'Cannot update completed exam' });
+    }
     if (req.user.role !== 1 && exam.created_by !== req.user.id) {
       return res.status(403).json({ message: 'Access denied. You can only edit your own exams.' });
     }
 
-    // Validate schedule if being updated
     const newStart = updateData.scheduled_start_at;
     const newEnd = updateData.scheduled_end_at;
     if (newStart && newEnd) {
@@ -173,7 +205,6 @@ exports.updateExam = async (req, res) => {
       }
     }
 
-    // Detect if schedule actually changed (for idempotency — avoid duplicate emails)
     const prevStart = exam.scheduled_start_at ? new Date(exam.scheduled_start_at).toISOString() : null;
     const prevEnd = exam.scheduled_end_at ? new Date(exam.scheduled_end_at).toISOString() : null;
     const scheduleChanged =
@@ -181,7 +212,6 @@ exports.updateExam = async (req, res) => {
 
     await exam.update(updateData);
 
-    // Notify students only if schedule was set or changed
     if (scheduleChanged && newStart && newEnd) {
       notifyStudentsAboutExam(exam, true);
     }
@@ -193,14 +223,27 @@ exports.updateExam = async (req, res) => {
   }
 };
 
+// ─── GET /exam/:examId/status ─────────────────────────────────────────────────
+// Safe polling endpoint — only returns exam status, never creates an attempt.
+// Used by ExamInstructions waiting room instead of POST /exam/:id/start.
+exports.getExamStatus = async (req, res) => {
+  try {
+    const { examId } = req.params;
+    const exam = await Exam.findByPk(examId, {
+      attributes: ['id', 'status', 'start_time', 'duration_minutes'],
+    });
+    if (!exam) return res.status(404).json({ message: 'Exam not found' });
+    res.json({ status: exam.status, start_time: exam.start_time });
+  } catch (error) {
+    console.error('getExamStatus error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ─── POST /teacher/exams/:id/image ────────────────────────────────────────────
 exports.uploadQuestionImage = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No image uploaded' });
-    }
-    // Return relative url where frontend can map to backend url
-    // Server is serving /public for ../public
-    // Image is saved in public/uploads -> so URL is /public/uploads/filename
+    if (!req.file) return res.status(400).json({ message: 'No image uploaded' });
     const imageUrl = `/public/uploads/${req.file.filename}`;
     res.json({ message: 'Image uploaded successfully', imageUrl });
   } catch (error) {
@@ -209,15 +252,14 @@ exports.uploadQuestionImage = async (req, res) => {
   }
 };
 
+// ─── POST /teacher/exams/:id/questions ───────────────────────────────────────
 exports.addOrUpdateQuestions = async (req, res) => {
   try {
     const { id } = req.params;
-    const { questions } = req.body; // Array of { question_text, options, correct_answer, marks }
-    
+    const { questions } = req.body;
     const exam = await Exam.findByPk(id);
     if (!exam) return res.status(404).json({ message: 'Exam not found' });
 
-    // Assuming we clear old questions for this exam and recreate them, or handle individually
     await Question.destroy({ where: { exam_id: id } });
 
     const newQuestions = questions.map(q => ({
@@ -227,7 +269,7 @@ exports.addOrUpdateQuestions = async (req, res) => {
       options: q.options,
       correct_answer: q.correct_answer,
       marks: q.marks || 1,
-      image_url: q.image_url || null
+      image_url: q.image_url || null,
     }));
 
     await Question.bulkCreate(newQuestions);
@@ -238,10 +280,10 @@ exports.addOrUpdateQuestions = async (req, res) => {
   }
 };
 
+// ─── POST /teacher/exams/:id/otp ─────────────────────────────────────────────
 exports.generateExamOtp = async (req, res) => {
   try {
     const { id } = req.params;
-    // expiryMinutes: how long the OTP is valid. Default 5 minutes
     const expiryMinutes = parseInt(req.body.expiryMinutes) || 5;
     if (expiryMinutes < 1 || expiryMinutes > 60) {
       return res.status(400).json({ message: 'Expiry must be between 1 and 60 minutes' });
@@ -255,8 +297,8 @@ exports.generateExamOtp = async (req, res) => {
 
     const otp = generateOtp();
     const expiresAt = new Date(Date.now() + expiryMinutes * 60000);
-
     await exam.update({ otp, otp_expires_at: expiresAt, status: 'Scheduled' });
+
     res.json({ message: 'OTP generated', otp, expiresAt, expiryMinutes });
   } catch (error) {
     console.error('generateExamOtp error:', error);
@@ -264,50 +306,46 @@ exports.generateExamOtp = async (req, res) => {
   }
 };
 
+// ─── POST /teacher/exams/:id/start ───────────────────────────────────────────
 exports.startExam = async (req, res) => {
   try {
     const { id } = req.params;
     const exam = await Exam.findByPk(id);
     if (!exam) return res.status(404).json({ message: 'Exam not found' });
 
-    // Only a Scheduled exam (OTP generated) can go Live
     if (exam.status !== 'Scheduled') {
       if (exam.status === 'Draft') {
-        return res.status(400).json({ message: 'Cannot start a Draft exam. Generate an OTP first to move it to Scheduled.' });
+        return res.status(400).json({ message: 'Cannot start a Draft exam. Generate an OTP first.' });
       }
       return res.status(400).json({ message: 'Exam already started or completed' });
     }
 
-    // Guard: ensure questions exist before going Live
     const questionCount = await Question.count({ where: { exam_id: id } });
     if (questionCount === 0) {
       return res.status(400).json({ message: 'Cannot start exam: no questions have been added yet.' });
     }
 
     await exam.update({ status: 'Live', start_time: new Date() });
-    
-    // Auto-end exam logic
+
     const msToWait = exam.duration_minutes * 60000;
     setTimeout(async () => {
-        try {
-            const e = await Exam.findByPk(id);
-            if (e && e.status === 'Live') {
-                await e.update({ status: 'Completed', is_active: false });
-                await ExamAttempt.update(
-                    { status: 'AUTO_SUBMITTED' },
-                    { where: { exam_id: id, status: { [Op.in]: ['WAITING_ROOM', 'IN_PROGRESS'] } } }
-                );
-                console.log(`Auto-ended exam ${id}`);
-            }
-        } catch (timerErr) {
-            console.error('Auto end error', timerErr);
+      try {
+        const e = await Exam.findByPk(id);
+        if (e && e.status === 'Live') {
+          await e.update({ status: 'Completed', is_active: false });
+          await ExamAttempt.update(
+            { status: 'AUTO_SUBMITTED' },
+            { where: { exam_id: id, status: { [Op.in]: ['WAITING_ROOM', 'IN_PROGRESS'] } } },
+          );
         }
+      } catch (timerErr) {
+        console.error('Auto end error', timerErr);
+      }
     }, msToWait);
 
-    // Transition all waiting room users to in-progress
     await ExamAttempt.update(
       { status: 'IN_PROGRESS', start_time: new Date(), end_time: new Date(Date.now() + msToWait) },
-      { where: { exam_id: id, status: 'WAITING_ROOM' } }
+      { where: { exam_id: id, status: 'WAITING_ROOM' } },
     );
 
     res.json({ message: 'Exam started successfully' });
@@ -317,21 +355,24 @@ exports.startExam = async (req, res) => {
   }
 };
 
+// ─── GET /teacher/exams/:id/submissions ──────────────────────────────────────
 exports.getExamSubmissions = async (req, res) => {
   try {
     const { id } = req.params;
     const attempts = await ExamAttempt.findAll({
       where: { exam_id: id },
       include: [
-        { model: User, as: 'student', attributes: ['id', 'full_name', 'unique_id', 'college_roll_number'] }
-      ]
+        { model: User, as: 'student', attributes: ['id', 'full_name', 'unique_id', 'college_roll_number'] },
+      ],
     });
-    
+
     const stats = {
-      total_students: attempts.length, // we could query User count for total in class
+      total_students: attempts.length,
       appeared: attempts.length,
-      average_score: attempts.length > 0 ? (attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length) : 0,
-    }
+      average_score: attempts.length > 0
+        ? attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length
+        : 0,
+    };
 
     res.json({ attempts, stats });
   } catch (error) {
@@ -340,6 +381,7 @@ exports.getExamSubmissions = async (req, res) => {
   }
 };
 
+// ─── POST /teacher/exams/:id/end ─────────────────────────────────────────────
 exports.endExam = async (req, res) => {
   try {
     const { id } = req.params;
@@ -349,20 +391,10 @@ exports.endExam = async (req, res) => {
       return res.status(400).json({ message: 'Exam is already completed' });
     }
 
-    // Mark the exam as completed
     await exam.update({ status: 'Completed', is_active: false });
-
-    // Auto-submit all active and waiting attempts
-    // Sequelize update() returns [affectedCount] — capture it directly
-    // (avoids a separate count query that would include previously force-submitted attempts)
     const [affectedCount] = await ExamAttempt.update(
       { status: 'FORCE_SUBMITTED' },
-      {
-        where: {
-          exam_id: id,
-          status: { [Op.in]: ['WAITING_ROOM', 'IN_PROGRESS'] }
-        }
-      }
+      { where: { exam_id: id, status: { [Op.in]: ['WAITING_ROOM', 'IN_PROGRESS'] } } },
     );
 
     res.json({ message: 'Exam force-ended successfully', affectedStudents: affectedCount });
@@ -371,25 +403,22 @@ exports.endExam = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+// ─── DELETE /teacher/exams/:id ────────────────────────────────────────────────
 exports.deleteExam = async (req, res) => {
   try {
     const { id } = req.params;
     const exam = await Exam.findByPk(id);
-    
     if (!exam) return res.status(404).json({ message: 'Exam not found' });
-    
-    // Ownership check — admins can delete any exam, teachers only their own
+
     if (req.user.role !== 1 && exam.created_by !== req.user.id) {
       return res.status(403).json({ message: 'Access denied. You can only delete your own exams.' });
     }
-
-    // Optional: Prevent deleting exams that are already live or completed
     if (exam.status === 'Live' || exam.status === 'Completed') {
-        return res.status(400).json({ message: 'Cannot delete an exam that is currently live or already completed.' });
+      return res.status(400).json({ message: 'Cannot delete an exam that is currently live or already completed.' });
     }
 
     await exam.destroy();
-    
     res.json({ message: 'Exam deleted successfully' });
   } catch (error) {
     console.error('deleteExam error:', error);

@@ -23,10 +23,15 @@ export default function ExamBuilder() {
   const [uploadStates, setUploadStates] = useState({});
   const fileInputRefs = useRef({});
 
+  // NEW: State to hold departments fetched from backend
+  const [departments, setDepartments] = useState([]);
+
   const [metadata, setMetadata] = useState({
     title: "",
     description: "",
     subject: "",
+    department_id: "", // NEW
+    semester: "", // NEW
     type: "Test",
     duration_minutes: 60,
     total_questions_to_ask: 10,
@@ -45,6 +50,16 @@ export default function ExamBuilder() {
     },
   ]);
 
+  // NEW: Fetch departments on component mount
+  useEffect(() => {
+    api
+      .get("/admin/departments", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      })
+      .then((r) => setDepartments(r.data))
+      .catch((err) => console.error("Failed to fetch departments", err));
+  }, []);
+
   useEffect(() => {
     if (isEditMode) {
       const fetchExam = async () => {
@@ -59,6 +74,8 @@ export default function ExamBuilder() {
             title: exam.title,
             description: exam.description || "",
             subject: exam.subject || "",
+            department_id: exam.department_id || "", // NEW
+            semester: exam.semester || "", // NEW
             type: exam.type,
             duration_minutes: exam.duration_minutes,
             total_questions_to_ask: exam.total_questions_to_ask,
@@ -171,6 +188,13 @@ export default function ExamBuilder() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Custom validation: check required fields
+    if (!metadata.department_id) {
+        alert("Please select a Department.");
+        return;
+    }
+
     // Custom validation: each question needs text OR image
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
@@ -282,6 +306,48 @@ export default function ExamBuilder() {
                 className="w-full px-4 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg outline-none focus:border-blue-500 text-zinc-900 dark:text-white"
               />
             </div>
+            
+            {/* NEW: Department Dropdown */}
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                Department <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="department_id"
+                value={metadata.department_id}
+                onChange={handleMetadataChange}
+                required
+                className="w-full px-4 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg outline-none focus:border-blue-500 text-zinc-900 dark:text-white"
+              >
+                <option value="">— Select Department —</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* NEW: Semester Dropdown */}
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                Semester
+              </label>
+              <select
+                name="semester"
+                value={metadata.semester}
+                onChange={handleMetadataChange}
+                className="w-full px-4 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg outline-none focus:border-blue-500 text-zinc-900 dark:text-white"
+              >
+                <option value="">— Select Semester —</option>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+                  <option key={s} value={s}>
+                    Semester {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                 Subject
@@ -290,9 +356,11 @@ export default function ExamBuilder() {
                 name="subject"
                 value={metadata.subject}
                 onChange={handleMetadataChange}
+                placeholder="e.g. Data Structures"
                 className="w-full px-4 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg outline-none focus:border-blue-500 text-zinc-900 dark:text-white"
               />
             </div>
+            
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                 Description
