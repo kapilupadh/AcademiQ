@@ -26,6 +26,9 @@ import ExamBuilder from "./pages/teacher/Exam/ExamBuilder";
 import ExamManage from "./pages/teacher/Exam/ExamManage";
 import AdminExamEngine from "./pages/admin/ExamEngine/AdminExamEngine";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
+import SubjectImport from "./pages/admin/SubjectImport/SubjectImport"; 
+// ADDED SUBJECT MANAGER IMPORT
+import SubjectManager from "./pages/admin/SubjectManager/SubjectManager";
 
 // Shared wrapper for student pages (sidebar + layout)
 function StudentPage({ children }) {
@@ -106,10 +109,14 @@ export default function App() {
           }
         />
 
-        {/* ── Admin Pages ── */}
+       {/* ── Admin Pages ── */}
         <Route path="/admin/generate-id" element={<AdminPage><GenerateId /></AdminPage>} />
         <Route path="/admin/dashboard" element={<AdminPage><AdminDashboard /></AdminPage>} />
         <Route path="/admin/exams" element={<AdminPage><AdminExamEngine /></AdminPage>} />
+        
+        {/* ADDED THESE NEW ROUTES: */}
+        <Route path="/admin/subjects/import" element={<AdminPage><SubjectImport /></AdminPage>} />
+        <Route path="/admin/subjects/manage" element={<AdminPage><SubjectManager /></AdminPage>} />
 
         {/* ── Teacher Pages ── */}
         <Route path="/teacher/dashboard" element={<TeacherPage><TeacherDashboard /></TeacherPage>} />
