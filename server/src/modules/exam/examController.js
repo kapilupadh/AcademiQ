@@ -1,3 +1,4 @@
+// server/src/modules/exam/examController.js
 const { Exam, Question, ExamAttempt, StudentAnswer, Violation, User, sequelize } = require('../../models');
 const { Op } = require('sequelize');
 
@@ -330,7 +331,20 @@ exports.getMyResults = async (req, res) => {
     res.status(500).json({ message: 'Error fetching results', error: error.message });
   }
 };
-
+// Only returns exam status — NEVER creates or modifies an attempt.
+exports.getExamStatus = async (req, res) => {
+  try {
+    const { examId } = req.params;
+    const exam = await Exam.findByPk(examId, {
+      attributes: ['id', 'status', 'start_time'],
+    });
+    if (!exam) return res.status(404).json({ message: 'Exam not found' });
+    res.json({ status: exam.status, start_time: exam.start_time });
+  } catch (error) {
+    console.error('getExamStatus error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 // GET /api/exam/:examId/result — detailed result for one exam
 exports.getMyExamResult = async (req, res) => {
   const studentId = req.user.id;

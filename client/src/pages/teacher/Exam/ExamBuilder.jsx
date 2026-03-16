@@ -53,12 +53,18 @@ export default function ExamBuilder() {
   // NEW: Fetch departments on component mount
   useEffect(() => {
     api
-      .get("/admin/departments", {
+      .get("/teacher/departments", {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       })
-      .then((r) => setDepartments(r.data))
+      .then((r) => {
+        setDepartments(r.data);
+        // Auto-select if there is only 1 department and we are not in edit mode
+        if (r.data.length === 1 && !isEditMode) {
+          setMetadata(prev => ({ ...prev, department_id: r.data[0].id }));
+        }
+      })
       .catch((err) => console.error("Failed to fetch departments", err));
-  }, []);
+  }, [isEditMode]);
 
   useEffect(() => {
     if (isEditMode) {

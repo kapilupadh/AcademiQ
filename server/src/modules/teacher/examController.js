@@ -425,3 +425,31 @@ exports.deleteExam = async (req, res) => {
     res.status(500).json({ message: 'Server error deleting exam' });
   }
 };
+// ─── GET /teacher/departments ────────────────────────────────────────────────
+exports.getDepartments = async (req, res) => {
+  try {
+    const { role, id } = req.user; // We use 'id' instead of 'department_id'
+    
+    let whereClause = { status: 'ACTIVE' };
+
+    // If it's a teacher, look up their fresh profile in the database
+    if (role === 2 || role === '2') {
+      const teacher = await User.findByPk(id, { attributes: ['department_id'] });
+      
+      // If they have a department assigned, lock it down!
+      if (teacher && teacher.department_id) {
+        whereClause.id = teacher.department_id;
+      }
+    }
+
+    const departments = await Department.findAll({
+      where: whereClause,
+      attributes: ['id', 'name', 'code']
+    });
+    
+    res.json(departments);
+  } catch (error) {
+    console.error('getDepartments error:', error);
+    res.status(500).json({ message: 'Error fetching departments', error: error.message });
+  }
+};

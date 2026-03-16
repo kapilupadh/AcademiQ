@@ -11,6 +11,8 @@ router.post('/upload', authenticateToken, upload.single('image'), teacherExamCon
 // All other teacher routes: require teacher or admin role
 router.use(authenticateToken, requireTeacher);
 
+
+router.get('/departments', teacherExamController.getDepartments);
 router.get('/exams', teacherExamController.getTeacherExams);
 router.post('/exams', teacherExamController.createExam);
 router.get('/exams/:id', teacherExamController.getExamDetails);
