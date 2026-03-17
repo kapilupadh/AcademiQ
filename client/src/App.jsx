@@ -1,5 +1,7 @@
 // App.jsx
+import { useEffect } from "react"; // ---> TEST CODE: Added useEffect
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useAcademic } from "./context/AcademicContext"; // ---> TEST CODE: Added context import
 import Login from "./pages/auth/Login/Login";
 import Register from "./pages/auth/Register/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword/ForgotPassword";
@@ -27,7 +29,6 @@ import ExamManage from "./pages/teacher/Exam/ExamManage";
 import AdminExamEngine from "./pages/admin/ExamEngine/AdminExamEngine";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 import SubjectImport from "./pages/admin/SubjectImport/SubjectImport"; 
-// ADDED SUBJECT MANAGER IMPORT
 import SubjectManager from "./pages/admin/SubjectManager/SubjectManager";
 
 // Shared wrapper for student pages (sidebar + layout)
@@ -76,6 +77,15 @@ function AdminPage({ children }) {
 }
 
 export default function App() {
+  // ---> TEST CODE STARTS HERE <---
+  const { departments, isLoading } = useAcademic();
+
+  useEffect(() => {
+    console.log("Context Test - Loading Status:", isLoading);
+    console.log("Context Test - Departments Data:", departments);
+  }, [departments, isLoading]);
+  // ---> TEST CODE ENDS HERE <---
+
   return (
     <BrowserRouter>
       <Routes>

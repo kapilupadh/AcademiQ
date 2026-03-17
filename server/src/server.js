@@ -1,3 +1,4 @@
+//server/src/server.js
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -26,7 +27,9 @@ const authRoutes = require('./modules/auth/authRoutes');
 const examRoutes = require('./modules/exam/examRoutes');
 const adminRoutes = require('./modules/admin/adminRoutes');
 const teacherRoutes = require('./modules/teacher/teacherRoutes');
+const academicRoutes = require('./modules/academic/academicRoutes');
 
+app.use('/api/academics', academicRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/exam', examRoutes);
 app.use('/api/admin', adminRoutes);

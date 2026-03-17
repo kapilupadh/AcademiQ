@@ -1,3 +1,4 @@
+//server/src/modules/auth/authController.js
 const User = require('../../models/User');
 const UniqueId = require('../../models/UniqueId');
 const RegistrationSession = require('../../models/RegistrationSession');
@@ -139,6 +140,8 @@ exports.register = async (req, res) => {
       full_name, 
       dob,
       department_id,
+      program_id,
+      current_semester,
     } = req.body;
     if (process.env.NODE_ENV === 'development') {
       console.log('--- Register Attempt ---');
@@ -205,11 +208,13 @@ exports.register = async (req, res) => {
         password_hash: hashedPassword,
         full_name,
         dob,
-        role: idRecord.role, // Use role from UniqueId (admin, teacher, student)
+        role: idRecord.role, 
         is_active: true,
-        email_verified: false, // Default false until verify
+        email_verified: false, 
         registered_date: new Date(),
-        department_id: department_id || null
+        department_id: department_id || null,
+        program_id: program_id || null,                                      
+        current_semester: current_semester ? parseInt(current_semester) : null 
       }, { transaction: t });
 
       // Mark ID as Used

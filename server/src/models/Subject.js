@@ -10,7 +10,6 @@ const Subject = sequelize.define('Subject', {
   name: {
     type: DataTypes.STRING,
     allowNull: false,
-    comment: 'e.g. Maths-2, Physics, Data Structures',
   },
   code: {
     type: DataTypes.STRING,
@@ -21,6 +20,13 @@ const Subject = sequelize.define('Subject', {
     type: DataTypes.UUID,
     allowNull: false,
   },
+  
+  teacher_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: { model: 'Users', key: 'id' },
+  },
+
   semester: {
     type: DataTypes.INTEGER,
     allowNull: false,

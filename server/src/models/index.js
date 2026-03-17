@@ -91,6 +91,10 @@ MaterialRequest.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
 Exam.hasMany(MaterialRequest, { foreignKey: 'exam_id' });
 MaterialRequest.belongsTo(Exam, { foreignKey: 'exam_id', as: 'exam' });
 
+//Teacher <-> Subject 
+User.hasMany(Subject, { foreignKey: 'teacher_id', as: 'taughtSubjects' });
+Subject.belongsTo(User, { foreignKey: 'teacher_id', as: 'teacher' });
+
 module.exports = {
   sequelize,
   User,

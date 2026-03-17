@@ -21,7 +21,7 @@ const excelUpload = multer({
 });
 exports.excelUpload = excelUpload;
 
-// ── ID Generation ───────────────────────────────────────────────────────────
+// ── Single ID generation ────────────────────────────────────────────────────
 exports.generateUniqueId = async (req, res) => {
   try {
     const { role, name, email, expiry_days } = req.body;
@@ -45,7 +45,11 @@ exports.generateUniqueId = async (req, res) => {
       expiry_date: expiryDate, status: 'ACTIVE',
       generated_by: req.user ? req.user.id : null,
     });
-    res.status(201).json({ message: 'Unique ID generated successfully', unique_id: newId.unique_id, role: newId.role, bound_to: { name: newId.student_name, email: newId.student_email } });
+    res.status(201).json({
+      message: 'Unique ID generated successfully',
+      unique_id: newId.unique_id, role: newId.role,
+      bound_to: { name: newId.student_name, email: newId.student_email },
+    });
   } catch (err) {
     console.error('[generateUniqueId]', err.message);
     res.status(500).json({ message: 'Server Error' });
@@ -85,7 +89,11 @@ exports.bulkGenerateIds = async (req, res) => {
       } while (attempts < 10);
       if (attempts >= 10) { errors.push({ row: i + 2, issue: 'Could not generate unique ID' }); continue; }
 
-      await UniqueId.create({ unique_id: uniqueString, role: 3, student_name: fullName, student_email: get(row, 'email') || null, status: 'ACTIVE', generated_by: req.user?.id || null });
+      await UniqueId.create({
+        unique_id: uniqueString, role: 3,
+        student_name: fullName, student_email: get(row, 'email') || null,
+        status: 'ACTIVE', generated_by: req.user?.id || null,
+      });
       results.push({ 'Student Name': fullName, 'Roll No': get(row, 'roll no', 'roll number'), 'Email': get(row, 'email'), 'Unique ID': uniqueString });
     }
 
@@ -102,9 +110,19 @@ exports.bulkGenerateIds = async (req, res) => {
   }
 };
 
+// ── POST /admin/students/bulk-generate ─────────────────────────────────────
+// Accepts:
+//   students[]        — array of { name, email, rollNo }
+//   department_id     — UUID (optional but strongly recommended)
+//   program_id        — UUID (optional)
+//   current_semester  — integer 1-8 (optional)
+//
+// Saves department_id, program_id, current_semester onto every UniqueId record
+// so when students register with these IDs, those values pre-fill their profile.
 exports.bulkGenerateStudentsFrontend = async (req, res) => {
   try {
-    const { students } = req.body;
+    const { students, department_id, program_id, current_semester } = req.body;
+
     if (!Array.isArray(students) || !students.length)
       return res.status(400).json({ message: 'Missing or invalid students array.' });
 
@@ -144,15 +162,44 @@ exports.bulkGenerateStudentsFrontend = async (req, res) => {
         } else attempts++;
       }
       if (!isUnique) { errors.push({ name, email, reason: 'ID collision.' }); continue; }
-      results.push({ unique_id: uniqueString, role: 3, student_name: name, student_email: email || null, status: 'ACTIVE', generated_by: req.user?.id || null, _rollNo: rollNo || '' });
+
+      results.push({
+        unique_id: uniqueString,
+        role: 3,
+        student_name: name,
+        student_email: email || null,
+        status: 'ACTIVE',
+        generated_by: req.user?.id || null,
+        // NEW: store academic routing data on the UniqueId record
+        department_id: department_id || null,
+        program_id: program_id || null,
+        current_semester: current_semester ? parseInt(current_semester) : null,
+        _rollNo: rollNo || '',
+      });
     }
 
-    if (results.length > 0) await UniqueId.bulkCreate(results.map(({ _rollNo, ...rest }) => rest));
+    if (results.length > 0) {
+      await UniqueId.bulkCreate(results.map(({ _rollNo, ...rest }) => rest));
+    }
+
     res.status(200).json({
       message: 'Bulk generation completed.',
-      successCount: results.length, failedCount: errors.length,
-      data: results.map(r => ({ Name: r.student_name, 'Roll No': r._rollNo, Email: r.student_email || 'N/A', 'Unique ID': r.unique_id })),
-      errors: errors.map(e => ({ name: e.name, email: e.email || `Roll No: ${e.rollNo}`, reason: e.reason })),
+      successCount: results.length,
+      failedCount: errors.length,
+      department_id: department_id || null,
+      program_id: program_id || null,
+      current_semester: current_semester || null,
+      data: results.map(r => ({
+        Name: r.student_name,
+        'Roll No': r._rollNo,
+        Email: r.student_email || 'N/A',
+        'Unique ID': r.unique_id,
+      })),
+      errors: errors.map(e => ({
+        name: e.name,
+        email: e.email || `Roll No: ${e.rollNo}`,
+        reason: e.reason,
+      })),
     });
   } catch (err) {
     console.error('bulkGenerateStudentsFrontend error:', err);
@@ -233,7 +280,6 @@ exports.updateSubject = async (req, res) => {
     const { Subject } = require('../../models');
     const subject = await Subject.findByPk(req.params.id);
     if (!subject) return res.status(404).json({ message: 'Subject not found.' });
-
     const { name, code, category, semester } = req.body;
     await subject.update({
       ...(name !== undefined && { name: name.trim() }),
@@ -270,7 +316,7 @@ exports.clearProgramSubjects = async (req, res) => {
   }
 };
 
-// ── Excel parser helper ──────────────────────────────────────────────────────
+// ── Excel parser ─────────────────────────────────────────────────────────────
 const parseSemesterFromString = (raw) => {
   if (!raw) return null;
   const val = String(raw).replace(/\s+/g, ' ').trim().toLowerCase();
@@ -330,63 +376,39 @@ const parseExcelBuffer = (buffer) => {
   if (yearCol === -1 || courseCol === -1 || titleCol === -1)
     return { error: `Could not find required columns in [${headers.join(', ')}]. Expected: Year, Course, Title of the paper.` };
 
-  const parsed = [];
-  const rowErrors = [];
-  
-  // TRACKING VARIABLES
-  let lastSemester = null;
-  let lastCourse = null; // Added to track course codes for empty cells
-
+  const parsed = [], rowErrors = [];
+  let lastSemester = null, lastCourse = null;
   const dataRows = rawRows.slice(headerRowIdx + 1);
 
   for (let i = 0; i < dataRows.length; i++) {
     const row = dataRows[i];
     const rowNum = headerRowIdx + i + 2;
-    const yearVal   = String(row[yearCol]  || '').trim();
-    let courseVal = String(row[courseCol] || '').trim(); // Changed to let
-    const titleVal  = String(row[titleCol]  || '').trim();
+    const yearVal  = String(row[yearCol]  || '').trim();
+    let courseVal  = String(row[courseCol] || '').trim();
+    const titleVal = String(row[titleCol]  || '').trim();
 
     if (yearVal) {
       const sem = parseSemesterFromString(yearVal);
       if (sem) lastSemester = sem;
     }
 
-    // Check for completely blank row before applying carry-over
     if (!courseVal && !titleVal) continue;
 
-    // Apply Course carry-over logic
-    if (courseVal) {
-      lastCourse = courseVal; // Remember new course
-    } else if (lastCourse) {
-      courseVal = lastCourse; // Apply remembered course to empty cell
-    }
+    if (courseVal) { lastCourse = courseVal; }
+    else if (lastCourse) { courseVal = lastCourse; }
 
-    if (!titleVal) {
-      rowErrors.push({ row: rowNum, issue: `Missing title (Course: "${courseVal}")` });
-      continue;
-    }
-    if (!lastSemester) {
-      rowErrors.push({ row: rowNum, issue: `Cannot determine semester for "${titleVal}"` });
-      continue;
-    }
+    if (!titleVal) { rowErrors.push({ row: rowNum, issue: `Missing title (Course: "${courseVal}")` }); continue; }
+    if (!lastSemester) { rowErrors.push({ row: rowNum, issue: `Cannot determine semester for "${titleVal}"` }); continue; }
 
-    parsed.push({
-      rowNum,
-      name: titleVal,
-      code: courseVal || null,
-      category: getCategoryFromCode(courseVal),
-      semester: lastSemester,
-    });
+    parsed.push({ rowNum, name: titleVal, code: courseVal || null, category: getCategoryFromCode(courseVal), semester: lastSemester });
   }
 
   return { parsed, rowErrors };
 };
 
-// ── POST /admin/subjects/preview ────────────────────────────────────────────
 exports.previewSubjectImport = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'Please upload an Excel file.' });
-
     const { parsed, rowErrors, error } = parseExcelBuffer(req.file.buffer);
     if (error) return res.status(400).json({ message: error });
 
@@ -395,23 +417,16 @@ exports.previewSubjectImport = async (req, res) => {
       if (!bySemester[s.semester]) bySemester[s.semester] = [];
       bySemester[s.semester].push(s);
     }
-
-    res.json({
-      totalRows: parsed.length,
-      semesters: bySemester,
-      rowErrors: rowErrors.length > 0 ? rowErrors : undefined,
-    });
+    res.json({ totalRows: parsed.length, semesters: bySemester, rowErrors: rowErrors.length > 0 ? rowErrors : undefined });
   } catch (err) {
     console.error('previewSubjectImport error:', err);
     res.status(500).json({ message: err.message || 'Server error during preview.' });
   }
 };
 
-// ── POST /admin/subjects/bulk-import ────────────────────────────────────────
 exports.bulkImportSubjects = async (req, res) => {
   try {
     const { Department, Program, Subject } = require('../../models');
-
     if (!req.file) return res.status(400).json({ message: 'Please upload an Excel file.' });
 
     const { department_id, program_name, program_code, duration_years, replace } = req.body;
@@ -423,13 +438,7 @@ exports.bulkImportSubjects = async (req, res) => {
 
     const [program, programCreated] = await Program.findOrCreate({
       where: { name: program_name.trim(), department_id },
-      defaults: {
-        name: program_name.trim(),
-        code: (program_code || program_name).trim().toUpperCase(),
-        department_id,
-        duration_years: parseInt(duration_years) || 3,
-        is_active: true,
-      },
+      defaults: { name: program_name.trim(), code: (program_code || program_name).trim().toUpperCase(), department_id, duration_years: parseInt(duration_years) || 3, is_active: true },
     });
 
     if (replace === 'true' || replace === true) {
@@ -457,11 +466,8 @@ exports.bulkImportSubjects = async (req, res) => {
 
     res.status(200).json({
       message: 'Import complete.',
-      department: dept.name, program: program.name, programCreated,
-      created, skipped,
-      errors: [...(rowErrors || []), ...dbErrors].length > 0
-        ? [...(rowErrors || []), ...dbErrors]
-        : undefined,
+      department: dept.name, program: program.name, programCreated, created, skipped,
+      errors: [...(rowErrors || []), ...dbErrors].length > 0 ? [...(rowErrors || []), ...dbErrors] : undefined,
     });
   } catch (err) {
     console.error('bulkImportSubjects error:', err);

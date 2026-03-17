@@ -1,3 +1,4 @@
+//server/src/models/User.js 
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const UniqueId = require('./UniqueId');
@@ -11,31 +12,33 @@ const User = sequelize.define('User', {
   unique_id: {
     type: DataTypes.STRING,
     allowNull: false,
-    references: {
-      model: UniqueId,
-      key: 'unique_id',
-    }
+    references: { model: UniqueId, key: 'unique_id' },
   },
   department_id: {
     type: DataTypes.UUID,
     allowNull: true,
-    references: {
-      model: 'Departments',
-      key: 'id',
-    }
+    references: { model: 'Departments', key: 'id' },
+  },
+  program_id: {                          // NEW — Phase 1
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: { model: 'programs', key: 'id' },
+  },
+  current_semester: {                    // NEW — Phase 1
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    validate: { min: 1, max: 8 },
   },
   username: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true, 
+    unique: true,
   },
   email: {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true,
-    validate: {
-      isEmail: true,
-    },
+    validate: { isEmail: true },
   },
   password_hash: {
     type: DataTypes.STRING,
@@ -54,12 +57,10 @@ const User = sequelize.define('User', {
     allowNull: true,
   },
   role: {
-    type: DataTypes.INTEGER, // 1 = Admin, 2 = Teacher, 3 = Student
+    type: DataTypes.INTEGER, // 1=Admin 2=Teacher 3=Student
     defaultValue: 3,
     allowNull: false,
-    validate: {
-      isIn: [[1, 2, 3]]
-    }
+    validate: { isIn: [[1, 2, 3]] },
   },
   otp: {
     type: DataTypes.STRING,
