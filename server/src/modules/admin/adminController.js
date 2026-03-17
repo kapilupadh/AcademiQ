@@ -110,15 +110,6 @@ exports.bulkGenerateIds = async (req, res) => {
   }
 };
 
-// ── POST /admin/students/bulk-generate ─────────────────────────────────────
-// Accepts:
-//   students[]        — array of { name, email, rollNo }
-//   department_id     — UUID (optional but strongly recommended)
-//   program_id        — UUID (optional)
-//   current_semester  — integer 1-8 (optional)
-//
-// Saves department_id, program_id, current_semester onto every UniqueId record
-// so when students register with these IDs, those values pre-fill their profile.
 exports.bulkGenerateStudentsFrontend = async (req, res) => {
   try {
     const { students, department_id, program_id, current_semester } = req.body;
@@ -472,5 +463,61 @@ exports.bulkImportSubjects = async (req, res) => {
   } catch (err) {
     console.error('bulkImportSubjects error:', err);
     res.status(500).json({ message: err.message || 'Server error during subject import.' });
+  }
+};
+exports.updateDepartmentLocation = async (req, res) => {
+  try {
+    const { Department } = require('../../models');
+    const { latitude, longitude, geofence_radius } = req.body;
+
+    if (latitude === undefined || longitude === undefined)
+      return res.status(400).json({ message: 'latitude and longitude are required.' });
+
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+
+    if (isNaN(lat) || isNaN(lng))
+      return res.status(400).json({ message: 'Invalid coordinates.' });
+    if (lat < -90 || lat > 90)
+      return res.status(400).json({ message: 'Latitude must be between -90 and 90.' });
+    if (lng < -180 || lng > 180)
+      return res.status(400).json({ message: 'Longitude must be between -180 and 180.' });
+
+    const dept = await Department.findByPk(req.params.id);
+    if (!dept) return res.status(404).json({ message: 'Department not found.' });
+
+    await dept.update({
+      latitude: lat,
+      longitude: lng,
+      geofence_radius: geofence_radius ? Math.max(10, Math.min(500, parseInt(geofence_radius))) : 50,
+    });
+
+    res.json({
+      message: `Location saved for ${dept.name}.`,
+      department: {
+        id: dept.id,
+        name: dept.name,
+        latitude: dept.latitude,
+        longitude: dept.longitude,
+        geofence_radius: dept.geofence_radius,
+      },
+    });
+  } catch (err) {
+    console.error('updateDepartmentLocation error:', err);
+    res.status(500).json({ message: 'Error updating department location.' });
+  }
+};
+
+// GET /admin/departments/:id/location
+exports.getDepartmentLocation = async (req, res) => {
+  try {
+    const { Department } = require('../../models');
+    const dept = await Department.findByPk(req.params.id, {
+      attributes: ['id', 'name', 'code', 'latitude', 'longitude', 'geofence_radius'],
+    });
+    if (!dept) return res.status(404).json({ message: 'Department not found.' });
+    res.json(dept);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching department location.' });
   }
 };

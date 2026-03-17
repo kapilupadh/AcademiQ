@@ -28,7 +28,10 @@ const examRoutes = require('./modules/exam/examRoutes');
 const adminRoutes = require('./modules/admin/adminRoutes');
 const teacherRoutes = require('./modules/teacher/teacherRoutes');
 const academicRoutes = require('./modules/academic/academicRoutes');
+const attendanceRoutes = require('./modules/attendance/attendanceRoutes');
 
+
+app.use('/api/attendance', attendanceRoutes);
 app.use('/api/academics', academicRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/exam', examRoutes);

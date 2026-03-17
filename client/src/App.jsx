@@ -1,7 +1,5 @@
-// App.jsx
-import { useEffect } from "react"; // ---> TEST CODE: Added useEffect
+// client/src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useAcademic } from "./context/AcademicContext"; // ---> TEST CODE: Added context import
 import Login from "./pages/auth/Login/Login";
 import Register from "./pages/auth/Register/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword/ForgotPassword";
@@ -28,16 +26,18 @@ import ExamBuilder from "./pages/teacher/Exam/ExamBuilder";
 import ExamManage from "./pages/teacher/Exam/ExamManage";
 import AdminExamEngine from "./pages/admin/ExamEngine/AdminExamEngine";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
-import SubjectImport from "./pages/admin/SubjectImport/SubjectImport"; 
+import SubjectImport from "./pages/admin/SubjectImport/SubjectImport";
 import SubjectManager from "./pages/admin/SubjectManager/SubjectManager";
+import TeacherAttendancePage from "./pages/teacher/Attendance/TeacherAttendancePage";
+import StudentAttendancePage from "./pages/student/Attendance/StudentAttendancePage";
+import DepartmentLocation from "./pages/admin/DepartmentLocation/DepartmentLocation";
 
-// Shared wrapper for student pages (sidebar + layout)
 function StudentPage({ children }) {
   return (
     <ProtectedRoute allowedRoles={[3]}>
       <Sidebar />
       <div
-        className="transition-all duration-300"
+        className="transition-all duration-300 max-lg:!pl-0 w-full"
         style={{ paddingLeft: "var(--student-sidebar-w, 260px)" }}
       >
         <Layout header={<Navbar page="student" />}>{children}</Layout>
@@ -46,13 +46,12 @@ function StudentPage({ children }) {
   );
 }
 
-// Shared wrapper for teacher pages
 function TeacherPage({ children }) {
   return (
     <ProtectedRoute allowedRoles={[2]}>
       <TeacherSidebar />
       <div
-        className="transition-all duration-300"
+        className="transition-all duration-300 max-lg:!pl-0 w-full"
         style={{ paddingLeft: "var(--teacher-sidebar-w, 240px)" }}
       >
         <Layout header={<Navbar page="teacher" />}>{children}</Layout>
@@ -61,13 +60,12 @@ function TeacherPage({ children }) {
   );
 }
 
-// Shared wrapper for admin pages
 function AdminPage({ children }) {
   return (
     <ProtectedRoute allowedRoles={[1]}>
       <AdminSidebar />
       <div
-        className="transition-all duration-300"
+        className="transition-all duration-300 max-lg:!pl-0 w-full"
         style={{ paddingLeft: "var(--admin-sidebar-w, 260px)" }}
       >
         <Layout header={<Navbar page="public" />}>{children}</Layout>
@@ -77,15 +75,6 @@ function AdminPage({ children }) {
 }
 
 export default function App() {
-  // ---> TEST CODE STARTS HERE <---
-  const { departments, isLoading } = useAcademic();
-
-  useEffect(() => {
-    console.log("Context Test - Loading Status:", isLoading);
-    console.log("Context Test - Departments Data:", departments);
-  }, [departments, isLoading]);
-  // ---> TEST CODE ENDS HERE <---
-
   return (
     <BrowserRouter>
       <Routes>
@@ -98,7 +87,6 @@ export default function App() {
         <Route path="/admin/login" element={<Layout header={<Navbar page="public" />}><AdminLogin /></Layout>} />
         <Route path="/admin/register" element={<Layout header={<Navbar page="public" />}><AdminRegister /></Layout>} />
 
-        {/* Default redirect */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
         {/* ── Student Pages ── */}
@@ -106,8 +94,9 @@ export default function App() {
         <Route path="/profile" element={<StudentPage><Profile /></StudentPage>} />
         <Route path="/exams/result" element={<StudentPage><Result /></StudentPage>} />
         <Route path="/exam/instructions" element={<StudentPage><ExamInstructions /></StudentPage>} />
+        <Route path="/attendance/history" element={<StudentPage><StudentAttendancePage /></StudentPage>} />
 
-        {/* Exam portal — no sidebar/navbar, isolated layout */}
+        {/* Exam portal — isolated layout */}
         <Route
           path="/exam/portal/:sessionId"
           element={
@@ -119,16 +108,16 @@ export default function App() {
           }
         />
 
-       {/* ── Admin Pages ── */}
+        {/* ── Admin Pages ── */}
         <Route path="/admin/generate-id" element={<AdminPage><GenerateId /></AdminPage>} />
         <Route path="/admin/dashboard" element={<AdminPage><AdminDashboard /></AdminPage>} />
         <Route path="/admin/exams" element={<AdminPage><AdminExamEngine /></AdminPage>} />
-        
-        {/* ADDED THESE NEW ROUTES: */}
         <Route path="/admin/subjects/import" element={<AdminPage><SubjectImport /></AdminPage>} />
         <Route path="/admin/subjects/manage" element={<AdminPage><SubjectManager /></AdminPage>} />
+        <Route path="/admin/departments/locations" element={<AdminPage><DepartmentLocation /></AdminPage>} />
 
         {/* ── Teacher Pages ── */}
+        <Route path="/teacher/attendance/mark" element={<TeacherPage><TeacherAttendancePage /></TeacherPage>} />
         <Route path="/teacher/dashboard" element={<TeacherPage><TeacherDashboard /></TeacherPage>} />
         <Route path="/teacher/exams" element={<TeacherPage><ExamList /></TeacherPage>} />
         <Route path="/teacher/exams/create" element={<TeacherPage><ExamBuilder /></TeacherPage>} />

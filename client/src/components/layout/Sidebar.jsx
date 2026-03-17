@@ -57,7 +57,6 @@ const PRIMARY = [
     to: "/exam/instructions",
   },
   {
-    // NEW: Promoted Results to Primary Nav
     key: "result",
     label: "Result",
     icon: ClipboardList,
@@ -92,7 +91,6 @@ const SECONDARY = [
     icon: BookMarked,
     accordion: true,
     sub: [
-      // Removed "Examination Results" from here since it's now in PRIMARY
       {
         label: "Examination Guidelines",
         icon: FileText,
@@ -459,9 +457,9 @@ function SidebarContent({
       >
         <SectionLabel text="Main" collapsed={collapsed} tk={tk} />
         <nav className="space-y-0.5">
-          {PRIMARY.map((item) => (
+          {PRIMARY.map(({ key, ...item }) => ( 
             <NavItem
-              key={item.key}
+              key={key}
               {...item}
               collapsed={collapsed}
               tk={tk}
@@ -479,11 +477,11 @@ function SidebarContent({
       >
         <SectionLabel text="More" collapsed={collapsed} tk={tk} />
         <div className="space-y-0.5">
-          {SECONDARY.map((item) => {
+          {SECONDARY.map(({ key, ...item }) => { 
             if (item.comingSoon) {
               return (
                 <ComingSoonItem
-                  key={item.key}
+                  key={key}
                   icon={item.icon}
                   label={item.label}
                   collapsed={collapsed}
@@ -494,8 +492,8 @@ function SidebarContent({
             if (item.accordion) {
               return (
                 <AccordionGroup
-                  key={item.key}
-                  groupKey={item.key}
+                  key={key}
+                  groupKey={key}
                   icon={item.icon}
                   label={item.label}
                   openGroups={openGroups}
@@ -518,7 +516,7 @@ function SidebarContent({
             }
             return (
               <NavItem
-                key={item.key}
+                key={key}
                 icon={item.icon}
                 label={item.label}
                 to={item.to}
@@ -615,10 +613,15 @@ export default function Sidebar() {
 
   return (
     <>
+      {/* FIXED: The Hamburger Toggle Button 
+        - Increased z-index to 9999 so nothing buries it 
+        - Adjusted colors so it dynamically stands out against light and dark backgrounds 
+      */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-lg
-          bg-zinc-900 border border-zinc-700 shadow-lg text-zinc-400 hover:text-white transition-all"
+        className="fixed top-4 left-4 z-[9999] md:hidden p-2 rounded-lg
+          bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-md 
+          text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all"
         aria-label="Open sidebar"
       >
         <Menu size={18} />
@@ -634,7 +637,7 @@ export default function Sidebar() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={() => setMobileOpen(false)}
-              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+              className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm md:hidden"
             />
             <motion.aside
               key="drawer"
@@ -642,7 +645,7 @@ export default function Sidebar() {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 380, damping: 38 }}
-              className="fixed left-0 top-0 bottom-0 z-50 w-[260px] shadow-2xl md:hidden"
+              className="fixed left-0 top-0 bottom-0 z-[9999] w-[260px] shadow-2xl md:hidden"
             >
               <SidebarContent
                 collapsed={false}

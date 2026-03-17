@@ -1,11 +1,13 @@
+// server/src/models/index.js
 const sequelize = require('../config/database');
 const User = require('./User');
 const UniqueId = require('./UniqueId');
 const RegistrationSession = require('./RegistrationSession');
 const Department = require('./Department');
-const Program = require('./Program');        // NEW
+const Program = require('./Program');
 const Subject = require('./Subject');
 const StudentSubject = require('./StudentSubject');
+const AttendanceSession = require('./AttendanceSession');
 
 // Exam Modules
 const Exam = require('./Exam');
@@ -17,11 +19,15 @@ const Violation = require('./Violation');
 const Attendance = require('./Attendance');
 const ActivityLog = require('./ActivityLog');
 
-// --- Associations ---
+// ── Associations ──────────────────────────────────────────────────────────────
 
-// User <-> Attendance
+// User <-> Attendance (as student)
 User.hasMany(Attendance, { foreignKey: 'student_id' });
 Attendance.belongsTo(User, { foreignKey: 'student_id' });
+
+// User <-> Attendance (as teacher who marked)
+User.hasMany(Attendance, { foreignKey: 'teacher_id', as: 'markedAttendances' });
+Attendance.belongsTo(User, { foreignKey: 'teacher_id', as: 'teacher' });
 
 // User <-> ActivityLog
 User.hasMany(ActivityLog, { foreignKey: 'user_id' });
@@ -43,6 +49,10 @@ Subject.belongsTo(Program, { foreignKey: 'program_id', as: 'program' });
 Department.hasMany(Subject, { foreignKey: 'department_id' });
 Subject.belongsTo(Department, { foreignKey: 'department_id' });
 
+// Teacher <-> Subject
+User.hasMany(Subject, { foreignKey: 'teacher_id', as: 'taughtSubjects' });
+Subject.belongsTo(User, { foreignKey: 'teacher_id', as: 'teacher' });
+
 // Subject <-> StudentSubject
 Subject.hasMany(StudentSubject, { foreignKey: 'subject_id' });
 StudentSubject.belongsTo(Subject, { foreignKey: 'subject_id' });
@@ -50,6 +60,23 @@ StudentSubject.belongsTo(Subject, { foreignKey: 'subject_id' });
 // User (student) <-> StudentSubject
 User.hasMany(StudentSubject, { foreignKey: 'student_id', as: 'enrollments' });
 StudentSubject.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
+
+// Subject <-> Attendance
+Subject.hasMany(Attendance, { foreignKey: 'subject_id' });
+Attendance.belongsTo(Subject, { foreignKey: 'subject_id', as: 'subject' });
+
+// AttendanceSession associations
+Subject.hasMany(AttendanceSession, { foreignKey: 'subject_id' });
+AttendanceSession.belongsTo(Subject, { foreignKey: 'subject_id', as: 'subject' });
+
+User.hasMany(AttendanceSession, { foreignKey: 'teacher_id', as: 'attendanceSessions' });
+AttendanceSession.belongsTo(User, { foreignKey: 'teacher_id', as: 'teacher' });
+
+Department.hasMany(AttendanceSession, { foreignKey: 'department_id' });
+AttendanceSession.belongsTo(Department, { foreignKey: 'department_id', as: 'department' });
+
+AttendanceSession.hasMany(Attendance, { foreignKey: 'session_id' });
+Attendance.belongsTo(AttendanceSession, { foreignKey: 'session_id', as: 'session' });
 
 // Exam <-> Question
 Exam.hasMany(Question, { foreignKey: 'exam_id', as: 'questions', onDelete: 'CASCADE' });
@@ -91,10 +118,6 @@ MaterialRequest.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
 Exam.hasMany(MaterialRequest, { foreignKey: 'exam_id' });
 MaterialRequest.belongsTo(Exam, { foreignKey: 'exam_id', as: 'exam' });
 
-//Teacher <-> Subject 
-User.hasMany(Subject, { foreignKey: 'teacher_id', as: 'taughtSubjects' });
-Subject.belongsTo(User, { foreignKey: 'teacher_id', as: 'teacher' });
-
 module.exports = {
   sequelize,
   User,
@@ -103,6 +126,7 @@ module.exports = {
   Program,
   Subject,
   StudentSubject,
+  AttendanceSession,
   RegistrationSession,
   Exam,
   Question,

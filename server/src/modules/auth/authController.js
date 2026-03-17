@@ -469,19 +469,22 @@ exports.getProfile = async (req, res) => {
 // --- API 9: Update Profile ---
 exports.updateProfile = async (req, res) => {
   try {
-    const { full_name, dob } = req.body;
+    const { full_name, dob, current_semester, program_id, department_id } = req.body;
     const user = await User.findByPk(req.user.id);
-    
+
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Update allowed fields
-    if (full_name) user.full_name = full_name;
-    if (dob) user.dob = dob;
-    
+    if (full_name !== undefined)         user.full_name        = full_name;
+    if (dob !== undefined)               user.dob              = dob;
+    if (current_semester !== undefined)  user.current_semester = current_semester ? parseInt(current_semester) : null;
+    if (program_id !== undefined)        user.program_id       = program_id || null;
+    if (department_id !== undefined)     user.department_id    = department_id || null;
+
     await user.save();
 
     res.json({ message: 'Profile updated successfully', user });
   } catch (error) {
+    console.error('updateProfile error:', error);
     res.status(500).json({ message: 'Error updating profile' });
   }
 };
