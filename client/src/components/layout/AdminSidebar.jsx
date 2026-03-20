@@ -7,7 +7,7 @@ import {
   UserSearch, GraduationCap, ClipboardList, MessageSquare,
   Settings2, ShieldCheck, ScrollText, FileText,
   ChevronLeft, ChevronRight, ChevronDown, LogOut, School, Menu, X, Upload,
-  MapPin, // <--- 1. ADDED MAPPIN IMPORT HERE
+  MapPin, BarChart2, // <--- 1. ADDED MAPPIN IMPORT HERE
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -30,6 +30,7 @@ const PRIMARY = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, to: "/admin/dashboard" },
   { key: "user-management", label: "User Management", icon: UsersRound, to: "/admin/generate-id", badge: { type: "chip", text: "ID", style: "bg-violet-500/15 text-violet-400 border border-violet-500/30" } },
   { key: "exam-engine", label: "Examination Engine", icon: BrainCircuit, to: "/admin/exams", badge: { type: "new", text: "NEW", style: "bg-violet-500/15 text-violet-400 border border-violet-500/30" } },
+  { label: "Attendance Reports", icon: BarChart2, to: "/admin/attendance/report" },
 ];
 
 // comingSoon: true → renders as non-clickable with "Soon" pill

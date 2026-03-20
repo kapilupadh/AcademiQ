@@ -1,15 +1,16 @@
 // client/src/pages/student/Attendance/StudentAttendancePage.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import api from "../../../services/api";
 import {
   CheckCircle2, XCircle, Clock, MapPin, Hash, QrCode,
-  Loader, AlertTriangle, BookOpen, BarChart2, ChevronDown,
-  ChevronRight, Camera,
+  Loader, AlertTriangle, BookOpen, BarChart2,
+  ChevronRight, ChevronDown, Camera, RefreshCw,
 } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const pctColor = (p) => p >= 75 ? "text-emerald-600 dark:text-emerald-400" : p >= 50 ? "text-amber-600 dark:text-amber-400" : "text-red-500";
-const pctBg = (p) => p >= 75 ? "bg-emerald-500" : p >= 50 ? "bg-amber-500" : "bg-red-500";
+const pctBg   = (p) => p >= 75 ? "bg-emerald-500" : p >= 50 ? "bg-amber-500" : "bg-red-500";
+const fmt     = (d) => d ? new Date(d).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—";
 
 function Countdown({ expiresAt }) {
   const [secs, setSecs] = useState(0);
@@ -23,7 +24,7 @@ function Countdown({ expiresAt }) {
   return <span className={`font-mono font-bold ${secs < 60 ? "text-red-500" : "text-emerald-500"}`}>{m}:{String(s).padStart(2, "0")}</span>;
 }
 
-// ── QR Scanner using jsQR ─────────────────────────────────────────────────────
+// ── QR Scanner ────────────────────────────────────────────────────────────────
 function QRScanner({ onScan }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -35,16 +36,9 @@ function QRScanner({ onScan }) {
     const start = async () => {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play();
-          scan();
-        }
-      } catch {
-        setError("Camera access denied. Please allow camera permission.");
-      }
+        if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play(); scan(); }
+      } catch { setError("Camera access denied."); }
     };
-
     const scan = () => {
       animRef.current = requestAnimationFrame(async () => {
         if (!videoRef.current || videoRef.current.readyState !== 4) { scan(); return; }
@@ -54,63 +48,99 @@ function QRScanner({ onScan }) {
         canvas.height = videoRef.current.videoHeight;
         ctx.drawImage(videoRef.current, 0, 0);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        // Dynamically import jsQR
         const jsQR = (await import("jsqr")).default;
         const code = jsQR(imageData.data, imageData.width, imageData.height);
         if (code) { onScan(code.data); return; }
         scan();
       });
     };
-
     start();
-    return () => {
-      cancelAnimationFrame(animRef.current);
-      stream?.getTracks().forEach(t => t.stop());
-    };
+    return () => { cancelAnimationFrame(animRef.current); stream?.getTracks().forEach(t => t.stop()); };
   }, []);
 
-  return (
-    <div className="space-y-3">
-      {error ? (
-        <div className="text-red-500 text-sm text-center p-4">{error}</div>
-      ) : (
-        <div className="relative rounded-xl overflow-hidden bg-black aspect-square max-w-xs mx-auto">
-          <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
-          <canvas ref={canvasRef} className="hidden" />
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-48 h-48 border-2 border-white/70 rounded-xl" />
-          </div>
-        </div>
-      )}
-      <p className="text-xs text-zinc-400 text-center">Point camera at the QR code</p>
+  return error ? (
+    <div className="text-red-500 text-sm text-center p-4">{error}</div>
+  ) : (
+    <div className="relative rounded-xl overflow-hidden bg-black aspect-square max-w-xs mx-auto">
+      <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
+      <canvas ref={canvasRef} className="hidden" />
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="w-48 h-48 border-2 border-white/70 rounded-xl" />
+      </div>
     </div>
   );
 }
 
-// ── Check-in Panel ────────────────────────────────────────────────────────────
-function CheckInPanel() {
-  const [sessionId, setSessionId] = useState("");
-  const [sessionInfo, setSessionInfo] = useState(null);
-  const [loadingSession, setLoadingSession] = useState(false);
-  const [sessionError, setSessionError] = useState("");
+// ── Session Card ──────────────────────────────────────────────────────────────
+function SessionCard({ session, onMark }) {
+  const isMarked = session.already_marked;
+  const canMark = session.is_active && session.otp_active && !isMarked;
 
+  return (
+    <div className={`border rounded-2xl p-4 transition-all ${
+      isMarked ? "border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/10"
+      : canMark ? "border-teal-400 dark:border-teal-600 bg-white dark:bg-zinc-900 shadow-sm"
+      : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 opacity-75"
+    }`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <p className="font-semibold text-zinc-900 dark:text-white truncate">{session.subject?.name}</p>
+            <span className="text-xs font-mono text-zinc-400 shrink-0">{session.subject?.code}</span>
+          </div>
+          <p className="text-xs text-zinc-500 flex items-center gap-1 mb-2">
+            <Clock className="w-3.5 h-3.5" />{fmt(session.class_start_time)} — {fmt(session.class_end_time)}
+            <span className="mx-1">·</span>
+            {session.teacher_name}
+          </p>
+
+          {isMarked ? (
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="w-4 h-4" /> Attendance marked
+            </span>
+          ) : !session.activated ? (
+            <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+              <AlertTriangle className="w-3.5 h-3.5" /> Waiting for teacher to activate
+            </span>
+          ) : !session.otp_active ? (
+            <span className="text-xs text-red-500 flex items-center gap-1">
+              <XCircle className="w-3.5 h-3.5" /> OTP expired — ask teacher to regenerate
+            </span>
+          ) : (
+            <span className="text-xs text-teal-600 dark:text-teal-400 flex items-center gap-1">
+              Expires in <Countdown expiresAt={session.expires_at} />
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 ${
+            session.mode === "OTP"
+              ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+              : "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+          }`}>
+            {session.mode === "OTP" ? <Hash className="w-3 h-3" /> : <QrCode className="w-3 h-3" />}
+            {session.mode}
+          </span>
+          {canMark && (
+            <button onClick={() => onMark(session)}
+              className="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg transition-all flex items-center gap-1">
+              Mark <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Mark Attendance Modal ─────────────────────────────────────────────────────
+function MarkAttendanceModal({ session, onSuccess, onClose }) {
   const [code, setCode] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
-  const [result, setResult] = useState(null);
-  const [submitError, setSubmitError] = useState("");
-
-  const fetchSession = async () => {
-    if (!sessionId.trim()) return;
-    setLoadingSession(true); setSessionError(""); setSessionInfo(null);
-    try {
-      const res = await api.get(`/attendance/sessions/${sessionId.trim()}/available`);
-      setSessionInfo(res.data);
-    } catch (err) {
-      setSessionError(err.response?.data?.message || "Session not found.");
-    } finally { setLoadingSession(false); }
-  };
+  const [error, setError] = useState("");
 
   const getLocation = () => new Promise((resolve, reject) => {
     if (!navigator.geolocation) { reject(new Error("Geolocation not supported.")); return; }
@@ -122,123 +152,54 @@ function CheckInPanel() {
   });
 
   const handleSubmit = async () => {
-    if (!code.trim()) { setSubmitError("Please enter the OTP or scan QR."); return; }
-    setSubmitting(true); setSubmitError(""); setGettingLocation(true);
-
+    if (!code.trim()) { setError("Please enter the OTP or scan QR."); return; }
+    setSubmitting(true); setError(""); setGettingLocation(true);
     let location;
-    try {
-      location = await getLocation();
-    } catch (err) {
-      setSubmitError(err.message);
-      setSubmitting(false); setGettingLocation(false);
-      return;
-    }
+    try { location = await getLocation(); }
+    catch (err) { setError(err.message); setSubmitting(false); setGettingLocation(false); return; }
     setGettingLocation(false);
-
     try {
       const res = await api.post("/attendance/submit", {
-        session_id: sessionInfo.id,
-        code: code.trim(),
-        latitude: location.latitude,
-        longitude: location.longitude,
+        session_id: session.id, code: code.trim(),
+        latitude: location.latitude, longitude: location.longitude,
       });
-      setResult({ success: true, message: res.data.message, distance: res.data.distance_meters });
+      onSuccess(res.data);
     } catch (err) {
-      setSubmitError(err.response?.data?.message || "Submission failed.");
+      setError(err.response?.data?.message || "Submission failed.");
     } finally { setSubmitting(false); }
   };
 
-  const handleQRScan = (token) => {
-    setShowScanner(false);
-    setCode(token);
-  };
-
-  if (result?.success) {
-    return (
-      <div className="text-center space-y-4 py-8">
-        <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto" />
-        <h3 className="text-xl font-bold text-zinc-900 dark:text-white">Attendance Marked!</h3>
-        <p className="text-zinc-500 text-sm">{result.message}</p>
-        {result.distance !== undefined && (
-          <p className="text-xs text-zinc-400 flex items-center gap-1 justify-center">
-            <MapPin className="w-3.5 h-3.5" /> {Math.round(result.distance)}m from classroom
-          </p>
-        )}
-        <button onClick={() => { setResult(null); setCode(""); setSessionInfo(null); setSessionId(""); }}
-          className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-all">
-          Mark Another
-        </button>
-      </div>
-    );
-  }
-
-  const INPUT = "w-full px-3 py-2.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl outline-none focus:border-teal-500 text-zinc-900 dark:text-white text-sm";
-
   return (
-    <div className="space-y-5">
-      <div>
-        <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-1">Mark Attendance</h2>
-        <p className="text-sm text-zinc-500">Enter the session ID provided by your teacher, then submit the OTP or scan the QR.</p>
-      </div>
-
-      {/* Session ID lookup */}
-      <div className="flex gap-2">
-        <input value={sessionId} onChange={e => setSessionId(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && fetchSession()}
-          placeholder="Paste session ID from teacher…" className={`${INPUT} flex-1`} />
-        <button onClick={fetchSession} disabled={loadingSession || !sessionId.trim()}
-          className="px-4 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold rounded-xl disabled:opacity-50 transition-all text-sm">
-          {loadingSession ? <Loader className="w-4 h-4 animate-spin" /> : "Find"}
-        </button>
-      </div>
-
-      {sessionError && (
-        <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl p-3">
-          <AlertTriangle className="w-4 h-4 shrink-0" />{sessionError}
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-md shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-zinc-800">
+          <div>
+            <h3 className="font-bold text-zinc-900 dark:text-white">{session.subject?.name}</h3>
+            <p className="text-xs text-zinc-500">{fmt(session.class_start_time)} — {fmt(session.class_end_time)}</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800">
+            <XCircle className="w-5 h-5" />
+          </button>
         </div>
-      )}
 
-      {/* Session info */}
-      {sessionInfo && (
-        <div className={`border rounded-xl p-4 space-y-1 ${sessionInfo.is_active && sessionInfo.within_window ? "border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/10" : "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/10"}`}>
-          <p className="font-semibold text-zinc-900 dark:text-white text-sm">{sessionInfo.subject?.name}</p>
-          <p className="text-xs text-zinc-500 flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5" />
-            {new Date(sessionInfo.class_start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} —
-            {new Date(sessionInfo.class_end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-          </p>
-          {sessionInfo.otp_active && sessionInfo.expires_at && (
-            <p className="text-xs text-zinc-500 flex items-center gap-1">
-              Expires in <Countdown expiresAt={sessionInfo.expires_at} />
-            </p>
-          )}
-          {!sessionInfo.within_window && <p className="text-xs text-red-500 font-semibold">Class window has ended.</p>}
-          {!sessionInfo.activated && <p className="text-xs text-amber-500">Teacher hasn't activated attendance yet.</p>}
-          {!sessionInfo.otp_active && sessionInfo.activated && sessionInfo.within_window && (
-            <p className="text-xs text-amber-500">OTP/QR has expired — ask teacher to regenerate.</p>
-          )}
-        </div>
-      )}
-
-      {/* Code entry */}
-      {sessionInfo?.is_active && sessionInfo?.within_window && sessionInfo?.otp_active && (
-        <div className="space-y-3">
-          {sessionInfo.mode === "OTP" ? (
+        <div className="p-5 space-y-4">
+          {session.mode === "OTP" ? (
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center gap-1">
-                <Hash className="w-4 h-4" /> Enter {sessionInfo.otp_digits}-digit OTP
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2 flex items-center gap-1">
+                <Hash className="w-4 h-4" /> Enter {session.otp_digits}-digit OTP from teacher
               </label>
               <input
-                type="text" inputMode="numeric" maxLength={sessionInfo.otp_digits}
+                type="text" inputMode="numeric" maxLength={session.otp_digits}
                 value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ""))}
-                placeholder={`${"•".repeat(sessionInfo.otp_digits)}`}
-                className={`${INPUT} tracking-[0.5em] text-center text-xl font-mono`}
+                autoFocus placeholder={"•".repeat(session.otp_digits)}
+                className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl outline-none focus:border-teal-500 text-zinc-900 dark:text-white font-mono tracking-[0.5em] text-2xl text-center"
               />
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 flex items-center gap-1">
-                <QrCode className="w-4 h-4" /> Scan QR Code
+                <QrCode className="w-4 h-4" /> Scan QR Code from teacher's screen
               </label>
               {!showScanner ? (
                 <button onClick={() => setShowScanner(true)}
@@ -246,7 +207,7 @@ function CheckInPanel() {
                   <Camera className="w-5 h-5" /> Open Camera to Scan
                 </button>
               ) : (
-                <QRScanner onScan={handleQRScan} />
+                <QRScanner onScan={token => { setCode(token); setShowScanner(false); }} />
               )}
               {code && (
                 <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
@@ -256,34 +217,118 @@ function CheckInPanel() {
             </div>
           )}
 
-          {submitError && (
+          {error && (
             <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl p-3">
-              <AlertTriangle className="w-4 h-4 shrink-0" />{submitError}
+              <AlertTriangle className="w-4 h-4 shrink-0" />{error}
             </div>
           )}
 
-          <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl p-3 text-xs text-blue-600 dark:text-blue-400 flex items-start gap-2">
-            <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-            Your GPS location will be verified automatically when you submit. Make sure location is enabled.
+          <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl p-3 text-xs text-blue-600 dark:text-blue-400 flex items-center gap-2">
+            <MapPin className="w-3.5 h-3.5 shrink-0" /> GPS will be checked automatically. Make sure location is enabled.
           </div>
 
           <button onClick={handleSubmit} disabled={submitting || !code.trim()}
             className="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-            {submitting ? (
-              gettingLocation
+            {submitting
+              ? gettingLocation
                 ? <><MapPin className="w-4 h-4 animate-pulse" /> Getting location…</>
                 : <><Loader className="w-4 h-4 animate-spin" /> Submitting…</>
-            ) : (
-              <><CheckCircle2 className="w-4 h-4" /> Mark My Attendance</>
-            )}
+              : <><CheckCircle2 className="w-4 h-4" /> Mark My Attendance</>
+            }
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Check-in Panel ────────────────────────────────────────────────────────────
+function CheckInPanel() {
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [activeModal, setActiveModal] = useState(null);
+  const [successMsg, setSuccessMsg] = useState("");
+
+  const fetchSessions = useCallback(async () => {
+    setLoading(true); setError("");
+    try {
+      const res = await api.get("/attendance/active-sessions");
+      setSessions(res.data);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load sessions.");
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchSessions(); }, [fetchSessions]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const id = setInterval(fetchSessions, 30000);
+    return () => clearInterval(id);
+  }, [fetchSessions]);
+
+  const handleSuccess = (data) => {
+    setActiveModal(null);
+    setSuccessMsg(data.message);
+    fetchSessions(); // Refresh to show marked status
+    setTimeout(() => setSuccessMsg(""), 5000);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Active Classes</h2>
+          <p className="text-sm text-zinc-500">Your current attendance sessions.</p>
+        </div>
+        <button onClick={fetchSessions} disabled={loading}
+          className="p-2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+        </button>
+      </div>
+
+      {successMsg && (
+        <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 text-emerald-600 dark:text-emerald-400 text-sm font-semibold">
+          <CheckCircle2 className="w-5 h-5 shrink-0" />{successMsg}
+        </div>
+      )}
+
+      {error && (
+        <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl p-3">
+          <AlertTriangle className="w-4 h-4 shrink-0" />{error}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center gap-2 text-zinc-400 py-12">
+          <Loader className="w-5 h-5 animate-spin" /> Looking for active sessions…
+        </div>
+      ) : sessions.length === 0 ? (
+        <div className="text-center py-16 space-y-3 text-zinc-400">
+          <Clock className="w-12 h-12 mx-auto opacity-20" />
+          <p className="font-medium text-zinc-500">No active sessions right now</p>
+          <p className="text-sm">Sessions appear here when your teacher activates attendance during class hours.</p>
+          <button onClick={fetchSessions} className="mt-2 text-sm text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1 mx-auto">
+            <RefreshCw className="w-3.5 h-3.5" /> Refresh
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {sessions.map(s => (
+            <SessionCard key={s.id} session={s} onMark={setActiveModal} />
+          ))}
+        </div>
+      )}
+
+      {activeModal && (
+        <MarkAttendanceModal session={activeModal} onSuccess={handleSuccess} onClose={() => setActiveModal(null)} />
       )}
     </div>
   );
 }
 
-// ── My Attendance History ─────────────────────────────────────────────────────
+// ── Attendance History ────────────────────────────────────────────────────────
 function AttendanceHistory() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -297,23 +342,43 @@ function AttendanceHistory() {
   }, []);
 
   if (loading) return <div className="flex items-center gap-2 text-zinc-400 py-8 justify-center"><Loader className="w-5 h-5 animate-spin" /> Loading…</div>;
-  if (!data?.subjects?.length) return <div className="text-center py-12 text-zinc-400 text-sm">No attendance records yet.</div>;
+  if (!data?.subjects?.length) return (
+    <div className="text-center py-12 text-zinc-400 space-y-2">
+      <BarChart2 className="w-10 h-10 mx-auto opacity-20" />
+      <p className="text-sm">No attendance records yet.</p>
+    </div>
+  );
 
   return (
     <div className="space-y-3">
+      {/* Overall stats */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: "Subjects", value: data.subjects.length, color: "text-blue-600 dark:text-blue-400" },
+          { label: "Total Classes", value: data.total_records, color: "text-zinc-700 dark:text-zinc-300" },
+          { label: "Avg Attendance", value: `${Math.round(data.subjects.reduce((s, x) => s + x.percentage, 0) / (data.subjects.length || 1))}%`, color: "text-teal-600 dark:text-teal-400" },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="bg-zinc-50 dark:bg-zinc-800 rounded-xl p-3 text-center">
+            <p className={`text-xl font-black ${color}`}>{value}</p>
+            <p className="text-xs text-zinc-400 mt-0.5">{label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Per-subject breakdown */}
       {data.subjects.map(s => (
         <div key={s.subject_id} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
           <button onClick={() => setExpanded(prev => ({ ...prev, [s.subject_id]: !prev[s.subject_id] }))}
             className="w-full flex items-center justify-between px-5 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
             <div className="text-left min-w-0">
               <p className="font-semibold text-zinc-900 dark:text-white text-sm truncate">{s.subject_name}</p>
-              <p className="text-xs text-zinc-400">{s.subject_code} · {s.present}/{s.total} classes</p>
+              <p className="text-xs text-zinc-400">{s.subject_code} · {s.present}/{s.total} present</p>
             </div>
             <div className="flex items-center gap-3 shrink-0 ml-3">
               <div className="text-right">
                 <p className={`text-lg font-black ${pctColor(s.percentage)}`}>{s.percentage}%</p>
-                <div className="w-16 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${pctBg(s.percentage)}`} style={{ width: `${s.percentage}%` }} />
+                <div className="w-16 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden mt-0.5">
+                  <div className={`h-full rounded-full transition-all ${pctBg(s.percentage)}`} style={{ width: `${s.percentage}%` }} />
                 </div>
               </div>
               {expanded[s.subject_id] ? <ChevronDown className="w-4 h-4 text-zinc-400" /> : <ChevronRight className="w-4 h-4 text-zinc-400" />}
@@ -331,7 +396,7 @@ function AttendanceHistory() {
                     {r.class_time && <p className="text-xs text-zinc-400">{r.class_time}</p>}
                   </div>
                   <div className="flex items-center gap-2">
-                    {r.verified && <span className="text-xs text-zinc-400">✓ verified</span>}
+                    {r.verified && <span className="text-xs text-zinc-400">✓</span>}
                     {r.status === "PRESENT"
                       ? <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400"><CheckCircle2 className="w-4 h-4" /> Present</span>
                       : r.status === "ABSENT"
@@ -359,12 +424,14 @@ export default function StudentAttendancePage() {
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-white flex items-center gap-3">
           <BookOpen className="w-7 h-7 text-teal-500" /> Attendance
         </h1>
-        <p className="text-zinc-500 dark:text-zinc-400 mt-1 text-sm">Mark your attendance or view your records.</p>
+        <p className="text-zinc-500 dark:text-zinc-400 mt-1 text-sm">Mark attendance or view your records.</p>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-xl w-fit">
-        {[{ v: "checkin", label: "Mark Attendance", icon: CheckCircle2 }, { v: "history", label: "My Records", icon: BarChart2 }].map(({ v, label, icon: Icon }) => (
+        {[
+          { v: "checkin", label: "Mark Attendance", icon: CheckCircle2 },
+          { v: "history", label: "My Records", icon: BarChart2 },
+        ].map(({ v, label, icon: Icon }) => (
           <button key={v} onClick={() => setTab(v)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === v ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400"}`}>
             <Icon className="w-4 h-4" /> {label}

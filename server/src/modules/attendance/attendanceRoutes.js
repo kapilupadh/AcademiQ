@@ -8,16 +8,20 @@ const requireTeacher = require('../../middleware/requireTeacher');
 router.use(authenticateToken);
 
 // ── Teacher routes ────────────────────────────────────────────────────────────
-router.post('/sessions',                    requireTeacher, ctrl.createSession);
-router.post('/sessions/:id/activate',       requireTeacher, ctrl.activateSession);
-router.post('/sessions/:id/regenerate',     requireTeacher, ctrl.regenerateCode);
-router.post('/sessions/:id/close',          requireTeacher, ctrl.closeSession);
-router.get('/sessions',                     requireTeacher, ctrl.getTeacherSessions);
-router.get('/sessions/:id',                 requireTeacher, ctrl.getSessionStatus);
+router.post('/sessions',                  requireTeacher, ctrl.createSession);
+router.post('/sessions/:id/activate',     requireTeacher, ctrl.activateSession);
+router.post('/sessions/:id/regenerate',   requireTeacher, ctrl.regenerateCode);
+router.post('/sessions/:id/close',        requireTeacher, ctrl.closeSession);
+router.get('/sessions',                   requireTeacher, ctrl.getTeacherSessions);
+router.get('/sessions/:id',               requireTeacher, ctrl.getSessionStatus);
+
+// ── Admin route ───────────────────────────────────────────────────────────────
+router.get('/report',                     ctrl.getAttendanceReport);
 
 // ── Student routes ────────────────────────────────────────────────────────────
-router.get('/my',                           ctrl.getMyAttendance);
-router.get('/sessions/:id/available',       ctrl.getSessionForStudent);
-router.post('/submit',                      ctrl.submitAttendance);
+router.get('/active-sessions',            ctrl.getActiveSessionsForStudent);
+router.get('/my',                         ctrl.getMyAttendance);
+router.get('/sessions/:id/available',     ctrl.getSessionForStudent);
+router.post('/submit',                    ctrl.submitAttendance);
 
 module.exports = router;

@@ -59,26 +59,37 @@ exports.getSubjectsByProgram = async (req, res) => {
 //   Teacher (role=2) → subjects in their department
 //   Student (role=3) → subjects in their program + current_semester
 //   Admin  (role=1) → all subjects
+// ── REPLACE getMySubjects in server/src/modules/academic/academicController.js ──
+
 exports.getMySubjects = async (req, res) => {
   try {
-    const { department_id, id: userId, role } = req.user;
+    const { Subject, User } = require('../../models');
+    const { id: userId, role } = req.user;
+
+    // Always fetch fresh user data from DB — don't rely on JWT for department_id
+    const user = await User.findByPk(userId, {
+      attributes: ['id', 'department_id', 'program_id', 'current_semester'],
+    });
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
     const where = { is_active: true };
 
     if (role === 2) {
-      if (!department_id)
-        return res.status(400).json({ message: 'Your account has no department assigned.' });
-      where.department_id = department_id;
+      // Teacher — filter by their department
+      if (!user.department_id) {
+        return res.status(400).json({ message: 'Your account has no department assigned. Contact admin.' });
+      }
+      where.department_id = user.department_id;
 
     } else if (role === 3) {
-      const { User } = require('../../models');
-      const student = await User.findByPk(userId, {
-        attributes: ['program_id', 'current_semester'],
-      });
-      if (!student?.program_id)
-        return res.status(400).json({ message: 'Your account has no program assigned.' });
-      where.program_id = student.program_id;
-      if (student.current_semester) where.semester = student.current_semester;
+      // Student — filter by program + current_semester
+      if (!user.program_id) {
+        return res.status(400).json({ message: 'Your account has no program assigned. Update your profile.' });
+      }
+      where.program_id = user.program_id;
+      if (user.current_semester) where.semester = user.current_semester;
     }
+    // Admin (role=1) — no filter, sees all
 
     const subjects = await Subject.findAll({
       where,

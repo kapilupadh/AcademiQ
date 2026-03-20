@@ -31,7 +31,7 @@ import SubjectManager from "./pages/admin/SubjectManager/SubjectManager";
 import TeacherAttendancePage from "./pages/teacher/Attendance/TeacherAttendancePage";
 import StudentAttendancePage from "./pages/student/Attendance/StudentAttendancePage";
 import DepartmentLocation from "./pages/admin/DepartmentLocation/DepartmentLocation";
-
+import AdminAttendanceReport from "./pages/admin/AttendanceReport/AdminAttendanceReport";
 function StudentPage({ children }) {
   return (
     <ProtectedRoute allowedRoles={[3]}>
@@ -115,6 +115,7 @@ export default function App() {
         <Route path="/admin/subjects/import" element={<AdminPage><SubjectImport /></AdminPage>} />
         <Route path="/admin/subjects/manage" element={<AdminPage><SubjectManager /></AdminPage>} />
         <Route path="/admin/departments/locations" element={<AdminPage><DepartmentLocation /></AdminPage>} />
+        <Route path="/admin/attendance/report" element={<AdminPage><AdminAttendanceReport /></AdminPage>} />
 
         {/* ── Teacher Pages ── */}
         <Route path="/teacher/attendance/mark" element={<TeacherPage><TeacherAttendancePage /></TeacherPage>} />
