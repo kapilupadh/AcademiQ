@@ -32,6 +32,9 @@ import TeacherAttendancePage from "./pages/teacher/Attendance/TeacherAttendanceP
 import StudentAttendancePage from "./pages/student/Attendance/StudentAttendancePage";
 import DepartmentLocation from "./pages/admin/DepartmentLocation/DepartmentLocation";
 import AdminAttendanceReport from "./pages/admin/AttendanceReport/AdminAttendanceReport";
+import TeacherSubjectsPage from "./pages/teacher/Subjects/TeacherSubjectsPage";
+
+
 function StudentPage({ children }) {
   return (
     <ProtectedRoute allowedRoles={[3]}>
@@ -124,6 +127,7 @@ export default function App() {
         <Route path="/teacher/exams/create" element={<TeacherPage><ExamBuilder /></TeacherPage>} />
         <Route path="/teacher/exams/edit/:id" element={<TeacherPage><ExamBuilder /></TeacherPage>} />
         <Route path="/teacher/exams/:id/manage" element={<TeacherPage><ExamManage /></TeacherPage>} />
+        <Route path="/teacher/subjects" element={<TeacherSubjectsPage />} />
       </Routes>
     </BrowserRouter>
   );

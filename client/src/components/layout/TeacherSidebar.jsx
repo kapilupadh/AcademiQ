@@ -36,7 +36,7 @@ const SECONDARY = [
   { key: "attendance", label: "Attendance", icon: Clock, to: "/teacher/attendance/mark", badge: { type: "otp", text: "OTP", style: "bg-amber-500/15 text-amber-400 border border-amber-500/30" } },
   { key: "class-details", label: "Class Details", icon: CalendarRange, to: "/teacher/students/seating", comingSoon: true },
   { key: "assessment-details", label: "Assessment Details", icon: FileText, to: "/teacher/assessments/rubrics", comingSoon: true },
-  { key: "lesson-planning", label: "Lesson Planning", icon: BookMarked, to: "/teacher/subjects", comingSoon: true, badge: { type: "new", text: "NEW", style: "bg-teal-500/15 text-teal-400 border border-teal-500/30" } },
+  { key: "lesson-planning", label: "Lesson Planning", icon: BookMarked, to: "/teacher/subjects", comingSoon: false, badge: { type: "new", text: "NEW", style: "bg-teal-500/15 text-teal-400 border border-teal-500/30" } },
   { key: "communication", label: "Communication", icon: MessageSquare, to: "/teacher/messages", comingSoon: true, badge: { type: "count", text: "3", style: "bg-teal-600 text-white" } },
 ];
 

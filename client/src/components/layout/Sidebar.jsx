@@ -325,7 +325,7 @@ function ComingSoonItem({ icon: Icon, label, collapsed, tk }) {
             <span className="flex-1 truncate">{label}</span>
             <span
               className={`text-[8px] font-bold tracking-wide uppercase px-1.5 py-0.5
-              rounded border leading-none ${tk.soon}`}
+              rounded border leading-none shrink-0 ${tk.soon}`}
             >
               Soon
             </span>
@@ -399,18 +399,19 @@ function SidebarContent({
             <div className="w-8 h-8 rounded-md bg-indigo-600 items-center justify-center shrink-0 hidden">
               <School size={15} className="text-white" />
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <p className={`text-sm font-bold leading-tight ${tk.brand}`}>
+            
+            <div className="flex flex-col flex-1 min-w-0 justify-center">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <p className={`text-sm font-bold leading-tight truncate ${tk.brand}`}>
                   AcademiQ
                 </p>
                 <span
-                  className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none ${tk.rolePill}`}
+                  className={`text-[8px] font-bold px-1.5 py-0.5 rounded border leading-none shrink-0 ${tk.rolePill}`}
                 >
                   STUDENT
                 </span>
               </div>
-              <p className={`text-[10px] leading-tight ${tk.brandSub}`}>
+              <p className={`text-[10px] leading-tight truncate mt-0.5 ${tk.brandSub}`}>
                 Student Portal
               </p>
             </div>
@@ -436,7 +437,7 @@ function SidebarContent({
         {!mobileView ? (
           <button
             onClick={onToggleCollapsed}
-            className={`p-1.5 rounded-lg transition-all duration-150 ${tk.btn}`}
+            className={`p-1.5 rounded-lg transition-all duration-150 shrink-0 ml-1 ${tk.btn}`}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
@@ -444,7 +445,7 @@ function SidebarContent({
         ) : showClose ? (
           <button
             onClick={onClose}
-            className={`p-1.5 rounded-lg transition-all duration-150 ${tk.btn}`}
+            className={`p-1.5 rounded-lg transition-all duration-150 shrink-0 ml-1 ${tk.btn}`}
           >
             <X size={15} />
           </button>
@@ -469,7 +470,7 @@ function SidebarContent({
         </nav>
       </div>
 
-      <div className={`mx-3 border-t ${tk.divider} my-2`} />
+      <div className={`mx-3 border-t ${tk.divider} my-2 shrink-0`} />
 
       {/* ── SECONDARY NAV — MORE ── */}
       <div
@@ -529,11 +530,11 @@ function SidebarContent({
         </div>
       </div>
 
-      <div className={`mx-3 border-t ${tk.divider}`} />
+      <div className={`mx-3 border-t ${tk.divider} shrink-0`} />
 
       {/* ── FOOTER — ACCOUNT ── */}
       <div
-        className={`overflow-hidden ${collapsed ? "px-2 py-3 flex justify-center" : "px-3 py-3"}`}
+        className={`overflow-hidden shrink-0 ${collapsed ? "px-2 py-3 flex justify-center" : "px-3 py-3"}`}
       >
         {collapsed ? (
           <div className="relative group">
@@ -547,9 +548,9 @@ function SidebarContent({
             <Tooltip label="Logout" tk={tk} />
           </div>
         ) : (
-          <>
+          <div className="flex flex-col w-full min-w-0">
             <SectionLabel text="Account" collapsed={false} tk={tk} />
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 min-w-0 mt-1">
               <div
                 className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0 ${tk.avatar}`}
               >
@@ -557,7 +558,7 @@ function SidebarContent({
                   {initials}
                 </span>
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="flex flex-col flex-1 min-w-0 justify-center">
                 <p
                   className={`text-xs font-semibold truncate leading-tight ${tk.userName}`}
                 >
@@ -577,7 +578,7 @@ function SidebarContent({
                 <LogOut size={14} />
               </button>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
@@ -613,10 +614,6 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* FIXED: The Hamburger Toggle Button 
-        - Increased z-index to 9999 so nothing buries it 
-        - Adjusted colors so it dynamically stands out against light and dark backgrounds 
-      */}
       <button
         onClick={() => setMobileOpen(true)}
         className="fixed top-4 left-4 z-[9999] md:hidden p-2 rounded-lg
