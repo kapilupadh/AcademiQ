@@ -15,10 +15,12 @@ const PORT = process.env.PORT || 5000;
 const path = require('path');
 
 app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Authorization', 'Content-Type'],
+  origin: ["http://localhost:3000"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Authorization", "Content-Type"],
+  credentials: true
 }));
+
 app.use(express.json());
 app.use('/public', express.static(path.join(__dirname, '../public')));
 
@@ -42,6 +44,17 @@ app.use('/api/departments', require('./modules/department/departmentRoutes'));
 // Test Route
 app.get('/', (req, res) => {
   res.send('AcademiQ Server is Running & DB is Connected!');
+});
+
+// 404 handler for unmatched routes
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found" });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error("ERROR:", err);
+  res.status(500).json({ message: err.message });
 });
 
 // Database Connection and Server Start

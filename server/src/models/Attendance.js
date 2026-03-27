@@ -61,6 +61,11 @@ const Attendance = sequelize.define('Attendance', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  selfie_url: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'URL or path to the selfie image captured during attendance',
+  },
 }, {
   timestamps: true,
   tableName: 'attendances',

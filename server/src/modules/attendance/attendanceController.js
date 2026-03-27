@@ -256,6 +256,10 @@ exports.getActiveSessionsForStudent = async (req, res) => {
           model: User, as: 'teacher',
           attributes: ['id', 'full_name'],
         },
+        {
+          model: Department, as: 'department',
+          attributes: ['id', 'name', 'latitude', 'longitude', 'geofence_radius'],
+        },
       ],
       order: [['class_start_time', 'ASC']],
     });
@@ -268,6 +272,16 @@ exports.getActiveSessionsForStudent = async (req, res) => {
 
       const otpActive = s.expires_at && now < new Date(s.expires_at);
 
+      // Build allowed location from department data for client
+      const allowedLocation = (s.department && s.department.latitude && s.department.longitude) ? {
+        latitude: s.department.latitude,
+        longitude: s.department.longitude,
+        radius_meters: s.department.geofence_radius || 50,
+      } : null;
+      
+      // Check if department has location configured
+      const hasLocationConfigured = !!(s.department && s.department.latitude && s.department.longitude);
+
       return {
         id: s.id,
         subject: s.subject,
@@ -276,11 +290,15 @@ exports.getActiveSessionsForStudent = async (req, res) => {
         otp_digits: s.otp_digits,
         class_start_time: s.class_start_time,
         class_end_time: s.class_end_time,
-        activated: !!s.activated_at,
-        otp_active: otpActive,
+        is_active: s.is_active, // Session is open for attendance
+        activated: !!s.activated_at, // OTP has been generated
+        otp_active: otpActive, // OTP has not expired
         expires_at: s.expires_at,
         already_marked: !!existing,
         already_marked_status: existing?.status || null,
+        department_location: s.department?.name || null,
+        allowed_location: allowedLocation,
+        location_configured: hasLocationConfigured,
       };
     }));
 
@@ -294,7 +312,9 @@ exports.getActiveSessionsForStudent = async (req, res) => {
 // ── POST /api/attendance/submit ───────────────────────────────────────────────
 exports.submitAttendance = async (req, res) => {
   try {
+    // Support both JSON and multipart form data
     const { session_id, code, latitude, longitude } = req.body;
+    const imageFile = req.file; // From multer middleware
     const studentId = req.user.id;
 
     if (!session_id || !code) return res.status(400).json({ message: 'session_id and code are required.' });
@@ -337,24 +357,63 @@ exports.submitAttendance = async (req, res) => {
       });
     }
 
-    // 4. Duplicate check
-    const existing = await Attendance.findOne({ where: { session_id, student_id: studentId } });
-    if (existing) {
-      if (existing.status === 'PRESENT') return res.status(400).json({ message: 'You have already marked attendance for this class.' });
-      await existing.update({ status: 'PRESENT', verified: true, distance_meters: distanceMeters });
-      return res.json({ message: 'Attendance marked successfully!', status: 'PRESENT', distance_meters: Math.round(distanceMeters) });
+    // 4. Image validation (REQUIRED)
+    // Validate that a file was uploaded
+    if (!imageFile) {
+      return res.status(400).json({ 
+        message: 'Selfie photo is required to complete attendance. Please capture and upload your photo.' 
+      });
     }
+    
+    // Additional server-side validation of the uploaded file
+    const validImageTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (!validImageTypes.includes(imageFile.mimetype)) {
+      // Clean up invalid file asynchronously
+      const fs = require('fs').promises;
+      fs.unlink(imageFile.path).catch(err => {
+        console.error('Failed to cleanup invalid file:', err);
+      });
+      return res.status(400).json({ 
+        message: 'Invalid image format. Only JPEG and PNG images are allowed.' 
+      });
+    }
+    
+    // Store the image path for serving
+    const selfieUrl = `/uploads/attendance/${imageFile.filename}`;
 
-    // 5. Create record
-    await Attendance.create({
-      student_id: studentId, subject_id: session.subject_id,
-      teacher_id: session.teacher_id, session_id,
-      date: new Date().toISOString().split('T')[0],
-      status: 'PRESENT', semester: session.semester,
-      verified: true, distance_meters: distanceMeters,
+    // 5. Use findOrCreate to prevent race conditions
+    // If record exists, update it; otherwise create new one
+    const [existing, created] = await Attendance.findOrCreate({
+      where: { session_id, student_id: studentId },
+      defaults: {
+        student_id: studentId,
+        subject_id: session.subject_id,
+        teacher_id: session.teacher_id,
+        session_id,
+        date: new Date().toISOString().split('T')[0],
+        status: 'PRESENT',
+        semester: session.semester,
+        verified: true,
+        distance_meters: distanceMeters,
+        selfie_url: selfieUrl,
+      },
     });
 
-    res.json({ message: 'Attendance marked successfully!', status: 'PRESENT', distance_meters: Math.round(distanceMeters) });
+    // If record already existed, handle update or reject
+    if (!created) {
+      if (existing.status === 'PRESENT') {
+        return res.status(400).json({ message: 'You have already marked attendance for this class.' });
+      }
+      await existing.update({
+        status: 'PRESENT',
+        verified: true,
+        distance_meters: distanceMeters,
+        selfie_url: selfieUrl,
+      });
+      return res.json({ message: 'Attendance marked successfully!', status: 'PRESENT', distance_meters: Math.round(distanceMeters), selfie_url: selfieUrl });
+    }
+
+    res.json({ message: 'Attendance marked successfully!', status: 'PRESENT', distance_meters: Math.round(distanceMeters), selfie_url: selfieUrl });
   } catch (err) {
     console.error('submitAttendance error:', err);
     res.status(500).json({ message: err.message || 'Server error.' });

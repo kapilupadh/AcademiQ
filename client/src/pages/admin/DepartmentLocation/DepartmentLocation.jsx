@@ -153,15 +153,25 @@ export default function DepartmentLocation() {
   const handleSave = async () => {
     if (!selectedDept || !coords) return;
     setSaving(true); setSaveError(""); setSaveSuccess(false);
+    
+    const payload = {
+      latitude: coords.lat, 
+      longitude: coords.lng, 
+      geofence_radius: radius,
+    };
+    
     try {
-      await api.patch(`/admin/departments/${selectedDept.id}/location`, {
-        latitude: coords.lat, longitude: coords.lng, geofence_radius: radius,
-      });
+      const response = await api.patch(`/admin/departments/${selectedDept.id}/location`, payload);
       setSaveSuccess(true);
       api.get("/admin/departments").then(r => setDepartments(r.data));
       setTimeout(() => setSaveSuccess(false), 5000);
     } catch (err) {
-      setSaveError(err.response?.data?.message || "Failed to save location.");
+      // Show the actual error message from backend or a more helpful message
+      const errorMsg = err.response?.data?.message || 
+                       (err.response?.status === 401 ? "Unauthorized - please login again" :
+                        err.response?.status === 403 ? "Forbidden - admin access required" :
+                        err.message || "Failed to save location. Check console for details.");
+      setSaveError(errorMsg);
     } finally { setSaving(false); }
   };
 
