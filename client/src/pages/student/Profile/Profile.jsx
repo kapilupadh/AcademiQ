@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   User, Mail, Calendar, Key, Edit2, Save, X,
   Eye, EyeOff, Shield, GraduationCap, BookOpen, Loader2,
-  AlertCircle, CheckCircle2
+  AlertCircle, CheckCircle2, UserCircle2,
 } from "lucide-react";
 
 export default function Profile() {
@@ -117,101 +117,179 @@ export default function Profile() {
   const maxSem = selectedProgram ? selectedProgram.duration_years * 2 : 8;
   const semOptions = Array.from({ length: maxSem }, (_, i) => i + 1);
 
+  // Derive initials for avatar
+  const initials = profile?.full_name
+    ? profile.full_name.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase()
+    : "?";
+
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-zinc-500 dark:text-zinc-400">
-        <Loader2 className="w-8 h-8 animate-spin mb-4 text-zinc-900 dark:text-zinc-100" />
-        <p className="text-sm font-medium">Loading profile data...</p>
+      <div className="p-6 max-w-6xl mx-auto space-y-6">
+        <div className="space-y-2">
+          <div className="h-8 w-48 bg-zinc-100 dark:bg-zinc-900 rounded-md animate-pulse" />
+          <div className="h-4 w-80 bg-zinc-100 dark:bg-zinc-900 rounded-md animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 h-96 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl animate-pulse" />
+          <div className="h-96 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl animate-pulse" />
+        </div>
       </div>
     );
   }
 
-  // UI Component Classes
-  const INPUT_CLS = "flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 transition-colors placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-400 dark:focus-visible:ring-zinc-300";
-  const OPTION_CLS = "bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100"; // Fixed: Explicit colors for native options
-  const LABEL_CLS = "text-sm font-medium leading-none text-zinc-900 dark:text-zinc-100 peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block";
-  const CARD_CLS = "rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950 overflow-hidden";
-  const BTN_PRIMARY_CLS = "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 disabled:pointer-events-none disabled:opacity-50 bg-zinc-900 text-zinc-50 hover:bg-zinc-900/90 h-10 px-4 py-2 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-50/90";
-  const BTN_OUTLINE_CLS = "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 border border-zinc-200 bg-transparent hover:bg-zinc-100 hover:text-zinc-900 h-9 px-4 py-2 dark:border-zinc-800 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 w-full sm:w-auto";
+  // ── UI Component Classes ──────────────────────────────────────────────────
+  const INPUT_CLS = "flex h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 transition-colors placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:border-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus-visible:ring-zinc-300 dark:focus-visible:border-zinc-300";
+  const OPTION_CLS = "bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100";
+  const LABEL_CLS = "text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1.5 block";
+  const CARD_CLS = "rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 overflow-hidden";
+  const BTN_PRIMARY_CLS = "inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 disabled:pointer-events-none disabled:opacity-50 bg-zinc-900 text-zinc-50 hover:bg-zinc-800 h-10 px-4 py-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white";
+  const BTN_OUTLINE_CLS = "inline-flex items-center justify-center rounded-lg text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 h-8 px-3 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:text-zinc-300";
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      className="max-w-5xl mx-auto space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8"
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      className="max-w-6xl mx-auto p-6 space-y-6"
     >
-      {/* Header Section */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Profile Settings</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Manage your academic information and security preferences.</p>
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5 tracking-tight">
+            <span className="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center">
+              <UserCircle2 className="w-4 h-4 text-white dark:text-zinc-900" />
+            </span>
+            Profile Settings
+          </h1>
+          <p className="text-zinc-500 dark:text-zinc-400 mt-1.5 text-sm">
+            Manage your academic information and security preferences.
+          </p>
+        </div>
       </div>
+
+      <div className="h-px bg-zinc-200 dark:bg-zinc-800" />
 
       {/* Alerts */}
       <AnimatePresence>
         {error && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-            <div className="flex items-center gap-3 bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 p-4 rounded-lg border border-red-200 dark:border-red-900/50 text-sm font-medium mb-4">
-              <AlertCircle className="w-5 h-5 shrink-0" /> {error}
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="flex items-start gap-2 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 p-3 rounded-lg border border-red-200 dark:border-red-900/60 text-sm">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> {error}
             </div>
           </motion.div>
         )}
         {success && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-            <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 p-4 rounded-lg border border-emerald-200 dark:border-emerald-900/50 text-sm font-medium mb-4">
-              <CheckCircle2 className="w-5 h-5 shrink-0" /> {success}
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="flex items-start gap-2 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 p-3 rounded-lg border border-emerald-200 dark:border-emerald-900/60 text-sm">
+              <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> {success}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-start">
-        
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+
         {/* Personal Details Card */}
         <div className={`lg:col-span-2 ${CARD_CLS}`}>
-          {/* Fixed: flex-col on mobile, flex-row on larger screens */}
-          <div className="p-4 sm:p-6 border-b border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 bg-zinc-50/50 dark:bg-zinc-900/50">
-            <div>
-              <h2 className="text-lg font-semibold flex items-center gap-2 text-zinc-900 dark:text-zinc-50">
-                <User className="w-5 h-5 text-zinc-500 dark:text-zinc-400" /> Personal Information
-              </h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Update your personal details and academic status.</p>
+          {/* Card Header */}
+          <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2.5">
+              <User className="w-4 h-4 text-zinc-500 dark:text-zinc-500" />
+              <div>
+                <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">Personal Information</h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-0.5">Your personal details and academic status</p>
+              </div>
             </div>
-            <button 
-              onClick={() => setIsEditing(!isEditing)} 
-              className={BTN_OUTLINE_CLS}
-            >
-              {isEditing ? <><X className="w-4 h-4 mr-2" /> Cancel</> : <><Edit2 className="w-4 h-4 mr-2" /> Edit</>}
+            <button onClick={() => setIsEditing(!isEditing)} className={BTN_OUTLINE_CLS}>
+              {isEditing ? <><X className="w-3.5 h-3.5 mr-1.5" /> Cancel</> : <><Edit2 className="w-3.5 h-3.5 mr-1.5" /> Edit</>}
             </button>
           </div>
 
-          <div className="p-4 sm:p-6">
+          {/* Identity Banner (view mode only) */}
+          {!isEditing && profile && (
+            <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-950/40 flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center shrink-0">
+                <span className="text-base font-semibold text-white dark:text-zinc-900 tracking-tight">{initials}</span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">{profile.full_name}</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-500 flex items-center gap-1.5 mt-0.5 truncate">
+                  <Mail className="w-3 h-3 shrink-0" />
+                  <span className="truncate">{profile.email}</span>
+                </p>
+              </div>
+              {profile.current_semester && (
+                <span className="hidden sm:inline-flex items-center gap-1 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-[11px] font-medium text-zinc-700 dark:text-zinc-300 shrink-0">
+                  <GraduationCap className="w-3 h-3" />
+                  Semester {profile.current_semester}
+                </span>
+              )}
+            </div>
+          )}
+
+          <div className="p-5">
             <AnimatePresence mode="wait">
               {isEditing ? (
-                <motion.form 
+                <motion.form
                   key="edit"
-                  initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}
-                  onSubmit={handleUpdateProfile} 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  onSubmit={handleUpdateProfile}
                   className="space-y-5"
                 >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div>
-                      <label className={LABEL_CLS}>Full Name</label>
-                      <input type="text" value={formData.full_name} onChange={e => setFormData({ ...formData, full_name: e.target.value })} className={INPUT_CLS} required />
-                    </div>
-                    <div>
-                      <label className={LABEL_CLS}>Date of Birth</label>
-                      <input type="date" value={formData.dob} onChange={e => setFormData({ ...formData, dob: e.target.value })} className={INPUT_CLS} />
+                  {/* Section: Personal */}
+                  <div>
+                    <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500 mb-3">
+                      Personal Details
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className={LABEL_CLS}>Full Name</label>
+                        <input
+                          type="text"
+                          value={formData.full_name}
+                          onChange={e => setFormData({ ...formData, full_name: e.target.value })}
+                          className={INPUT_CLS}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className={LABEL_CLS}>Date of Birth</label>
+                        <input
+                          type="date"
+                          value={formData.dob}
+                          onChange={e => setFormData({ ...formData, dob: e.target.value })}
+                          className={INPUT_CLS}
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="border-t border-zinc-200 dark:border-zinc-800 pt-5 mt-5">
-                    <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
-                      <GraduationCap className="w-4 h-4 text-zinc-500" /> Academic Routing
+                  {/* Section: Academic */}
+                  <div className="border-t border-zinc-200 dark:border-zinc-800 pt-5">
+                    <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500 mb-3 flex items-center gap-1.5">
+                      <GraduationCap className="w-3.5 h-3.5" /> Academic Routing
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="sm:col-span-2">
                         <label className={LABEL_CLS}>Department</label>
-                        <select value={formData.department_id} onChange={e => { setFormData({ ...formData, department_id: e.target.value, program_id: "", current_semester: "" }); }} className={INPUT_CLS}>
+                        <select
+                          value={formData.department_id}
+                          onChange={e => setFormData({ ...formData, department_id: e.target.value, program_id: "", current_semester: "" })}
+                          className={INPUT_CLS}
+                        >
                           <option value="" className={OPTION_CLS}>— Select Department —</option>
                           {departments?.map(d => <option key={d.id} value={d.id} className={OPTION_CLS}>{d.name}</option>)}
                         </select>
@@ -221,9 +299,15 @@ export default function Profile() {
                         <div>
                           <label className={LABEL_CLS}>Program</label>
                           {loadingPrograms ? (
-                            <div className="flex h-10 items-center gap-2 text-sm text-zinc-500"><Loader2 className="w-4 h-4 animate-spin" /> Fetching programs...</div>
+                            <div className="flex h-10 items-center gap-2 text-xs text-zinc-500 dark:text-zinc-500 px-3 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50 dark:bg-zinc-950">
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Fetching programs...
+                            </div>
                           ) : (
-                            <select value={formData.program_id} onChange={e => setFormData({ ...formData, program_id: e.target.value, current_semester: "" })} className={INPUT_CLS}>
+                            <select
+                              value={formData.program_id}
+                              onChange={e => setFormData({ ...formData, program_id: e.target.value, current_semester: "" })}
+                              className={INPUT_CLS}
+                            >
                               <option value="" className={OPTION_CLS}>— Select Program —</option>
                               {programs?.map(p => <option key={p.id} value={p.id} className={OPTION_CLS}>{p.name} ({p.code})</option>)}
                             </select>
@@ -232,9 +316,13 @@ export default function Profile() {
                       )}
 
                       {formData.program_id && (
-                        <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}>
+                        <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}>
                           <label className={LABEL_CLS}>Current Semester</label>
-                          <select value={formData.current_semester} onChange={e => setFormData({ ...formData, current_semester: e.target.value })} className={INPUT_CLS}>
+                          <select
+                            value={formData.current_semester}
+                            onChange={e => setFormData({ ...formData, current_semester: e.target.value })}
+                            className={INPUT_CLS}
+                          >
                             <option value="" className={OPTION_CLS}>— Select Semester —</option>
                             {semOptions.map(s => <option key={s} value={s} className={OPTION_CLS}>Semester {s}</option>)}
                           </select>
@@ -243,52 +331,88 @@ export default function Profile() {
                     </div>
                   </div>
 
-                  <div className="flex justify-end pt-4">
-                    <button type="submit" className={`w-full sm:w-auto ${BTN_PRIMARY_CLS}`}>
-                      <Save className="w-4 h-4 mr-2" /> Save Changes
+                  {/* Actions */}
+                  <div className="flex justify-end gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditing(false)}
+                      className={BTN_OUTLINE_CLS + " h-10 px-4"}
+                    >
+                      Cancel
+                    </button>
+                    <button type="submit" className={BTN_PRIMARY_CLS}>
+                      <Save className="w-4 h-4 mr-1.5" /> Save Changes
                     </button>
                   </div>
                 </motion.form>
               ) : (
-                <motion.div 
+                <motion.div
                   key="view"
-                  initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
                   className="space-y-6"
                 >
-                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-6">
-                    <div className="space-y-1">
-                      <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Full Name</dt>
-                      <dd className="text-sm text-zinc-900 dark:text-zinc-100 font-medium">{profile?.full_name}</dd>
-                    </div>
-                    <div className="space-y-1">
-                      <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400 flex items-center gap-1"><Mail className="w-3.5 h-3.5" /> Email</dt>
-                      <dd className="text-sm text-zinc-900 dark:text-zinc-100 font-medium break-all">{profile?.email}</dd>
-                    </div>
-                    <div className="space-y-1">
-                      <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400 flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Date of Birth</dt>
-                      <dd className="text-sm text-zinc-900 dark:text-zinc-100 font-medium">{profile?.dob ? new Date(profile.dob).toLocaleDateString() : "Not Set"}</dd>
-                    </div>
-                    <div className="sm:col-span-2 border-t border-zinc-200 dark:border-zinc-800 pt-6 mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-6">
+                  {/* Personal Details */}
+                  <div>
+                    <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500 mb-3">
+                      Personal Details
+                    </h3>
+                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
+                      <InfoRow
+                        icon={User}
+                        label="Full Name"
+                        value={profile?.full_name}
+                      />
+                      <InfoRow
+                        icon={Mail}
+                        label="Email"
+                        value={profile?.email}
+                        className="break-all"
+                      />
+                      <InfoRow
+                        icon={Calendar}
+                        label="Date of Birth"
+                        value={profile?.dob ? new Date(profile.dob).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Not set"}
+                      />
+                    </dl>
+                  </div>
+
+                  {/* Academic Details */}
+                  <div className="border-t border-zinc-200 dark:border-zinc-800 pt-5">
+                    <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500 mb-3 flex items-center gap-1.5">
+                      <GraduationCap className="w-3.5 h-3.5" /> Academic Routing
+                    </h3>
+                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
+                      <InfoRow
+                        icon={GraduationCap}
+                        label="Department"
+                        value={deptName || "Not assigned"}
+                        muted={!deptName}
+                      />
+                      <InfoRow
+                        icon={BookOpen}
+                        label="Program"
+                        value={programName || "Not assigned"}
+                        muted={!programName}
+                      />
                       <div className="space-y-1">
-                        <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400 flex items-center gap-1"><GraduationCap className="w-3.5 h-3.5" /> Department</dt>
-                        <dd className="text-sm text-zinc-900 dark:text-zinc-100 font-medium">{deptName || "Not Assigned"}</dd>
-                      </div>
-                      <div className="space-y-1">
-                        <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400 flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" /> Program</dt>
-                        <dd className="text-sm text-zinc-900 dark:text-zinc-100 font-medium">{programName || "Not Assigned"}</dd>
-                      </div>
-                      <div className="space-y-1">
-                        <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Current Semester</dt>
-                        <dd className="text-sm text-zinc-900 dark:text-zinc-100 font-medium">
+                        <dt className="text-xs font-medium text-zinc-500 dark:text-zinc-500 flex items-center gap-1.5">
+                          <Calendar className="w-3 h-3" /> Current Semester
+                        </dt>
+                        <dd>
                           {profile?.current_semester ? (
-                            <span className="inline-flex items-center rounded-full border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2">
+                            <span className="inline-flex items-center gap-1 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-2 py-0.5 text-xs font-medium text-zinc-700 dark:text-zinc-300">
                               Semester {profile.current_semester}
                             </span>
-                          ) : "Not Assigned"}
+                          ) : (
+                            <span className="text-sm text-zinc-400 dark:text-zinc-600">Not assigned</span>
+                          )}
                         </dd>
                       </div>
-                    </div>
-                  </dl>
+                    </dl>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -296,46 +420,86 @@ export default function Profile() {
         </div>
 
         {/* Security Card */}
-        <div className={`space-y-6 ${CARD_CLS}`}>
-          <div className="p-4 sm:p-6 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
-            <h2 className="text-lg font-semibold flex items-center gap-2 text-zinc-900 dark:text-zinc-50">
-              <Shield className="w-5 h-5 text-zinc-500 dark:text-zinc-400" /> Security
-            </h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Update your password to keep your account secure.</p>
+        <div className={CARD_CLS}>
+          <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-800">
+            <div className="flex items-center gap-2.5">
+              <Shield className="w-4 h-4 text-zinc-500 dark:text-zinc-500" />
+              <div>
+                <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">Security</h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-0.5">Update your password</p>
+              </div>
+            </div>
           </div>
-          
-          <div className="p-4 sm:p-6">
+
+          <div className="p-5">
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
                 <label className={LABEL_CLS}>Current Password</label>
-                <input type={showPassword ? "text" : "password"} value={passwordData.currentPassword}
-                  onChange={e => setPasswordData({ ...passwordData, currentPassword: e.target.value })} className={INPUT_CLS} required />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={passwordData.currentPassword}
+                  onChange={e => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                  className={INPUT_CLS}
+                  required
+                />
               </div>
               <div>
                 <label className={LABEL_CLS}>New Password</label>
                 <div className="relative">
-                  <input type={showPassword ? "text" : "password"} value={passwordData.newPassword}
-                    onChange={e => setPasswordData({ ...passwordData, newPassword: e.target.value })} className={INPUT_CLS} required />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors">
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={passwordData.newPassword}
+                    onChange={e => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                    className={INPUT_CLS + " pr-10"}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
               <div>
                 <label className={LABEL_CLS}>Confirm New Password</label>
-                <input type={showPassword ? "text" : "password"} value={passwordData.confirmPassword}
-                  onChange={e => setPasswordData({ ...passwordData, confirmPassword: e.target.value })} className={INPUT_CLS} required />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={passwordData.confirmPassword}
+                  onChange={e => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  className={INPUT_CLS}
+                  required
+                />
               </div>
-              <div className="pt-2">
-                <button type="submit" className={`w-full ${BTN_PRIMARY_CLS}`}>
-                  <Key className="w-4 h-4 mr-2" /> Update Password
-                </button>
+
+              {/* Password hint */}
+              <div className="text-[11px] text-zinc-500 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 leading-relaxed">
+                Use at least 8 characters with a mix of letters, numbers and symbols.
               </div>
+
+              <button type="submit" className={`w-full ${BTN_PRIMARY_CLS}`}>
+                <Key className="w-4 h-4 mr-1.5" /> Update Password
+              </button>
             </form>
           </div>
         </div>
 
       </div>
     </motion.div>
+  );
+}
+
+// ── Info Row (view mode) ────────────────────────────────────────────────────
+function InfoRow({ icon: Icon, label, value, muted = false, className = "" }) {
+  return (
+    <div className="space-y-1">
+      <dt className="text-xs font-medium text-zinc-500 dark:text-zinc-500 flex items-center gap-1.5">
+        {Icon && <Icon className="w-3 h-3" />} {label}
+      </dt>
+      <dd className={`text-sm font-medium ${muted ? "text-zinc-400 dark:text-zinc-600" : "text-zinc-900 dark:text-zinc-100"} ${className}`}>
+        {value}
+      </dd>
+    </div>
   );
 }

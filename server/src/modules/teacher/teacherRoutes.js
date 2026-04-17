@@ -5,13 +5,18 @@ const { authenticateToken } = require('../../middleware/authMiddleware');
 const requireTeacher = require('../../middleware/requireTeacher');
 const teacherExamController = require('./examController');
 const teacherSubjectController = require('./teacherSubjectController');
+const dashboardController = require('./dashboardController'); // ← ADD THIS
 const upload = require('../../middleware/uploadMiddleware');
+
 
 // Upload route
 router.post('/upload', authenticateToken, upload.single('image'), teacherExamController.uploadQuestionImage);
 
 // All other routes require teacher role
 router.use(authenticateToken, requireTeacher);
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+router.get('/dashboard/overview', dashboardController.getDashboardOverview); // ← ADD THIS
 
 // ── Exam routes ───────────────────────────────────────────────────────────────
 router.get('/departments', teacherExamController.getDepartments);

@@ -28,6 +28,9 @@ router.post('/verify-otp', authController.verifyOTP);
 // POST /api/auth/reset-password
 router.post('/reset-password', authController.resetPassword);
 
+// POST /api/auth/dashboard-student 
+router.get('/dashboard', authenticateToken, authController.getStudentDashboard);
+
 // --- Protected Routes ---
 router.get('/me', authenticateToken, authController.getProfile);
 router.put('/me', authenticateToken, authController.updateProfile);

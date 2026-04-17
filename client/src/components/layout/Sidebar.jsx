@@ -39,8 +39,8 @@ const setSidebarWidth = (w) =>
   document.documentElement.style.setProperty("--student-sidebar-w", w);
 
 /* ─── Logo paths ────────────────────────────────────────────────── */
-const LOGO_DARK_MODE = "/Icons/Untitled.png"; 
-const LOGO_LIGHT_MODE = "/Icons/Dark-Logo.jpg"; 
+const LOGO_DARK_MODE = "/Icons/Untitled.png";
+const LOGO_LIGHT_MODE = "/Icons/Dark-Logo.jpg";
 
 /* ─── PRIMARY NAV (flat, top) ───────────────────────────────────── */
 const PRIMARY = [
@@ -60,13 +60,7 @@ const PRIMARY = [
     key: "result",
     label: "Result",
     icon: ClipboardList,
-    to: "/exams/result", 
-  },
-  {
-    key: "assignment",
-    label: "Assignment",
-    icon: PenTool,
-    to: "/assignments/pending",
+    to: "/exams/result",
   },
   {
     key: "attendance",
@@ -89,6 +83,7 @@ const SECONDARY = [
     key: "exam-details",
     label: "Exam Details",
     icon: BookMarked,
+    comingSoon : true,
     accordion: true,
     sub: [
       {
@@ -103,7 +98,7 @@ const SECONDARY = [
     key: "assignment-details",
     label: "Assignment Details",
     icon: FileText,
-    to: "/assignments/details",
+   comingSoon: true,
     accordion: false,
   },
   {
@@ -115,51 +110,53 @@ const SECONDARY = [
   },
 ];
 
-/* ─── THEME TOKENS (Indigo accent) ─────────────────────────────── */
+/* ─── THEME TOKENS (shadcn-like, neutral zinc) ─────────────────── */
 const T = {
   dark: {
-    bg: "bg-[#0f1117]",
-    border: "border-zinc-800",
-    label: "text-zinc-600",
-    divider: "border-zinc-800",
+    bg: "bg-zinc-950",
+    border: "border-zinc-800/80",
+    label: "text-zinc-500",
+    divider: "border-zinc-800/60",
     navBase: "text-zinc-400",
-    navHover: "hover:bg-zinc-800/60 hover:text-zinc-100",
-    navActive: "bg-indigo-500/12 text-indigo-400",
-    activeBar: "bg-indigo-500",
-    btn: "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800",
-    brand: "text-white",
+    navHover: "hover:bg-zinc-800/50 hover:text-zinc-50",
+    navActive: "bg-zinc-800/70 text-zinc-50",
+    activeBar: "bg-zinc-50",
+    btn: "text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800/60",
+    brand: "text-zinc-50",
     brandSub: "text-zinc-500",
-    rolePill: "bg-indigo-900/40 text-indigo-400 border border-indigo-800/50",
-    avatar: "bg-indigo-900/40 text-indigo-400 border-indigo-800/40",
+    rolePill: "bg-zinc-800/80 text-zinc-300 border border-zinc-700/60",
+    avatar: "bg-zinc-800 text-zinc-200 border-zinc-700",
     userName: "text-zinc-100",
     email: "text-zinc-500",
-    tooltip: "bg-zinc-900 border-zinc-700 text-white shadow-xl",
-    soon: "bg-zinc-800 text-zinc-500 border-zinc-700",
-    subActive: "text-indigo-400 bg-indigo-500/10",
-    subBase: "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60",
-    subBorder: "border-zinc-800",
+    tooltip: "bg-zinc-900 border-zinc-800 text-zinc-50 shadow-lg",
+    soon: "bg-zinc-800/80 text-zinc-400 border-zinc-700/70",
+    subActive: "text-zinc-50 bg-zinc-800/60",
+    subBase: "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/40",
+    subBorder: "border-zinc-800/70",
+    logoutHover: "hover:bg-red-500/10 hover:text-red-400",
   },
   light: {
-    bg: "bg-zinc-50",
+    bg: "bg-white",
     border: "border-zinc-200",
-    label: "text-zinc-400",
-    divider: "border-zinc-200",
+    label: "text-zinc-500",
+    divider: "border-zinc-200/70",
     navBase: "text-zinc-600",
     navHover: "hover:bg-zinc-100 hover:text-zinc-900",
-    navActive: "bg-indigo-50 text-indigo-700",
-    activeBar: "bg-indigo-600",
-    btn: "text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100",
+    navActive: "bg-zinc-100 text-zinc-900",
+    activeBar: "bg-zinc-900",
+    btn: "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100",
     brand: "text-zinc-900",
     brandSub: "text-zinc-500",
-    rolePill: "bg-indigo-50 text-indigo-700 border border-indigo-200",
-    avatar: "bg-indigo-100 text-indigo-700 border-indigo-200",
+    rolePill: "bg-zinc-100 text-zinc-700 border border-zinc-200",
+    avatar: "bg-zinc-100 text-zinc-700 border-zinc-200",
     userName: "text-zinc-900",
     email: "text-zinc-500",
-    tooltip: "bg-zinc-900 border-zinc-700 text-white shadow-xl",
-    soon: "bg-zinc-200 text-zinc-500 border-zinc-300",
-    subActive: "text-indigo-700 bg-indigo-50",
-    subBase: "text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100",
+    tooltip: "bg-zinc-900 border-zinc-800 text-zinc-50 shadow-lg",
+    soon: "bg-zinc-100 text-zinc-500 border-zinc-200",
+    subActive: "text-zinc-900 bg-zinc-100",
+    subBase: "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100",
     subBorder: "border-zinc-200",
+    logoutHover: "hover:bg-red-50 hover:text-red-600",
   },
 };
 
@@ -167,11 +164,13 @@ const T = {
 function Tooltip({ label, tk }) {
   return (
     <div
-      className="absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50
-      pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+      className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-50
+      pointer-events-none opacity-0 group-hover:opacity-100
+      -translate-x-1 group-hover:translate-x-0
+      transition-all duration-150"
     >
       <div
-        className={`px-2.5 py-1.5 rounded-md text-xs whitespace-nowrap border ${tk.tooltip}`}
+        className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap border ${tk.tooltip}`}
       >
         {label}
       </div>
@@ -192,18 +191,20 @@ function NavItem({ icon: Icon, label, to, collapsed, tk, onClick }) {
         to={to}
         onClick={onClick}
         className={`relative flex items-center gap-3 rounded-lg text-sm font-medium
-          transition-all duration-150
-          ${collapsed ? "justify-center px-0 py-2.5 w-full" : "px-3 py-2.5"}
+          transition-all duration-200
+          ${collapsed ? "justify-center px-0 py-2.5 w-full" : "px-3 py-2"}
           ${isActive ? tk.navActive : `${tk.navBase} ${tk.navHover}`}`}
         style={{ fontFamily: "'DM Sans', sans-serif" }}
       >
         {isActive && !collapsed && (
-          <span
-            className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full ${tk.activeBar}`}
+          <motion.span
+            layoutId="active-nav-bar"
+            className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-full ${tk.activeBar}`}
+            transition={{ type: "spring", stiffness: 380, damping: 30 }}
           />
         )}
         <Icon
-          size={17}
+          size={16}
           strokeWidth={isActive ? 2.2 : 1.8}
           className="shrink-0"
         />
@@ -217,10 +218,10 @@ function NavItem({ icon: Icon, label, to, collapsed, tk, onClick }) {
 /* ─── SECTION LABEL ─────────────────────────────────────────────── */
 function SectionLabel({ text, collapsed, tk }) {
   if (collapsed)
-    return <div className={`my-2 mx-auto w-6 border-t ${tk.divider}`} />;
+    return <div className={`my-2 mx-auto w-5 border-t ${tk.divider}`} />;
   return (
     <p
-      className={`text-[9px] font-bold uppercase tracking-[0.12em] px-3 mb-1.5 ${tk.label}`}
+      className={`text-[10px] font-semibold uppercase tracking-wider px-3 mb-1.5 mt-3 ${tk.label}`}
       style={{ fontFamily: "'DM Sans', sans-serif" }}
     >
       {text}
@@ -245,9 +246,9 @@ function AccordionGroup({
       {collapsed ? (
         <>
           <button
-            className={`flex justify-center w-full py-2.5 rounded-lg transition-all duration-150 ${tk.navBase} ${tk.navHover}`}
+            className={`flex justify-center w-full py-2.5 rounded-lg transition-all duration-200 ${tk.navBase} ${tk.navHover}`}
           >
-            <Icon size={17} strokeWidth={1.8} />
+            <Icon size={16} strokeWidth={1.8} />
           </button>
           <Tooltip label={label} tk={tk} />
         </>
@@ -255,15 +256,16 @@ function AccordionGroup({
         <>
           <button
             onClick={() => onToggle(groupKey)}
-            className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium
-              transition-all duration-150 ${tk.navBase} ${tk.navHover}`}
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium
+              transition-all duration-200 ${tk.navBase} ${tk.navHover}`}
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
-            <Icon size={17} strokeWidth={1.8} className="shrink-0" />
+            <Icon size={16} strokeWidth={1.8} className="shrink-0" />
             <span className="flex-1 text-left truncate">{label}</span>
             <motion.span
               animate={{ rotate: isOpen ? 180 : 0 }}
               transition={{ duration: 0.2 }}
+              className="opacity-70"
             >
               <ChevronDown size={13} strokeWidth={2} />
             </motion.span>
@@ -274,11 +276,11 @@ function AccordionGroup({
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
                 className="overflow-hidden"
               >
                 <div
-                  className={`mt-0.5 ml-[26px] pl-3 border-l ${tk.subBorder} space-y-0.5 pb-1`}
+                  className={`mt-1 ml-[22px] pl-3 border-l ${tk.subBorder} space-y-0.5 pb-1`}
                 >
                   {children}
                 </div>
@@ -299,8 +301,8 @@ function SubItem({ icon: Icon, label, to, tk, onClick }) {
     <Link
       to={to}
       onClick={onClick}
-      className={`flex items-center gap-2.5 px-2 py-1.5 rounded-md text-xs font-medium
-        transition-all duration-150 ${isActive ? tk.subActive : tk.subBase}`}
+      className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium
+        transition-all duration-200 ${isActive ? tk.subActive : tk.subBase}`}
       style={{ fontFamily: "'DM Sans', sans-serif" }}
     >
       <Icon size={13} strokeWidth={isActive ? 2.2 : 1.8} className="shrink-0" />
@@ -309,30 +311,34 @@ function SubItem({ icon: Icon, label, to, tk, onClick }) {
   );
 }
 
-/* ─── COMING SOON ITEM ──────────────────────────────────────────── */
+/* ─── COMING SOON ITEM (shadcn-style badge) ────────────────────── */
 function ComingSoonItem({ icon: Icon, label, collapsed, tk }) {
   return (
     <div className="relative group">
       <div
         className={`flex items-center gap-3 rounded-lg text-sm font-medium cursor-not-allowed
-        transition-all duration-150 select-none opacity-50
-        ${collapsed ? "justify-center px-0 py-2.5 w-full" : "px-3 py-2.5"} ${tk.navBase}`}
+        transition-all duration-200 select-none
+        ${collapsed ? "justify-center px-0 py-2.5 w-full opacity-50" : "px-3 py-2"} ${tk.navBase}`}
         style={{ fontFamily: "'DM Sans', sans-serif" }}
       >
-        <Icon size={17} strokeWidth={1.8} className="shrink-0" />
+        <Icon
+          size={16}
+          strokeWidth={1.8}
+          className={`shrink-0 ${!collapsed ? "opacity-60" : ""}`}
+        />
         {!collapsed && (
           <>
-            <span className="flex-1 truncate">{label}</span>
+            <span className="flex-1 truncate opacity-70">{label}</span>
             <span
-              className={`text-[8px] font-bold tracking-wide uppercase px-1.5 py-0.5
-              rounded border leading-none shrink-0 ${tk.soon}`}
+              className={`text-[9px] font-semibold tracking-wide px-1.5 py-0.5
+              rounded-md border leading-none shrink-0 ${tk.soon}`}
             >
               Soon
             </span>
           </>
         )}
       </div>
-      {collapsed && <Tooltip label={`${label} (Coming Soon)`} tk={tk} />}
+      {collapsed && <Tooltip label={`${label} · Soon`} tk={tk} />}
     </div>
   );
 }
@@ -359,7 +365,7 @@ function SidebarContent({
       return {};
     }
   })();
-  const name = user.name || "Student";
+  const name = user.full_name || "Student";
   const email = user.email || "student@academiq.com";
   const initials = name
     .split(" ")
@@ -376,89 +382,57 @@ function SidebarContent({
 
   return (
     <div
-      className={`flex flex-col h-full transition-colors duration-150 ${tk.bg} ${tk.border} border-r`}
+      className={`flex flex-col h-full transition-all duration-300 ${tk.bg} ${tk.border} border-r
+      ${!isDark ? "shadow-[4px_0_24px_-12px_rgba(0,0,0,0.08)]" : ""}`}
       style={{ fontFamily: "'DM Sans', sans-serif" }}
     >
-      {/* ── HEADER: Logo + Role badge + Collapse toggle ── */}
+      {/* ── HEADER ── */}
       <div
         className={`flex items-center justify-between border-b ${tk.divider} h-16 shrink-0
-        ${collapsed ? "px-2" : "px-3"}`}
+        ${collapsed ? "px-2" : "px-4"}`}
       >
-        {!collapsed ? (
-          <div className="flex items-center gap-2.5 flex-1 min-w-0">
-            <img
-              src={isDark ? LOGO_DARK_MODE : LOGO_LIGHT_MODE}
-              alt="AcademiQ"
-              className="h-8 w-auto rounded-md object-contain shrink-0 transition-all duration-150"
-              onError={(e) => {
-                e.target.style.display = "none";
-                if (e.target.nextSibling)
-                  e.target.nextSibling.style.display = "flex";
-              }}
-            />
-            <div className="w-8 h-8 rounded-md bg-indigo-600 items-center justify-center shrink-0 hidden">
-              <School size={15} className="text-white" />
-            </div>
-            
-            <div className="flex flex-col flex-1 min-w-0 justify-center">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <p className={`text-sm font-bold leading-tight truncate ${tk.brand}`}>
-                  AcademiQ
-                </p>
-                <span
-                  className={`text-[8px] font-bold px-1.5 py-0.5 rounded border leading-none shrink-0 ${tk.rolePill}`}
-                >
-                  STUDENT
-                </span>
-              </div>
-              <p className={`text-[10px] leading-tight truncate mt-0.5 ${tk.brandSub}`}>
-                Student Portal
-              </p>
-            </div>
-          </div>
-        ) : (
-          <>
-            <img
-              src={isDark ? LOGO_DARK_MODE : LOGO_LIGHT_MODE}
-              alt="AcademiQ"
-              className="w-8 h-8 rounded-md object-contain shrink-0 transition-all duration-150"
-              onError={(e) => {
-                e.target.style.display = "none";
-                if (e.target.nextSibling)
-                  e.target.nextSibling.style.display = "flex";
-              }}
-            />
-            <div className="w-8 h-8 rounded-md bg-indigo-600 items-center justify-center shrink-0 hidden">
-              <School size={15} className="text-white" />
-            </div>
-          </>
-        )}
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+          <img
+            src={isDark ? LOGO_DARK_MODE : LOGO_LIGHT_MODE}
+            alt="Logo"
+            className="h-8 w-auto rounded-md object-contain shrink-0 transition-all duration-150"
+          />
 
+          {!collapsed && (
+            <span
+              className={`text-[9px] font-semibold px-2 py-0.5 rounded-md leading-none shrink-0 tracking-wider ${tk.rolePill}`}
+            >
+              STUDENT
+            </span>
+          )}
+        </div>
+
+        {/* Action Button */}
         {!mobileView ? (
           <button
             onClick={onToggleCollapsed}
-            className={`p-1.5 rounded-lg transition-all duration-150 shrink-0 ml-1 ${tk.btn}`}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className={`p-1.5 rounded-md transition-all duration-200 shrink-0 ml-1 ${tk.btn}`}
+            title={collapsed ? "Expand" : "Collapse"}
           >
             {collapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
           </button>
         ) : showClose ? (
           <button
             onClick={onClose}
-            className={`p-1.5 rounded-lg transition-all duration-150 shrink-0 ml-1 ${tk.btn}`}
+            className={`p-1.5 rounded-md transition-all duration-200 shrink-0 ml-1 ${tk.btn}`}
           >
-            <X size={15} />
+            <X size={16} />
           </button>
         ) : null}
       </div>
 
-      {/* ── PRIMARY NAV — MAIN ── */}
+      {/* ── PRIMARY NAV ── */}
       <div
-        className={`${collapsed ? "px-2" : "px-3"} pt-3 pb-1 overflow-hidden`}
+        className={`${collapsed ? "px-2" : "px-3"} pt-2 pb-1 overflow-hidden`}
       >
         <SectionLabel text="Main" collapsed={collapsed} tk={tk} />
         <nav className="space-y-0.5">
-          {PRIMARY.map(({ key, ...item }) => ( 
+          {PRIMARY.map(({ key, ...item }) => (
             <NavItem
               key={key}
               {...item}
@@ -472,13 +446,13 @@ function SidebarContent({
 
       <div className={`mx-3 border-t ${tk.divider} my-2 shrink-0`} />
 
-      {/* ── SECONDARY NAV — MORE ── */}
+      {/* ── SECONDARY NAV ── */}
       <div
         className={`flex-1 overflow-y-auto scrollbar-hide ${collapsed ? "px-2" : "px-3"} pb-2`}
       >
         <SectionLabel text="More" collapsed={collapsed} tk={tk} />
         <div className="space-y-0.5">
-          {SECONDARY.map(({ key, ...item }) => { 
+          {SECONDARY.map(({ key, ...item }) => {
             if (item.comingSoon) {
               return (
                 <ComingSoonItem
@@ -541,7 +515,7 @@ function SidebarContent({
             <button
               onClick={handleLogout}
               title="Logout"
-              className="p-1.5 rounded-md text-red-500 hover:bg-red-500/10 transition-all duration-150"
+              className={`p-2 rounded-md text-zinc-500 ${tk.logoutHover} transition-all duration-200`}
             >
               <LogOut size={15} />
             </button>
@@ -550,11 +524,13 @@ function SidebarContent({
         ) : (
           <div className="flex flex-col w-full min-w-0">
             <SectionLabel text="Account" collapsed={false} tk={tk} />
-            <div className="flex items-center gap-2.5 min-w-0 mt-1">
+            <div
+              className={`flex items-center gap-2.5 min-w-0 mt-1 p-2 rounded-lg border ${tk.divider} transition-all duration-200`}
+            >
               <div
                 className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0 ${tk.avatar}`}
               >
-                <span className="text-xs font-bold leading-none">
+                <span className="text-[11px] font-semibold leading-none">
                   {initials}
                 </span>
               </div>
@@ -573,7 +549,7 @@ function SidebarContent({
               <button
                 onClick={handleLogout}
                 title="Logout"
-                className="p-1.5 rounded-md text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150 shrink-0"
+                className={`p-1.5 rounded-md text-zinc-500 ${tk.logoutHover} transition-all duration-200 shrink-0`}
               >
                 <LogOut size={14} />
               </button>
@@ -601,6 +577,18 @@ export default function Sidebar() {
     injectFont();
   }, []);
 
+  // Tablet Smart-Collapse
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768 && window.innerWidth <= 1100) {
+        setCollapsed(true);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   useEffect(() => {
     setSidebarWidth(collapsed ? "72px" : "260px");
     localStorage.setItem("stu_sidebar_collapsed", JSON.stringify(collapsed));
@@ -614,11 +602,12 @@ export default function Sidebar() {
 
   return (
     <>
+      {/* Mobile trigger */}
       <button
         onClick={() => setMobileOpen(true)}
         className="fixed top-4 left-4 z-[9999] md:hidden p-2 rounded-lg
-          bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-md 
-          text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all"
+          bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm
+          text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all duration-200"
         aria-label="Open sidebar"
       >
         <Menu size={18} />

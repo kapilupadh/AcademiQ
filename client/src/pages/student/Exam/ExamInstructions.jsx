@@ -1,7 +1,7 @@
-// client/src/pages/student/Exam/ExamInstructions.jsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import api from "../../../services/api";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   CircleAlert,
   Shield,
@@ -17,6 +17,9 @@ import {
   Timer,
   ChevronRight,
   RefreshCcw,
+  GraduationCap,
+  Sparkles,
+  ListChecks,
 } from "lucide-react";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -58,37 +61,37 @@ const RULES = [
 function StatusPill({ state }) {
   const configs = {
     waiting_for_teacher: {
-      cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+      cls: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/60",
       text: "Waiting for teacher to activate OTP…",
       icon: Loader,
       animate: true,
     },
     otp_active: {
-      cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+      cls: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60",
       text: "OTP is active — enter it below to join",
       icon: Key,
       animate: false,
     },
     exam_started: {
-      cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+      cls: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/60",
       text: "Exam started — you may enter now!",
       icon: CheckCircle,
       animate: false,
     },
     exam_closed: {
-      cls: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+      cls: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900/60",
       text: "Exam is closed or has ended",
       icon: XCircle,
       animate: false,
     },
     waiting_room: {
-      cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+      cls: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60",
       text: "You are in the waiting room — waiting for teacher to start…",
       icon: Loader,
       animate: true,
     },
     blocked: {
-      cls: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+      cls: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900/60",
       text: "Your access to this exam has been restricted",
       icon: XCircle,
       animate: false,
@@ -98,9 +101,9 @@ function StatusPill({ state }) {
   const Icon = cfg.icon;
   return (
     <div
-      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold ${cfg.cls}`}
+      className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-full border text-xs font-medium ${cfg.cls}`}
     >
-      <Icon className={`w-4 h-4 ${cfg.animate ? "animate-spin" : ""}`} />
+      <Icon className={`w-3.5 h-3.5 ${cfg.animate ? "animate-spin" : ""}`} />
       {cfg.text}
     </div>
   );
@@ -111,31 +114,58 @@ function SkeletonCard() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 animate-pulse">
       {[...Array(4)].map((_, i) => (
-        <div key={i} className="h-20 bg-zinc-100 dark:bg-zinc-800 rounded-xl" />
+        <div
+          key={i}
+          className="h-20 bg-zinc-100 dark:bg-zinc-800/60 rounded-xl"
+        />
       ))}
     </div>
   );
 }
 
 // ─── Exam Detail Card ─────────────────────────────────────────────────────────
-function ExamDetailCard({ icon: Icon, label, value, color }) {
-  const colors = {
-    blue: "bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-300",
-    purple:
-      "bg-purple-50 dark:bg-purple-900/10 border-purple-100 dark:border-purple-800 text-purple-700 dark:text-purple-300",
-    emerald:
-      "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300",
-    amber:
-      "bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-800 text-amber-700 dark:text-amber-400",
-  };
+function ExamDetailCard({ icon: Icon, label, value }) {
+  return (
+    <div className="group p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
+      <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 mb-2">
+        <Icon className="w-3.5 h-3.5" />
+        <p className="text-[11px] font-medium uppercase tracking-wider">
+          {label}
+        </p>
+      </div>
+      <p className="font-semibold text-zinc-900 dark:text-zinc-100 truncate text-sm">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+// ─── Section Card ─────────────────────────────────────────────────────────────
+function SectionCard({ children, className = "" }) {
   return (
     <div
-      className={`p-4 rounded-xl border flex items-center gap-3 ${colors[color]}`}
+      className={`bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm ${className}`}
     >
-      <Icon className="w-5 h-5 flex-shrink-0 opacity-70" />
-      <div className="min-w-0">
-        <p className="text-xs font-semibold opacity-70">{label}</p>
-        <p className="font-bold truncate">{value}</p>
+      {children}
+    </div>
+  );
+}
+
+function SectionHeader({ icon: Icon, title, subtitle }) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="shrink-0 w-9 h-9 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+        <Icon className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+      </div>
+      <div>
+        <h2 className="text-base font-semibold text-zinc-900 dark:text-white leading-tight">
+          {title}
+        </h2>
+        {subtitle && (
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+            {subtitle}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -208,8 +238,6 @@ export default function ExamInstructions() {
           : "waiting_for_teacher";
 
   // ── Polling via GET /exam/:id/status (safe — does NOT create attempt) ──────
-  // Only polls exam status, never touches the attempt. When exam goes Live,
-  // we navigate to portal where POST /exam/:id/start is called exactly once.
   const startPolling = useCallback(
     (examId) => {
       if (pollRef.current) clearInterval(pollRef.current);
@@ -269,7 +297,6 @@ export default function ExamInstructions() {
         setPhase("waiting_room");
         startPolling(selectedExamId);
       } else if (status === "IN_PROGRESS") {
-        // Exam already live when joining — go straight in
         navigate(`/exam/portal/${selectedExamId}`);
       }
     } catch (err) {
@@ -289,15 +316,26 @@ export default function ExamInstructions() {
   // ─────────────────────────────────────────────────────────────────────────
   if (phase === "blocked") {
     return (
-      <div className="max-w-xl mx-auto p-8 pt-24 text-center space-y-4">
-        <XCircle className="w-16 h-16 text-red-500 mx-auto" />
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">
-          Access Restricted
-        </h2>
-        <p className="text-zinc-500 dark:text-zinc-400">
-          Your exam attempt has been terminated or marked as absent. Please
-          contact your teacher for assistance.
-        </p>
+      <div className="min-h-[80vh] flex items-center justify-center p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          className="max-w-md w-full bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 text-center space-y-4 shadow-sm"
+        >
+          <div className="mx-auto w-14 h-14 rounded-full bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 flex items-center justify-center">
+            <XCircle className="w-7 h-7 text-red-500" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">
+              Access Restricted
+            </h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+              Your exam attempt has been terminated or marked as absent. Please
+              contact your teacher for assistance.
+            </p>
+          </div>
+        </motion.div>
       </div>
     );
   }
@@ -307,44 +345,54 @@ export default function ExamInstructions() {
   // ─────────────────────────────────────────────────────────────────────────
   if (phase === "waiting_room") {
     return (
-      <div className="max-w-xl mx-auto p-8 pt-16 space-y-6">
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 text-center space-y-6 shadow-sm">
+      <div className="min-h-[80vh] flex items-center justify-center p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          className="max-w-md w-full bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 text-center space-y-6 shadow-sm"
+        >
           <div className="relative mx-auto w-20 h-20">
             <div className="absolute inset-0 rounded-full bg-blue-100 dark:bg-blue-900/30 animate-ping opacity-40" />
-            <div className="relative flex items-center justify-center w-20 h-20 rounded-full bg-blue-100 dark:bg-blue-900/30">
-              <Loader className="w-9 h-9 text-blue-500 animate-spin" />
+            <div className="relative flex items-center justify-center w-20 h-20 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60">
+              <Loader className="w-8 h-8 text-blue-500 animate-spin" />
             </div>
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-1">
+            <h2 className="text-xl font-semibold text-zinc-900 dark:text-white mb-1.5">
               You're in the Waiting Room
             </h2>
-            <p className="text-zinc-500 dark:text-zinc-400 text-sm">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
               Stay on this page. The exam will begin automatically when your
               teacher starts it.
             </p>
           </div>
 
           {examDetails && (
-            <div className="bg-zinc-50 dark:bg-zinc-950 rounded-xl p-4 text-left border border-zinc-200 dark:border-zinc-800">
+            <div className="bg-zinc-50 dark:bg-zinc-950/60 rounded-xl p-4 text-left border border-zinc-200 dark:border-zinc-800">
               <p className="text-sm font-semibold text-zinc-900 dark:text-white mb-1">
                 {examDetails.title}
               </p>
-              <p className="text-xs text-zinc-500">
-                {examDetails.type} &bull; {examDetails.duration_minutes} mins
-                &bull; {examDetails.total_questions_to_ask} questions
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                {examDetails.type} · {examDetails.duration_minutes} mins ·{" "}
+                {examDetails.total_questions_to_ask} questions
               </p>
             </div>
           )}
 
-          <StatusPill state="waiting_room" />
+          <div className="flex justify-center">
+            <StatusPill state="waiting_room" />
+          </div>
 
-          <p className="text-xs text-red-500 font-medium">
-            ⚠️ Do not close or refresh this tab. Doing so will mark you as
-            Absent.
-          </p>
-        </div>
+          <div className="flex items-start gap-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/60 rounded-lg px-3 py-2.5 text-left">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <p className="font-medium leading-relaxed">
+              Do not close or refresh this tab. Doing so will mark you as
+              Absent.
+            </p>
+          </div>
+        </motion.div>
       </div>
     );
   }
@@ -352,47 +400,66 @@ export default function ExamInstructions() {
   // ─────────────────────────────────────────────────────────────────────────
   // MAIN / IDLE STATE
   // ─────────────────────────────────────────────────────────────────────────
+  const showOtpCard =
+    selectedExamId && examDetails && uiState !== "exam_closed";
+
   return (
-    <div className="max-w-3xl mx-auto p-6 pt-8 space-y-6">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-zinc-900 dark:text-white mb-1">
-          Join Examination
-        </h1>
-        <p className="text-zinc-500 dark:text-zinc-400 text-sm">
-          Select your exam, read the instructions carefully, then enter the OTP
-          provided by your teacher.
-        </p>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="flex items-start gap-3"
+      >
+        <div className="shrink-0 w-11 h-11 rounded-xl bg-zinc-900 dark:bg-white flex items-center justify-center">
+          <GraduationCap className="w-5 h-5 text-white dark:text-zinc-900" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-white tracking-tight">
+            Join Examination
+          </h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
+            {selectedExamId
+              ? "Enter the OTP provided by your teacher to join."
+              : "Select your exam, read the instructions, then enter the OTP provided by your teacher."}
+          </p>
+        </div>
+      </motion.div>
 
       {/* ── Exam Selection ── */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm space-y-4">
-        <h2 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-          <ChevronRight className="w-5 h-5 text-blue-500" /> Select Exam
-        </h2>
+      <SectionCard className="p-6 space-y-5">
+        <SectionHeader
+          icon={Sparkles}
+          title="Select Exam"
+          subtitle="Choose from available scheduled or live exams"
+        />
 
         {loadingExams ? (
-          <div className="h-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse" />
+          <div className="h-12 bg-zinc-100 dark:bg-zinc-800/60 rounded-xl animate-pulse" />
         ) : (
-          <select
-            className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl outline-none focus:border-blue-500 text-zinc-900 dark:text-white"
-            value={selectedExamId}
-            onChange={(e) => setSelectedExamId(e.target.value)}
-          >
-            <option value="" disabled>
-              — Choose an Exam —
-            </option>
-            {exams.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.title} · {e.type}
+          <div className="relative">
+            <select
+              className="w-full appearance-none px-4 py-3 pr-10 bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 rounded-xl outline-none focus:border-zinc-400 dark:focus:border-zinc-600 focus:ring-2 focus:ring-zinc-900/5 dark:focus:ring-white/5 text-sm text-zinc-900 dark:text-white transition-colors"
+              value={selectedExamId}
+              onChange={(e) => setSelectedExamId(e.target.value)}
+            >
+              <option value="" disabled>
+                — Choose an Exam —
               </option>
-            ))}
-          </select>
+              {exams.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.title} · {e.type}
+                </option>
+              ))}
+            </select>
+            <ChevronRight className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 rotate-90" />
+          </div>
         )}
 
         {/* Exam details */}
         {selectedExamId && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {loadingDetails ? (
               <SkeletonCard />
             ) : examDetails ? (
@@ -403,77 +470,81 @@ export default function ExamInstructions() {
                     icon={Clock}
                     label="Duration"
                     value={`${examDetails.duration_minutes} Mins`}
-                    color="blue"
                   />
                   <ExamDetailCard
                     icon={CircleAlert}
                     label="Questions"
                     value={`${examDetails.total_questions_to_ask} MCQs`}
-                    color="purple"
                   />
                   <ExamDetailCard
                     icon={Timer}
                     label="Passing"
                     value={`${examDetails.passing_percentage}%`}
-                    color="emerald"
                   />
                   <ExamDetailCard
                     icon={BookOpen}
                     label="Type"
                     value={examDetails.type || "—"}
-                    color="amber"
                   />
                 </div>
               </>
             ) : null}
           </div>
         )}
-      </div>
+      </SectionCard>
 
-      {/* ── Instructions ── */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
-          <ChevronRight className="w-5 h-5 text-amber-500" /> Exam Rules &
-          Instructions
-        </h2>
-        <div className="space-y-3">
-          {RULES.map((rule, i) => {
-            const Icon = rule.icon;
-            return (
-              <div
-                key={i}
-                className="flex gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800"
-              >
-                <div className="shrink-0 mt-0.5 w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
-                  <Icon className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+      {/* ── Instructions (only when NO exam selected) ── */}
+      {!selectedExamId && (
+        <SectionCard className="p-6 space-y-5">
+          <SectionHeader
+            icon={ListChecks}
+            title="Exam Rules & Instructions"
+            subtitle="Please read carefully before selecting an exam"
+          />
+
+          <div className="grid sm:grid-cols-2 gap-2.5">
+            {RULES.map((rule, i) => {
+              const Icon = rule.icon;
+              return (
+                <div
+                  key={i}
+                  className="flex gap-3 p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
+                >
+                  <div className="shrink-0 mt-0.5 w-8 h-8 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center">
+                    <Icon className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-zinc-900 dark:text-white">
+                      {rule.title}
+                    </p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                      {rule.desc}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-zinc-900 dark:text-white">
-                    {rule.title}
-                  </p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                    {rule.desc}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+              );
+            })}
+          </div>
+        </SectionCard>
+      )}
 
-      {/* ── OTP Entry ── */}
-      {selectedExamId && examDetails && uiState !== "exam_closed" && (
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm space-y-5">
-          <h2 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-            <ChevronRight className="w-5 h-5 text-blue-500" /> Enter OTP
-          </h2>
+      {/* ── OTP + Agreement + Button (only when exam IS selected) ── */}
+      {showOtpCard && (
+        <SectionCard className="p-6 space-y-5">
+          <SectionHeader
+            icon={Key}
+            title="Enter OTP"
+            subtitle="6-digit code provided by your teacher"
+          />
 
+          {/* OTP Input */}
           <div>
             <div className="relative">
-              <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+              <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none z-10" />
               <input
                 type="text"
                 inputMode="numeric"
+                autoComplete="one-time-code"
                 maxLength={6}
                 value={otp}
                 onChange={(e) => {
@@ -489,36 +560,36 @@ export default function ExamInstructions() {
                     ? "OTP not yet active…"
                     : "Enter 6-digit OTP"
                 }
-                className="w-full pl-12 pr-4 py-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl outline-none focus:border-blue-500 text-zinc-900 dark:text-white font-mono tracking-[0.4em] text-xl text-center disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                className="w-full pl-12 pr-4 py-4 bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 rounded-xl outline-none focus:border-zinc-400 dark:focus:border-zinc-600 focus:ring-2 focus:ring-zinc-900/5 dark:focus:ring-white/5 text-zinc-900 dark:text-white font-mono tracking-[0.4em] text-lg text-center disabled:opacity-40 disabled:cursor-not-allowed transition-all"
               />
             </div>
 
             {uiState === "waiting_for_teacher" && (
-              <p className="mt-2 text-xs text-zinc-400 flex items-center gap-1">
+              <p className="mt-2.5 text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
                 <Shield className="w-3 h-3" />
                 OTP will become available once your teacher activates it.
               </p>
             )}
 
             {otpError && (
-              <div className="mt-2 flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg border border-red-200 dark:border-red-800">
-                <XCircle className="w-4 h-4 flex-shrink-0" />
+              <div className="mt-2.5 flex items-center gap-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-lg border border-red-200 dark:border-red-900/60">
+                <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
                 {otpError}
               </div>
             )}
           </div>
 
           {/* Agreement Checkbox */}
-          <label className="flex items-start gap-3 cursor-pointer group">
+          <label className="flex items-start gap-3 cursor-pointer group p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/40 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
             <input
               type="checkbox"
               checked={agreed}
               onChange={(e) => setAgreed(e.target.checked)}
-              className="mt-0.5 w-4 h-4 accent-blue-600 cursor-pointer"
+              className="mt-0.5 w-4 h-4 accent-zinc-900 dark:accent-white cursor-pointer flex-shrink-0"
             />
-            <span className="text-sm text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200 transition-colors leading-relaxed">
-              I have read and understood all the exam rules and instructions
-              above. I agree to follow them strictly throughout the exam.
+            <span className="text-xs text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200 transition-colors leading-relaxed">
+              I have read and understood all the exam rules and instructions.
+              I agree to follow them strictly throughout the exam.
             </span>
           </label>
 
@@ -532,16 +603,22 @@ export default function ExamInstructions() {
               uiState === "exam_closed"
             }
             onClick={handleJoin}
-            className="w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all transform active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2"
+            className="w-full py-3.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-semibold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors transform active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2 shadow-sm"
           >
             {joining ? (
               <>
-                <Loader className="w-5 h-5 animate-spin" /> Joining…
+                <Loader className="w-4 h-4 animate-spin" /> Joining…
               </>
             ) : uiState === "exam_started" ? (
-              "⚡ Exam Is Live — Enter Now"
+              <>
+                <Sparkles className="w-4 h-4" />
+                Exam Is Live — Enter Now
+              </>
             ) : (
-              "Enter Waiting Room"
+              <>
+                Enter Waiting Room
+                <ChevronRight className="w-4 h-4" />
+              </>
             )}
           </button>
 
@@ -550,12 +627,12 @@ export default function ExamInstructions() {
               The exam has started! Enter immediately.
             </p>
           )}
-        </div>
+        </SectionCard>
       )}
 
       {/* Closed state banner */}
-      {uiState === "exam_closed" && (
-        <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-2xl p-5 flex items-center gap-3 text-red-700 dark:text-red-400">
+      {selectedExamId && uiState === "exam_closed" && (
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/60 rounded-2xl p-4 flex items-center gap-3 text-red-700 dark:text-red-400">
           <XCircle className="w-5 h-5 flex-shrink-0" />
           <p className="text-sm font-medium">
             This exam has been closed. Please contact your teacher if you
