@@ -1,4 +1,3 @@
-// client/src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/auth/Login/Login";
 import Register from "./pages/auth/Register/Register";
@@ -71,11 +70,12 @@ function AdminPage({ children }) {
         className="transition-all duration-300 max-lg:!pl-0 w-full"
         style={{ paddingLeft: "var(--admin-sidebar-w, 260px)" }}
       >
-        <Layout header={<Navbar page="public" />}>{children}</Layout>
+        <Layout header={<Navbar page="admin" />}>{children}</Layout>
       </div>
     </ProtectedRoute>
   );
 }
+
 
 export default function App() {
   return (
@@ -121,13 +121,13 @@ export default function App() {
         <Route path="/admin/attendance/report" element={<AdminPage><AdminAttendanceReport /></AdminPage>} />
 
         {/* ── Teacher Pages ── */}
-        <Route path="/teacher/attendance/mark" element={<TeacherPage><TeacherAttendancePage /></TeacherPage>} />
         <Route path="/teacher/dashboard" element={<TeacherPage><TeacherDashboard /></TeacherPage>} />
         <Route path="/teacher/exams" element={<TeacherPage><ExamList /></TeacherPage>} />
         <Route path="/teacher/exams/create" element={<TeacherPage><ExamBuilder /></TeacherPage>} />
         <Route path="/teacher/exams/edit/:id" element={<TeacherPage><ExamBuilder /></TeacherPage>} />
         <Route path="/teacher/exams/:id/manage" element={<TeacherPage><ExamManage /></TeacherPage>} />
-        <Route path="/teacher/subjects" element={<TeacherSubjectsPage />} />
+        <Route path="/teacher/attendance/mark" element={<TeacherPage><TeacherAttendancePage /></TeacherPage>} />
+        <Route path="/teacher/subjects" element={<TeacherPage><TeacherSubjectsPage /></TeacherPage>} />
       </Routes>
     </BrowserRouter>
   );
