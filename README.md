@@ -52,6 +52,8 @@
 
 This project is split into a frontend React app and a backend Node/Express app using PostgreSQL.
 
+Bulk mode of student data should be generated.
+
 The easiest free deployment path is:
 
 1. Deploy backend + PostgreSQL on Railway.
