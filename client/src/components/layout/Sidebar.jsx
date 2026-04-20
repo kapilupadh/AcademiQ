@@ -64,9 +64,9 @@ const PRIMARY = [
   },
   {
     key: "assignment",
-    label: "Assignment",
+    label: "Assignments",
     icon: PenTool,
-    to: "/assignments/pending",
+    to: "/student/assignments",
   },
   {
     key: "attendance",
@@ -99,13 +99,7 @@ const SECONDARY = [
       { label: "Rules & Regulations", icon: ShieldAlert, to: "/exams/rules" },
     ],
   },
-  {
-    key: "assignment-details",
-    label: "Assignment Details",
-    icon: FileText,
-    to: "/assignments/details",
-    accordion: false,
-  },
+
   {
     key: "achievements",
     label: "Achievements",

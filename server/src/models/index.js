@@ -18,6 +18,8 @@ const MaterialRequest = require('./MaterialRequest');
 const Violation = require('./Violation');
 const Attendance = require('./Attendance');
 const ActivityLog = require('./ActivityLog');
+const Assignment = require('./Assignment');
+const AssignmentSubmission = require('./AssignmentSubmission');
 
 // ── Associations ──────────────────────────────────────────────────────────────
 
@@ -118,6 +120,22 @@ MaterialRequest.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
 Exam.hasMany(MaterialRequest, { foreignKey: 'exam_id' });
 MaterialRequest.belongsTo(Exam, { foreignKey: 'exam_id', as: 'exam' });
 
+// Subject <-> Assignment
+Subject.hasMany(Assignment, { foreignKey: 'subject_id' });
+Assignment.belongsTo(Subject, { foreignKey: 'subject_id', as: 'subject' });
+
+// User (Teacher) <-> Assignment
+User.hasMany(Assignment, { foreignKey: 'teacher_id', as: 'createdAssignments' });
+Assignment.belongsTo(User, { foreignKey: 'teacher_id', as: 'teacher' });
+
+// Assignment <-> AssignmentSubmission
+Assignment.hasMany(AssignmentSubmission, { foreignKey: 'assignment_id', onDelete: 'CASCADE' });
+AssignmentSubmission.belongsTo(Assignment, { foreignKey: 'assignment_id' });
+
+// User (Student) <-> AssignmentSubmission
+User.hasMany(AssignmentSubmission, { foreignKey: 'student_id', as: 'submissions' });
+AssignmentSubmission.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
+
 module.exports = {
   sequelize,
   User,
@@ -136,4 +154,6 @@ module.exports = {
   Violation,
   Attendance,
   ActivityLog,
+  Assignment,
+  AssignmentSubmission,
 };

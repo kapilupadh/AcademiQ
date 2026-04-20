@@ -38,6 +38,7 @@ app.use('/api/exam', examRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/teacher', teacherRoutes);
 app.use('/api/departments', require('./modules/department/departmentRoutes'));
+app.use('/api/assignments', require('./modules/assignments/assignmentRoutes'));
 
 // Test Route
 app.get('/', (req, res) => {

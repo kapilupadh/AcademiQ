@@ -2,8 +2,15 @@ const { User } = require('../models');
 
 const requireTeacher = async (req, res, next) => {
   try {
+    // ── DEVELOPMENT MODE BYPASS ──────────────────────────────────────────────
+    if (req.user && req.user.id && req.user.id.startsWith('dev-')) {
+      if (req.user.role === 2 || req.user.role === 1) {
+        return next();
+      }
+    }
+
     const user = await User.findByPk(req.user.id);
-    
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }

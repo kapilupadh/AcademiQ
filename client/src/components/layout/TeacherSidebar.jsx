@@ -26,8 +26,8 @@ const LOGO_LIGHT_MODE = "/Icons/Dark-Logo.jpg";
 
 const PRIMARY = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, to: "/teacher/dashboard" },
+  { key: "assignment", label: "Assignments", icon: NotebookPen, to: "/teacher/assignments" },
   { key: "examination", label: "Examination", icon: BookOpen, to: "/teacher/exams" },
-  { key: "assessments", label: "Assessments", icon: NotebookPen, to: "/teacher/exams/create" },
   { key: "classes", label: "My Classes", icon: Users, to: "/teacher/students", comingSoon: true },
 ];
 

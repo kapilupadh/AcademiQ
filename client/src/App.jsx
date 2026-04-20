@@ -31,6 +31,11 @@ import SubjectManager from "./pages/admin/SubjectManager/SubjectManager";
 import TeacherAttendancePage from "./pages/teacher/Attendance/TeacherAttendancePage";
 import StudentAttendancePage from "./pages/student/Attendance/StudentAttendancePage";
 import DepartmentLocation from "./pages/admin/DepartmentLocation/DepartmentLocation";
+import AssignmentList from "./pages/teacher/Assignments/AssignmentList";
+import CreateAssignment from "./pages/teacher/Assignments/CreateAssignment";
+import AssignmentSubmissions from "./pages/teacher/Assignments/AssignmentSubmissions";
+import StudentAssignmentList from "./pages/student/Assignments/AssignmentList";
+import AssignmentSubmissionPage from "./pages/student/Assignments/AssignmentSubmissionPage";
 
 function StudentPage({ children }) {
   return (
@@ -95,6 +100,8 @@ export default function App() {
         <Route path="/exams/result" element={<StudentPage><Result /></StudentPage>} />
         <Route path="/exam/instructions" element={<StudentPage><ExamInstructions /></StudentPage>} />
         <Route path="/attendance/history" element={<StudentPage><StudentAttendancePage /></StudentPage>} />
+        <Route path="/student/assignments" element={<StudentPage><StudentAssignmentList /></StudentPage>} />
+        <Route path="/student/assignments/:id" element={<StudentPage><AssignmentSubmissionPage /></StudentPage>} />
 
         {/* Exam portal — isolated layout */}
         <Route
@@ -123,6 +130,10 @@ export default function App() {
         <Route path="/teacher/exams/create" element={<TeacherPage><ExamBuilder /></TeacherPage>} />
         <Route path="/teacher/exams/edit/:id" element={<TeacherPage><ExamBuilder /></TeacherPage>} />
         <Route path="/teacher/exams/:id/manage" element={<TeacherPage><ExamManage /></TeacherPage>} />
+        <Route path="/teacher/assignments" element={<TeacherPage><AssignmentList /></TeacherPage>} />
+        <Route path="/teacher/assignments/create" element={<TeacherPage><CreateAssignment /></TeacherPage>} />
+        <Route path="/teacher/assignments/edit/:id" element={<TeacherPage><CreateAssignment /></TeacherPage>} />
+        <Route path="/teacher/assignments/:id/submissions" element={<TeacherPage><AssignmentSubmissions /></TeacherPage>} />
       </Routes>
     </BrowserRouter>
   );

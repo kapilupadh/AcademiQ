@@ -62,6 +62,9 @@ exports.getSubjectsByProgram = async (req, res) => {
 exports.getMySubjects = async (req, res) => {
   try {
     const { department_id, id: userId, role } = req.user;
+    console.log('[DEBUG] getMySubjects called for user:', { userId, role, department_id });
+
+    // Database-driven subject filtering
     const where = { is_active: true };
 
     if (role === 2) {
@@ -72,17 +75,14 @@ exports.getMySubjects = async (req, res) => {
     } else if (role === 3) {
       const { User } = require('../../models');
       const student = await User.findByPk(userId, {
-        attributes: ['program_id', 'current_semester'],
+        attributes: ['department_id'],
       });
-      if (!student?.program_id)
-        return res.status(400).json({ message: 'Your account has no program assigned.' });
-      where.program_id = student.program_id;
-      if (student.current_semester) where.semester = student.current_semester;
+      if (student?.department_id) where.department_id = student.department_id;
     }
 
     const subjects = await Subject.findAll({
       where,
-      attributes: ['id', 'name', 'code', 'category', 'semester', 'department_id', 'program_id'],
+      attributes: ['id', 'name', 'code', 'semester', 'department_id'],
       order: [['semester', 'ASC'], ['name', 'ASC']],
     });
 
