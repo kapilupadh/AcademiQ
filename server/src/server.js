@@ -49,15 +49,15 @@ const startServer = async () => {
   try {
     await sequelize.authenticate();
     console.log('✅ Database connected successfully.');
-    
+
     // Sync models (force: false means it won't drop existing tables)
     // Use { alter: true } only in dev if you want to update columns without dropping
     await sequelize.sync({ alter: false });
     console.log('✅ Models synchronized.');
 
     app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+      console.log(`Server is running on port ${PORT}`);
+    });
   } catch (error) {
     console.error('❌ Unable to connect to the database:', error);
   }

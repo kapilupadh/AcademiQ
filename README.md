@@ -56,7 +56,7 @@ STD-2026-4499
 Unique id's to Teacher to register
 TCH-2026-8836
 
-Next objective :
+
 Bulk mode of student data should be generated .
 
 
