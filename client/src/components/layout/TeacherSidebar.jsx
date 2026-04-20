@@ -44,10 +44,10 @@ const LOGO_LIGHT_MODE = "/Icons/Dark-Logo.jpg";
 
 /* ─── PRIMARY NAV ───────────────────────────────────────────────── */
 const PRIMARY = [
-  { key: "dashboard",   label: "Dashboard",   icon: LayoutDashboard, to: "/teacher/dashboard" },
-  { key: "examination", label: "Examination", icon: BookOpen,        to: "/teacher/exams" },
-  { key: "assessments", label: "Assessments", icon: NotebookPen,     to: "/teacher/assessments", comingSoon: true },
-  { key: "classes",     label: "My Classes",  icon: Users,           to: "/teacher/students",    comingSoon: true },
+  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, to: "/teacher/dashboard" },
+  { key: "assignment", label: "Assignments", icon: NotebookPen, to: "/teacher/assignments" },
+  { key: "examination", label: "Examination", icon: BookOpen, to: "/teacher/exams" },
+  { key: "classes", label: "My Classes", icon: Users, to: "/teacher/students", comingSoon: true },
 ];
 
 /* ─── SECONDARY NAV ─────────────────────────────────────────────── */

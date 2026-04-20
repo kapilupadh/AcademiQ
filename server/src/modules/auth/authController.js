@@ -165,8 +165,18 @@ exports.validateId = async (req, res) => {
 
     const sessionToken = uuidv4();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-    await RegistrationSession.create({ unique_id, session_token: sessionToken, expires_at: expiresAt, status: 'PENDING' });
-    res.json({ valid: true, session_token: sessionToken, role: idRecord.role, bound_data: { name: idRecord.student_name, email: idRecord.student_email } });
+    await RegistrationSession.create({ 
+      unique_id, 
+      session_token: sessionToken, 
+      expires_at: expiresAt, 
+      status: 'PENDING' 
+    });
+    res.json({ 
+      valid: true, 
+      session_token: sessionToken, 
+      role: idRecord.role, 
+      bound_data: { name: idRecord.student_name, email: idRecord.student_email } 
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server Validation Error' });
   }
@@ -174,7 +184,8 @@ exports.validateId = async (req, res) => {
 
 exports.checkEmail = async (req, res) => {
   try {
-    const existingUser = await User.findOne({ where: { email: req.body.email } });
+    const { email } = req.body;
+    const existingUser = await User.findOne({ where: { email } });
     res.json({ available: !existingUser });
   } catch (error) {
     res.status(500).json({ message: 'Server Error' });
@@ -191,18 +202,37 @@ exports.register = async (req, res) => {
     const idRecord = await UniqueId.findOne({ where: { unique_id } });
     if (!idRecord || idRecord.is_used) return res.status(400).json({ message: 'Unique ID invalid or used.' });
 
+    // STRICT TEACHER VALIDATION
+    if (idRecord.role === 2) {
+      const inputEmail = email.trim().toLowerCase();
+      const boundEmail = (idRecord.student_email || '').trim().toLowerCase();
+      if (inputEmail !== boundEmail) {
+        return res.status(400).json({ message: 'Registration Failed: Email must match the one provided by Admin.' });
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const t = await sequelize.transaction();
     try {
       const newUser = await User.create({
-        unique_id, username, email, password_hash: hashedPassword, full_name, dob, role: idRecord.role,
-        is_active: true, department_id: department_id || null, program_id: program_id || null,
-        current_semester: current_semester ? parseInt(current_semester) : null, registered_date: new Date()
+        unique_id, 
+        username, 
+        email, 
+        password_hash: hashedPassword, 
+        full_name, 
+        dob, 
+        role: idRecord.role,
+        is_active: true, 
+        department_id: department_id || null, 
+        program_id: program_id || null,
+        current_semester: current_semester ? parseInt(current_semester) : null, 
+        registered_date: new Date(),
+        email_verified: true
       }, { transaction: t });
       await idRecord.update({ is_used: true, used_date: new Date() }, { transaction: t });
       await session.update({ status: 'COMPLETED' }, { transaction: t });
       await t.commit();
-      res.status(201).json({ message: 'Registration successful.', userId: newUser.id });
+      res.status(201).json({ message: 'Registration successful. Please login.', userId: newUser.id });
     } catch (dbError) {
       await t.rollback();
       throw dbError;
@@ -216,12 +246,37 @@ exports.login = async (req, res) => {
   try {
     const { login_id, password, expected_role } = req.body;
     const user = await User.findOne({ where: { [Op.or]: [{ email: login_id }, { username: login_id }] } });
-    if (!user || !(await bcrypt.compare(password, user.password_hash))) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
     if (!user.is_active) return res.status(403).json({ message: 'Account is inactive.' });
-    if (expected_role && Number(user.role) !== Number(expected_role)) return res.status(403).json({ message: 'Access denied: Incorrect portal.' });
+    if (expected_role && Number(user.role) !== Number(expected_role)) {
+      return res.status(403).json({ message: 'Access denied: Incorrect portal.' });
+    }
 
-    const token = jwt.sign({ id: user.id, role: user.role, department_id: user.department_id || null }, process.env.JWT_SECRET, { expiresIn: '24h' });
-    res.json({ message: 'Login successful', user: { id: user.id, username: user.username, email: user.email, role: user.role, full_name: user.full_name }, token, role: user.role });
+    const token = jwt.sign(
+      { 
+        id: user.id, 
+        role: user.role, 
+        department_id: user.department_id || null,
+        program_id: user.program_id || null 
+      }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '24h' }
+    );
+
+    res.json({ 
+      message: 'Login successful', 
+      user: { 
+        id: user.id, 
+        username: user.username, 
+        email: user.email, 
+        role: user.role, 
+        full_name: user.full_name 
+      }, 
+      token, 
+      role: user.role 
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server Error' });
   }
@@ -284,7 +339,7 @@ exports.updateProfile = async (req, res) => {
     const { full_name, dob, current_semester, program_id, department_id } = req.body;
     const user = await User.findByPk(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
-    Object.assign(user, { full_name, dob, current_semester: current_semester ? parseInt(current_semester) : null, program_id, department_id });
+    Object.assign(user, { full_name, dob, current_semester: current_semester ? parseInt(current_semester) : null, program_id: program_id || null, department_id: department_id || null });
     await user.save();
     res.json({ message: 'Profile updated successfully', user });
   } catch (error) {

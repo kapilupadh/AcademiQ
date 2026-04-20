@@ -93,7 +93,7 @@ exports.getMySubjects = async (req, res) => {
 
     const subjects = await Subject.findAll({
       where,
-      attributes: ['id', 'name', 'code', 'category', 'semester', 'department_id', 'program_id'],
+      attributes: ['id', 'name', 'code', 'semester', 'department_id'],
       order: [['semester', 'ASC'], ['name', 'ASC']],
     });
 
