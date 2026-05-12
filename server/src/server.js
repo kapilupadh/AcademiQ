@@ -1,5 +1,5 @@
 //server/src/server.js
-const express = require('express');
+const express = require('express'); // Express end point 
 const cors = require('cors');
 const dotenv = require('dotenv');
 const sequelize = require('./config/database');
@@ -14,12 +14,17 @@ const PORT = process.env.PORT || 5000;
 
 const path = require('path');
 
+// --- Updated CORS Configuration ---
 app.use(cors({
-  origin: ["http://localhost:3000"],
+  origin: [
+    process.env.FRONTEND_URL,      // This will use your Vercel link from Railway variables
+    "http://localhost:3000"        // This keeps it working on your local computer
+  ],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Authorization", "Content-Type"],
   credentials: true
 }));
+
 
 app.use(express.json());
 app.use('/public', express.static(path.join(__dirname, '../public')));
