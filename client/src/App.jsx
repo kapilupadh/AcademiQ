@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import Login from "./pages/auth/Login/Login";
 import Register from "./pages/auth/Register/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword/ForgotPassword";
@@ -129,6 +131,8 @@ export default function App() {
         <Route path="/teacher/attendance/mark" element={<TeacherPage><TeacherAttendancePage /></TeacherPage>} />
         <Route path="/teacher/subjects" element={<TeacherPage><TeacherSubjectsPage /></TeacherPage>} />
       </Routes>
+      <Analytics />
+      <SpeedInsights />
     </BrowserRouter>
   );
 }
