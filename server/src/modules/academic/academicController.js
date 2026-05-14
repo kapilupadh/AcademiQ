@@ -103,3 +103,38 @@ exports.getMySubjects = async (req, res) => {
     res.status(500).json({ message: 'Error fetching subjects' });
   }
 };
+
+// POST /api/academics/subjects
+// Allows teachers to quickly add a subject to their department
+exports.createSubject = async (req, res) => {
+  try {
+    const { name, code, semester } = req.body;
+    const { department_id, id: userId, role } = req.user;
+
+    if (!name) return res.status(400).json({ message: 'Subject name is required.' });
+
+    // For teachers, we automatically assign their department
+    const targetDeptId = role === 1 && req.body.department_id ? req.body.department_id : department_id;
+
+    if (!targetDeptId) return res.status(400).json({ message: 'Department not assigned to your account.' });
+
+    // Find the first program in that department to link the subject
+    const { Program } = require('../../models');
+    const program = await Program.findOne({ where: { department_id: targetDeptId } });
+
+    const newSubject = await Subject.create({
+      name,
+      code: code || name.slice(0, 6).toUpperCase(),
+      semester: semester || 1,
+      department_id: targetDeptId,
+      program_id: program ? program.id : null,
+      teacher_id: role === 2 ? userId : null,
+      is_active: true
+    });
+
+    res.status(201).json(newSubject);
+  } catch (err) {
+    console.error('createSubject error:', err);
+    res.status(500).json({ message: 'Error creating subject' });
+  }
+};

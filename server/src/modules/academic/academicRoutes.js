@@ -17,4 +17,7 @@ router.get('/programs/:id/subjects',          controller.getSubjectsByProgram);
 // Smart filtered endpoint — returns subjects relevant to the caller's role
 router.get('/my-subjects',                    controller.getMySubjects);
 
+// Allow creation of subjects (typically used by teachers for quick-add)
+router.post('/subjects',                      controller.createSubject);
+
 module.exports = router;
