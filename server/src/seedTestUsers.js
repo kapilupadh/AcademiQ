@@ -49,19 +49,32 @@ async function seed() {
     });
     console.log('✅ Teacher "teacher@academiq.com" ready.');
 
-    // 5. Create Subject and Assign to Teacher
-    const [sub] = await Subject.findOrCreate({
-      where: { name: 'DBMS', program_id: prog.id },
-      defaults: {
-        code: 'CS401',
-        category: 'Core',
-        semester: 4,
-        department_id: dept.id,
-        teacher_id: teacher.id,
-        is_active: true
-      }
-    });
-    console.log('✅ Subject "DBMS" ready and assigned to Teacher.');
+    // 5. Create Subjects and Assign to Teacher
+    const subjectsToSeed = [
+      { name: 'DBMS', code: 'CS401', semester: 4 },
+      { name: 'Data Structures', code: 'CS201', semester: 2 },
+      { name: 'Operating Systems', code: 'CS402', semester: 4 },
+      { name: 'Computer Networks', code: 'CS501', semester: 5 },
+      { name: 'Artificial Intelligence', code: 'CS601', semester: 6 },
+      { name: 'Software Engineering', code: 'CS302', semester: 3 },
+    ];
+
+    const seededSubjects = [];
+    for (const subData of subjectsToSeed) {
+      const [sub] = await Subject.findOrCreate({
+        where: { name: subData.name, program_id: prog.id },
+        defaults: {
+          code: subData.code,
+          category: 'Core',
+          semester: subData.semester,
+          department_id: dept.id,
+          teacher_id: teacher.id,
+          is_active: true
+        }
+      });
+      seededSubjects.push(sub);
+      console.log(`✅ Subject "${subData.name}" ready and assigned to Teacher.`);
+    }
 
     // 6. Create Student
     const studentIdCode = 'STD-TEST-01';
@@ -88,12 +101,14 @@ async function seed() {
     });
     console.log('✅ Student "student@academiq.com" ready.');
 
-    // 7. Enroll Student in Subject
-    await StudentSubject.findOrCreate({
-      where: { student_id: student.id, subject_id: sub.id },
-      defaults: { semester: 4, status: 'ENROLLED' }
-    });
-    console.log('✅ Student enrolled in "DBMS".');
+    // 7. Enroll Student in all Seeded Subjects
+    for (const sub of seededSubjects) {
+      await StudentSubject.findOrCreate({
+        where: { student_id: student.id, subject_id: sub.id },
+        defaults: { semester: sub.semester, status: 'ENROLLED' }
+      });
+      console.log(`✅ Student enrolled in "${sub.name}".`);
+    }
 
     console.log('\n🚀 ALL TEST DATA SEEDED SUCCESSFULLY!');
     console.log('--------------------------------------');

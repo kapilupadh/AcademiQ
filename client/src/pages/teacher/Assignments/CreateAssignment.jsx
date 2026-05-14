@@ -23,6 +23,10 @@ export default function CreateAssignment() {
     max_marks: 100
   });
 
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [newSubjectName, setNewSubjectName] = useState("");
+  const [addingSubject, setAddingSubject] = useState(false);
+
   useEffect(() => {
     fetchSubjects();
     if (isEdit) {
@@ -58,6 +62,23 @@ export default function CreateAssignment() {
       setError("Failed to load assignment details");
     } finally {
       setInitialLoading(false);
+    }
+  };
+
+  const handleQuickAddSubject = async () => {
+    if (!newSubjectName.trim()) return;
+    setAddingSubject(true);
+    try {
+      const res = await api.post("/academics/subjects", { name: newSubjectName.trim() });
+      const newSub = res.data;
+      setSubjects(prev => [...prev, newSub]);
+      setFormData(prev => ({ ...prev, subject_id: newSub.id }));
+      setNewSubjectName("");
+      setShowQuickAdd(false);
+    } catch (err) {
+      setError("Failed to add subject");
+    } finally {
+      setAddingSubject(false);
     }
   };
 
@@ -113,20 +134,50 @@ export default function CreateAssignment() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
-                Subject
-              </label>
-              <select
-                required
-                value={formData.subject_id}
-                onChange={(e) => setFormData({ ...formData, subject_id: e.target.value })}
-                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
-              >
-                <option value="" disabled>Select a subject</option>
-                {subjects.map(sub => (
-                  <option key={sub.id} value={sub.id}>{sub.name} ({sub.code})</option>
-                ))}
-              </select>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                  Subject
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowQuickAdd(!showQuickAdd)}
+                  className="text-xs font-bold text-teal-600 hover:text-teal-700 transition-colors"
+                >
+                  {showQuickAdd ? "Cancel" : "+ Quick Add"}
+                </button>
+              </div>
+              
+              {showQuickAdd ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Subject Name"
+                    value={newSubjectName}
+                    onChange={(e) => setNewSubjectName(e.target.value)}
+                    className="flex-1 px-4 py-2 bg-white dark:bg-zinc-950 border border-teal-500 rounded-xl focus:ring-2 focus:ring-teal-500/20 outline-none transition-all"
+                  />
+                  <button
+                    type="button"
+                    disabled={addingSubject || !newSubjectName.trim()}
+                    onClick={handleQuickAddSubject}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 disabled:opacity-50 transition-all shadow-sm"
+                  >
+                    {addingSubject ? <Loader2 className="animate-spin" size={16} /> : "Add"}
+                  </button>
+                </div>
+              ) : (
+                <select
+                  required
+                  value={formData.subject_id}
+                  onChange={(e) => setFormData({ ...formData, subject_id: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
+                >
+                  <option value="" disabled>Select a subject</option>
+                  {subjects.map(sub => (
+                    <option key={sub.id} value={sub.id}>{sub.name} ({sub.code})</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div className="space-y-2">
