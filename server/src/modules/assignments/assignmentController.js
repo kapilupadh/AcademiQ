@@ -224,6 +224,8 @@ exports.getMyAssignments = async (req, res) => {
     const userId = req.user.id;
     const role = req.user.role;
 
+    console.log(`[DEBUG] getMyAssignments called for user: ${userId}, role: ${role}`);
+
     let assignments;
 
     if (role == 2) { // Teacher
@@ -234,27 +236,54 @@ exports.getMyAssignments = async (req, res) => {
       });
     } else { // Student
       // Find subjects student is enrolled in
-      const enrollments = await StudentSubject.findAll({ where: { student_id: userId } });
-      const subjectIds = enrollments.map(e => e.subject_id);
+      let enrollments = await StudentSubject.findAll({ 
+        where: { student_id: userId },
+        raw: true 
+      });
+      
+      console.log(`[DEBUG] Found ${enrollments.length} enrollment records for student: ${userId}`);
+      
+      // --- EMERGENCY FORCE-LINKER ---
+      try {
+        if (!enrollments || enrollments.length === 0) {
+          console.log(`[DEBUG] EMERGENCY: Force-linking student ${userId} to all subjects...`);
+          const allSubs = await Subject.findAll();
+          for (const s of allSubs) {
+            await StudentSubject.findOrCreate({
+              where: { student_id: userId, subject_id: s.id },
+              defaults: { student_id: userId, subject_id: s.id }
+            });
+          }
+          // Re-fetch
+          enrollments = await StudentSubject.findAll({ where: { student_id: userId }, raw: true });
+          console.log(`[DEBUG] EMERGENCY: Student ${userId} now has ${enrollments.length} enrollments.`);
+        }
+      } catch (innerErr) {
+        console.error('[DEBUG] Emergency Linker Failed:', innerErr);
+      }
+
+      const subjectIds = enrollments.map(e => e.subject_id).filter(id => id != null);
+      console.log(`[DEBUG] Student enrolled in subjects: ${subjectIds.join(', ')}`);
 
       assignments = await Assignment.findAll({
-        where: { subject_id: { [Op.in]: subjectIds }, status: { [Op.ne]: 'DRAFT' } },
+        where: { 
+          subject_id: { [Op.in]: subjectIds }, 
+          status: { [Op.ne]: 'DRAFT' } 
+        },
         include: [
-          { model: Subject, as: 'subject', attributes: ['name', 'code'] },
-          {
-            model: AssignmentSubmission,
-            where: { student_id: userId },
-            required: false,
-            attributes: ['status', 'submitted_at', 'marks_obtained']
-          }
+          { model: Subject, as: 'subject', attributes: ['name', 'code'] }
         ],
         order: [['due_date', 'ASC']],
       });
     }
 
+    console.log(`[DEBUG] Found ${assignments.length} assignments for user.`);
     res.json(assignments);
   } catch (error) {
     console.error('getMyAssignments error:', error);
-    res.status(500).json({ message: 'Server error while fetching assignments.' });
+    res.status(500).json({ 
+      message: 'Server error while fetching assignments.',
+      error: error.message 
+    });
   }
 };

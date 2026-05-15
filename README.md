@@ -1,58 +1,96 @@
-# AcademiQ
+# AcademiQ - Academic Management System
 
-## Project Structure
+This is the **Guaranteed Setup Guide**. If you are setting this project up for the first time on a new laptop, follow every single command below in order.
 
-- `client/`: React frontend application
-- `server/`: Node.js/Express backend application
+---
 
-## Local Development
+## 🚀 Step-by-Step Setup (Do not skip any step!)
 
-### Client (Frontend)
+### 1. Clone the Project
+Open your terminal and run:
+```bash
+git clone <your-repository-url>
+cd AcademiQ
+```
 
-1. Open a terminal.
-2. Navigate to the client directory:
-   ```bash
-   cd client
+### 2. Install All Dependencies
+Run these commands one by one:
+```bash
+# Install root dependencies
+npm install
+
+# Install Server dependencies
+cd server
+npm install
+
+# Install Client dependencies
+cd ../client
+npm install
+```
+
+### 3. Setup the Database (PostgreSQL)
+1. Open your PostgreSQL terminal or **pgAdmin**.
+2. Run this command to create the database:
+   ```sql
+   CREATE DATABASE "AcademiQ";
    ```
-3. Install dependencies:
+3. Go back to your terminal (in the `AcademiQ` root folder) and import the data:
    ```bash
-   npm install
+   psql -U postgres -d AcademiQ -f DB/academiq_db.sql
    ```
-4. Start the frontend development server:
-   ```bash
-   npm start
-   ```
-   - The app runs on http://localhost:3000 by default.
+   *(Enter your PostgreSQL password when prompted)*
 
-### Server (Backend)
+### 4. Setup Environment Variables (.env)
+You must create two files. **Do not skip this.**
 
-1. Open a new terminal.
-2. Navigate to the server directory:
-   ```bash
-   cd server
-   ```
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-4. Start the backend server:
-   ```bash
-   npm run dev
-   ```
-   - This uses `nodemon` and runs on http://localhost:5000 by default.
+**A. Server Config:**
+Create a file named `.env` inside the `server` folder and paste this:
+```env
+PORT=5000
+JWT_SECRET=dev_secret_key
+ADMIN_SETUP_CODE=123456
+NODE_ENV=development
+DB_NAME=AcademiQ
+DB_USER=postgres
+DB_PASSWORD=your_postgresql_password
+DB_HOST=localhost
+DB_PORT=5432
+```
 
-### Example local URLs
+**B. Client Config:**
+Create a file named `.env` inside the `client` folder and paste this:
+```env
+REACT_APP_API_URL=http://localhost:5000/api
+```
 
-- Student login: `http://localhost:3000/login`
-- Teacher login: `http://localhost:3000/teacher-login`
-- Admin login: `http://localhost:3000/admin/login`
-- Admin register: `http://localhost:3000/admin/register`
+### 5. Run the "Magic Fix" Script (CRITICAL)
+This script fixes the "Empty Subject Dropdown" issue by setting up Departments and linking the Teacher account.
+```bash
+cd server
+node scripts/seed_for_friend.js
+```
+
+---
+
+## 💻 How to Run the Project
+
+You need **two** terminal windows open at the same time:
+
+**Terminal 1 (Backend Server):**
+```bash
+cd server
+npm run dev
+```
+
+**Terminal 2 (Frontend Client):**
+```bash
+cd client
+npm start
+```
 
 ## Production Deployment Guide
 
 This project is split into a frontend React app and a backend Node/Express app using PostgreSQL.
-
-Bulk mode of student data should be generated.
 
 The easiest free deployment path is:
 
@@ -86,15 +124,7 @@ Railway and other hosts use `npm start` for production.
    npm start
    ```
 7. Add the required environment variables in Railway:
-   - `DB_HOST`
-   - `DB_USER`
-   - `DB_PASSWORD`
-   - `DB_NAME`
-   - `DB_PORT`
-   - `JWT_SECRET`
-   - any other env vars your backend needs
-
-Railway gives you a Postgres connection string and database credentials. Paste them into Railway's environment variables panel.
+   - `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`, `JWT_SECRET`
 
 ### Step 3: Deploy frontend on Vercel
 
@@ -107,61 +137,17 @@ Railway gives you a Postgres connection string and database credentials. Paste t
 5. Add a project environment variable:
    - `REACT_APP_API_URL=https://<your-backend-domain>/api`
 
-Your frontend will use this API URL for requests to the deployed backend.
+---
 
-### Step 4: Connect frontend to backend
+## 🔑 Login Credentials
+Use these to see the subjects and assignments immediately:
+*   **Teacher Login**: `http://localhost:3000/teacher-login`
+*   **Email**: `teacher@academiq.com`
+*   **Password**: `Password123!`
 
-The React app uses `REACT_APP_API_URL` or `/api` by default.
+---
 
-- If you deploy the backend on Railway, set `REACT_APP_API_URL` to the Railway backend URL.
-- Example:
-  ```text
-  https://my-backend-name.up.railway.app/api
-  ```
-
-### Optional: One-host alternative
-
-If you want a single provider instead, you can also use Render:
-- Web Service for the backend
-- PostgreSQL database
-- Static Site for the frontend
-
-However, the fastest free path is Railway for backend + DB and Vercel for frontend.
-
-## Environment variables
-
-### Backend environment variables (`server/.env` or host config)
-
-Example variables:
-
-```env
-DB_HOST=your-db-host
-DB_USER=your-db-user
-DB_PASSWORD=your-db-password
-DB_NAME=your-db-name
-DB_PORT=5432
-JWT_SECRET=your-jwt-secret
-```
-
-### Frontend environment variables (`client/.env` or Vercel project settings)
-
-```env
-REACT_APP_API_URL=https://<your-backend-domain>/api
-```
-
-## Important notes
-
-- Free tiers often sleep when idle and have limits on CPU, memory, and database size.
-- Some services require a card to sign up, but you can still use the free tier without spending money.
-- Test the deployed backend first, then connect the frontend.
-- If your backend uses file uploads, verify the upload destination supports persistent storage.
-
-## Project details
-
-- Frontend: React with `craco` and Tailwind CSS
-- Backend: Express, Sequelize, PostgreSQL
-- Local frontend dev command: `cd client && npm start`
-- Local backend dev command: `cd server && npm run dev`
-
-Good luck deploying! If you want, I can also add a separate `DEPLOYMENT.md` file with the same guide.
-
+## 🛠 Troubleshooting
+- **Missing Subjects?** Ensure you ran `node scripts/seed_for_friend.js` in Step 5.
+- **Database Error?** Make sure `DB_PASSWORD` in `server/.env` is correct.
+- **Port Busy?** If port 3000 or 5000 is used, restart your laptop or kill the process.

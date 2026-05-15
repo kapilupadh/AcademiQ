@@ -1,6 +1,4 @@
 
-\restrict yGEc5LDsUhP4QU7qLA3yJZHvR22fZLZyZBg2VwtkHLEu4f1jLm0iSxuzEkgMXle
-
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
 
@@ -18,20 +16,13 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
-DROP DATABASE academiq_db;
---
--- TOC entry 5352 (class 1262 OID 16389)
--- Name: academiq_db; Type: DATABASE; Schema: -; Owner: postgres
---
-
-CREATE DATABASE academiq_db WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'English_India.1252';
+CREATE TYPE public."enum_RegistrationSessions_status" AS ENUM ('PENDING', 'COMPLETED', 'EXPIRED');
+CREATE TYPE public."enum_UniqueIds_status" AS ENUM ('ACTIVE', 'INACTIVE');
+CREATE TYPE public.enum_exam_attempts_status AS ENUM ('IN_PROGRESS', 'SUBMITTED', 'AUTO_SUBMITTED', 'TERMINATED');
+CREATE TYPE public.enum_questions_question_type AS ENUM ('MCQ', 'TEXT');
+CREATE TYPE public.enum_violations_type AS ENUM ('TAB_SWITCH', 'FULLSCREEN_EXIT', 'MOUSE_LEAVE', 'DEBUGGER_DETECTED');
 
 
-ALTER DATABASE academiq_db OWNER TO postgres;
-
-\unrestrict yGEc5LDsUhP4QU7qLA3yJZHvR22fZLZyZBg2VwtkHLEu4f1jLm0iSxuzEkgMXle
-\connect academiq_db
-\restrict yGEc5LDsUhP4QU7qLA3yJZHvR22fZLZyZBg2VwtkHLEu4f1jLm0iSxuzEkgMXle
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -50,98 +41,45 @@ SET row_security = off;
 -- Name: enum_RegistrationSessions_status; Type: TYPE; Schema: public; Owner: postgres
 --
 
-CREATE TYPE public."enum_RegistrationSessions_status" AS ENUM (
-    'PENDING',
-    'COMPLETED',
-    'EXPIRED'
-);
 
 
-ALTER TYPE public."enum_RegistrationSessions_status" OWNER TO postgres;
+
+
 
 --
 -- TOC entry 901 (class 1247 OID 20063)
--- Name: enum_UniqueIds_role; Type: TYPE; Schema: public; Owner: postgres
 --
 
-CREATE TYPE public."enum_UniqueIds_role" AS ENUM (
-    'student',
-    'teacher',
-    'admin'
-);
-
-
-ALTER TYPE public."enum_UniqueIds_role" OWNER TO postgres;
-
---
--- TOC entry 859 (class 1247 OID 16562)
--- Name: enum_UniqueIds_status; Type: TYPE; Schema: public; Owner: postgres
---
-
-CREATE TYPE public."enum_UniqueIds_status" AS ENUM (
-    'ACTIVE',
-    'INACTIVE'
-);
-
-
-ALTER TYPE public."enum_UniqueIds_status" OWNER TO postgres;
-
---
--- TOC entry 865 (class 1247 OID 16584)
--- Name: enum_Users_role; Type: TYPE; Schema: public; Owner: postgres
---
-
-CREATE TYPE public."enum_Users_role" AS ENUM (
-    'student',
-    'admin',
-    'teacher'
-);
-
-
-ALTER TYPE public."enum_Users_role" OWNER TO postgres;
 
 --
 -- TOC entry 886 (class 1247 OID 19676)
 -- Name: enum_exam_attempts_status; Type: TYPE; Schema: public; Owner: postgres
 --
 
-CREATE TYPE public.enum_exam_attempts_status AS ENUM (
-    'IN_PROGRESS',
-    'SUBMITTED',
-    'AUTO_SUBMITTED',
-    'TERMINATED'
-);
 
 
-ALTER TYPE public.enum_exam_attempts_status OWNER TO postgres;
+
+
 
 --
 -- TOC entry 880 (class 1247 OID 19649)
 -- Name: enum_questions_question_type; Type: TYPE; Schema: public; Owner: postgres
 --
 
-CREATE TYPE public.enum_questions_question_type AS ENUM (
-    'MCQ',
-    'TEXT'
-);
 
 
-ALTER TYPE public.enum_questions_question_type OWNER TO postgres;
+
+
 
 --
 -- TOC entry 895 (class 1247 OID 19734)
 -- Name: enum_violations_type; Type: TYPE; Schema: public; Owner: postgres
 --
 
-CREATE TYPE public.enum_violations_type AS ENUM (
-    'TAB_SWITCH',
-    'FULLSCREEN_EXIT',
-    'MOUSE_LEAVE',
-    'DEBUGGER_DETECTED'
-);
 
 
-ALTER TYPE public.enum_violations_type OWNER TO postgres;
+
+
 
 SET default_tablespace = '';
 
@@ -183,7 +121,7 @@ CREATE TABLE public."UniqueIds" (
     generated_by uuid,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    role public."enum_UniqueIds_role" DEFAULT 'student'::public."enum_UniqueIds_role" NOT NULL
+    role integer DEFAULT 3 NOT NULL
 );
 
 
@@ -197,12 +135,15 @@ ALTER TABLE public."UniqueIds" OWNER TO postgres;
 CREATE TABLE public."Users" (
     id uuid NOT NULL,
     unique_id character varying(255) NOT NULL,
+    department_id uuid,
+    program_id uuid,
+    current_semester integer,
     username character varying(255) NOT NULL,
     email character varying(255) NOT NULL,
     password_hash character varying(255) NOT NULL,
     full_name character varying(255) NOT NULL,
     college_roll_number character varying(255),
-    role public."enum_Users_role" DEFAULT 'student'::public."enum_Users_role" NOT NULL,
+    role integer DEFAULT 3 NOT NULL,
     registered_date timestamp with time zone,
     email_verified boolean DEFAULT false,
     is_active boolean DEFAULT true,
@@ -356,10 +297,8 @@ COMMENT ON COLUMN public.violations.metadata IS 'Any extra info like browser age
 -- Data for Name: RegistrationSessions; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."RegistrationSessions" (id, unique_id, session_token, status, expires_at, "createdAt", "updatedAt") FROM stdin;
-ff58acc3-4af1-4f32-a086-3a2d55e48ded	CS-2024-001	fec246d3-6013-457f-8c9c-2b24f89bda7b	COMPLETED	2026-01-11 04:07:12.455+05:30	2026-01-11 03:52:12.456+05:30	2026-01-11 03:53:06.693+05:30
-d21cdd73-8ac0-410c-8385-3a133c33b502	CS-2024-002	a28d3838-bf74-448a-bec1-4c40e37c05aa	PENDING	2026-01-11 04:18:16.537+05:30	2026-01-11 04:03:16.537+05:30	2026-01-11 04:03:16.537+05:30
-\.
+INSERT INTO public."RegistrationSessions" (id, unique_id, session_token, status, expires_at, "createdAt", "updatedAt") VALUES ('ff58acc3-4af1-4f32-a086-3a2d55e48ded', 'CS-2024-001', 'fec246d3-6013-457f-8c9c-2b24f89bda7b', 'COMPLETED', '2026-01-11 04:07:12.455+05:30', '2026-01-11 03:52:12.456+05:30', '2026-01-11 03:53:06.693+05:30');
+INSERT INTO public."RegistrationSessions" (id, unique_id, session_token, status, expires_at, "createdAt", "updatedAt") VALUES ('d21cdd73-8ac0-410c-8385-3a133c33b502', 'CS-2024-002', 'a28d3838-bf74-448a-bec1-4c40e37c05aa', 'PENDING', '2026-01-11 04:18:16.537+05:30', '2026-01-11 04:03:16.537+05:30', '2026-01-11 04:03:16.537+05:30');
 
 
 --
@@ -368,12 +307,10 @@ d21cdd73-8ac0-410c-8385-3a133c33b502	CS-2024-002	a28d3838-bf74-448a-bec1-4c40e37
 -- Data for Name: UniqueIds; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."UniqueIds" (id, unique_id, student_name, student_email, is_used, status, generated_date, expiry_date, used_date, generated_by, "createdAt", "updatedAt", role) FROM stdin;
-22eb8d3e-ee5e-4d23-be45-d5018b117d40	CS-2024-002	Seed User 2	\N	f	ACTIVE	2026-01-11 03:45:20.495+05:30	\N	\N	\N	2026-01-11 03:45:20.495+05:30	2026-01-11 03:45:20.495+05:30	student
-5573dc17-222d-4c66-ad85-b5d0baea9822	CS-2024-003	\N	\N	f	INACTIVE	2026-01-11 03:45:20.499+05:30	\N	\N	\N	2026-01-11 03:45:20.499+05:30	2026-01-11 03:45:20.499+05:30	student
-879cf3e7-3d1c-4aab-bc1a-a7c917edb20f	CS-2024-004	\N	\N	t	ACTIVE	2026-01-11 03:45:20.501+05:30	\N	\N	\N	2026-01-11 03:45:20.501+05:30	2026-01-11 03:45:20.501+05:30	student
-6ba7eb21-f332-4044-865e-b40843ecd636	CS-2024-001	Seed User 1	\N	t	ACTIVE	2026-01-11 03:45:20.485+05:30	\N	2026-01-11 03:53:06.689+05:30	\N	2026-01-11 03:45:20.486+05:30	2026-01-11 03:53:06.69+05:30	student
-\.
+INSERT INTO public."UniqueIds" (id, unique_id, student_name, student_email, is_used, status, generated_date, expiry_date, used_date, generated_by, "createdAt", "updatedAt", role) VALUES ('22eb8d3e-ee5e-4d23-be45-d5018b117d40', 'CS-2024-002', 'Seed User 2', NULL, false, 'ACTIVE', '2026-01-11 03:45:20.495+05:30', NULL, NULL, NULL, '2026-01-11 03:45:20.495+05:30', '2026-01-11 03:45:20.495+05:30', 3);
+INSERT INTO public."UniqueIds" (id, unique_id, student_name, student_email, is_used, status, generated_date, expiry_date, used_date, generated_by, "createdAt", "updatedAt", role) VALUES ('5573dc17-222d-4c66-ad85-b5d0baea9822', 'CS-2024-003', NULL, NULL, false, 'INACTIVE', '2026-01-11 03:45:20.499+05:30', NULL, NULL, NULL, '2026-01-11 03:45:20.499+05:30', '2026-01-11 03:45:20.499+05:30', 3);
+INSERT INTO public."UniqueIds" (id, unique_id, student_name, student_email, is_used, status, generated_date, expiry_date, used_date, generated_by, "createdAt", "updatedAt", role) VALUES ('879cf3e7-3d1c-4aab-bc1a-a7c917edb20f', 'CS-2024-004', NULL, NULL, true, 'ACTIVE', '2026-01-11 03:45:20.501+05:30', NULL, NULL, NULL, '2026-01-11 03:45:20.501+05:30', '2026-01-11 03:45:20.501+05:30', 3);
+INSERT INTO public."UniqueIds" (id, unique_id, student_name, student_email, is_used, status, generated_date, expiry_date, used_date, generated_by, "createdAt", "updatedAt", role) VALUES ('6ba7eb21-f332-4044-865e-b40843ecd636', 'CS-2024-001', 'Seed User 1', NULL, true, 'ACTIVE', '2026-01-11 03:45:20.485+05:30', NULL, '2026-01-11 03:53:06.689+05:30', NULL, '2026-01-11 03:45:20.486+05:30', '2026-01-11 03:53:06.69+05:30', 3);
 
 
 --
@@ -382,9 +319,7 @@ COPY public."UniqueIds" (id, unique_id, student_name, student_email, is_used, st
 -- Data for Name: Users; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."Users" (id, unique_id, username, email, password_hash, full_name, college_roll_number, role, registered_date, email_verified, is_active, "createdAt", "updatedAt", otp, otp_expires_at, dob) FROM stdin;
-f9cd7bbb-a135-4115-b7f9-d64669bacf1b	CS-2024-001	Kapil_Dev	kapilupadhyaya9957@gmail.com	$2b$10$My4u4cet668JbqJB6v/D8ujrvC3GuF4BajXErLnVIs4lGBZdoPMea	Kapil Upadhyaya	\N	student	2026-01-11 03:53:06.683+05:30	f	t	2026-01-11 03:53:06.683+05:30	2026-01-23 19:54:54.761+05:30	\N	\N	2004-04-17
-\.
+INSERT INTO public."Users" (id, unique_id, department_id, program_id, current_semester, username, email, password_hash, full_name, college_roll_number, role, registered_date, email_verified, is_active, "createdAt", "updatedAt", otp, otp_expires_at, dob) VALUES ('f9cd7bbb-a135-4115-b7f9-d64669bacf1b', 'CS-2024-001', NULL, NULL, NULL, 'Kapil_Dev', 'kapilupadhyaya9957@gmail.com', '$2b$10$My4u4cet668JbqJB6v/D8ujrvC3GuF4BajXErLnVIs4lGBZdoPMea', 'Kapil Upadhyaya', NULL, 3, '2026-01-11 03:53:06.683+05:30', false, true, '2026-01-11 03:53:06.683+05:30', '2026-01-23 19:54:54.761+05:30', NULL, NULL, '2004-04-17');
 
 
 --
@@ -393,8 +328,6 @@ f9cd7bbb-a135-4115-b7f9-d64669bacf1b	CS-2024-001	Kapil_Dev	kapilupadhyaya9957@gm
 -- Data for Name: exam_attempts; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.exam_attempts (id, student_id, exam_id, status, start_time, end_time, assigned_questions, score, violation_count, "createdAt", "updatedAt") FROM stdin;
-\.
 
 
 --
@@ -403,8 +336,6 @@ COPY public.exam_attempts (id, student_id, exam_id, status, start_time, end_time
 -- Data for Name: exams; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.exams (id, title, description, duration_minutes, total_questions_to_ask, passing_percentage, is_active, "createdAt", "updatedAt") FROM stdin;
-\.
 
 
 --
@@ -413,8 +344,6 @@ COPY public.exams (id, title, description, duration_minutes, total_questions_to_
 -- Data for Name: questions; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.questions (id, exam_id, question_text, question_type, options, correct_answer, marks, "createdAt", "updatedAt") FROM stdin;
-\.
 
 
 --
@@ -423,8 +352,6 @@ COPY public.questions (id, exam_id, question_text, question_type, options, corre
 -- Data for Name: student_answers; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.student_answers (id, attempt_id, question_id, selected_option, is_final, "createdAt", "updatedAt") FROM stdin;
-\.
 
 
 --
@@ -433,8 +360,6 @@ COPY public.student_answers (id, attempt_id, question_id, selected_option, is_fi
 -- Data for Name: violations; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.violations (id, attempt_id, type, "timestamp", metadata, "createdAt", "updatedAt") FROM stdin;
-\.
 
 
 --
@@ -1694,5 +1619,4 @@ ALTER TABLE ONLY public.violations
 -- PostgreSQL database dump complete
 --
 
-\unrestrict yGEc5LDsUhP4QU7qLA3yJZHvR22fZLZyZBg2VwtkHLEu4f1jLm0iSxuzEkgMXle
 

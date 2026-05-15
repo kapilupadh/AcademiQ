@@ -7,7 +7,7 @@ This document provides a complete breakdown of the Assignment functionality rece
 ## 🔐 Credentials & Test Users
 
 To test the module after running `node src/seedTestUsers.js`, use the following accounts:
-
+signments 
 | User Role | Email | Password |
 | :--- | :--- | :--- |
 | **Teacher** | `teacher@academiq.com` | `Password123!` |
