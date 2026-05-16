@@ -11,13 +11,13 @@ router.get('/:id', authenticateToken, assignmentController.getAssignmentDetails)
 router.get('/subject/:subjectId', authenticateToken, assignmentController.getSubjectAssignments);
 
 // ── Teacher Routes ──
-router.post('/', authenticateToken, requireTeacher, assignmentController.createAssignment);
-router.put('/:id', authenticateToken, requireTeacher, assignmentController.updateAssignment);
+const upload = require('../../middleware/uploadMiddleware');
+
+router.post('/', authenticateToken, requireTeacher, upload.single('assignment_file'), assignmentController.createAssignment);
+router.put('/:id', authenticateToken, requireTeacher, upload.single('assignment_file'), assignmentController.updateAssignment);
 router.delete('/:id', authenticateToken, requireTeacher, assignmentController.deleteAssignment);
 router.get('/:id/submissions', authenticateToken, requireTeacher, assignmentController.getAssignmentSubmissions);
 router.put('/submissions/:submissionId/grade', authenticateToken, requireTeacher, assignmentController.gradeSubmission);
-
-const upload = require('../../middleware/uploadMiddleware');
 
 // ── Student Routes ──
 router.post('/:id/submit', authenticateToken, upload.single('submission_image'), assignmentController.submitAssignment);

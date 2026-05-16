@@ -34,6 +34,7 @@ export default function Register() {
     department_id: "",
     program_id: "",
     current_semester: "",
+    phone_number: "",
   });
 
   // When department changes, load its programs
@@ -89,6 +90,18 @@ export default function Register() {
       setError("Please select a department.");
       return;
     }
+    if (!formData.phone_number) {
+      setError("Phone number is compulsory.");
+      return;
+    }
+    if (!/^\d{10}$/.test(formData.phone_number)) {
+      setError("Phone number must be exactly 10 digits.");
+      return;
+    }
+    if (!formData.first_name || !formData.last_name || !formData.email || !formData.username || !formData.dob) {
+      setError("All fields are compulsory.");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -103,6 +116,7 @@ export default function Register() {
         department_id: formData.department_id,
         program_id: formData.program_id || null,
         current_semester: formData.current_semester ? parseInt(formData.current_semester) : null,
+        phone_number: formData.phone_number,
       };
 
       await api.post(`/auth/register`, payload);
@@ -166,7 +180,7 @@ export default function Register() {
             <>
               {/* Username */}
               <div className="space-y-1">
-                <label className={LABEL_CLS}>Username</label>
+                <label className={LABEL_CLS}>Username <span className="text-red-500">*</span></label>
                 <input type="text" name="username" value={formData.username}
                   onChange={handleChange} placeholder="captain_code" className={INPUT_CLS} />
               </div>
@@ -224,27 +238,34 @@ export default function Register() {
               {/* First / Last Name */}
               <div className="flex flex-col gap-4 sm:flex-row">
                 <div className="w-full space-y-1">
-                  <label className={LABEL_CLS}>First Name</label>
+                  <label className={LABEL_CLS}>First Name <span className="text-red-500">*</span></label>
                   <input type="text" name="first_name" value={formData.first_name}
                     onChange={handleChange} placeholder="John" className={INPUT_CLS} />
                 </div>
                 <div className="w-full space-y-1">
-                  <label className={LABEL_CLS}>Last Name</label>
+                  <label className={LABEL_CLS}>Last Name <span className="text-red-500">*</span></label>
                   <input type="text" name="last_name" value={formData.last_name}
                     onChange={handleChange} placeholder="Doe" className={INPUT_CLS} />
                 </div>
               </div>
 
-              {/* Email */}
-              <div className="space-y-1">
-                <label className={LABEL_CLS}>Email</label>
-                <input type="email" name="email" value={formData.email}
-                  onChange={handleChange} placeholder="m@example.com" className={INPUT_CLS} />
+              {/* Email / Phone */}
+              <div className="flex flex-col gap-4 sm:flex-row">
+                <div className="w-full space-y-1">
+                  <label className={LABEL_CLS}>Email <span className="text-red-500">*</span></label>
+                  <input type="email" name="email" value={formData.email}
+                    onChange={handleChange} placeholder="m@example.com" className={INPUT_CLS} />
+                </div>
+                <div className="w-full space-y-1">
+                  <label className={LABEL_CLS}>Phone Number <span className="text-red-500">*</span></label>
+                  <input type="text" name="phone_number" value={formData.phone_number}
+                    onChange={handleChange} placeholder="10-digit number" className={INPUT_CLS} />
+                </div>
               </div>
 
               {/* DOB */}
               <div className="space-y-1">
-                <label className={LABEL_CLS}>Date of Birth</label>
+                <label className={LABEL_CLS}>Date of Birth <span className="text-red-500">*</span></label>
                 <input type="date" name="dob" value={formData.dob}
                   onChange={handleChange} className={`${INPUT_CLS} scheme-light dark:scheme-dark`} />
               </div>
@@ -252,12 +273,12 @@ export default function Register() {
               {/* Passwords */}
               <div className="flex flex-col gap-4 sm:flex-row">
                 <div className="w-full space-y-1">
-                  <label className={LABEL_CLS}>Password</label>
+                  <label className={LABEL_CLS}>Password <span className="text-red-500">*</span></label>
                   <input type="password" name="password" value={formData.password}
                     onChange={handleChange} className={INPUT_CLS} />
                 </div>
                 <div className="w-full space-y-1">
-                  <label className={LABEL_CLS}>Confirm Password</label>
+                  <label className={LABEL_CLS}>Confirm Password <span className="text-red-500">*</span></label>
                   <input type="password" name="confirm_password" value={formData.confirm_password}
                     onChange={handleChange} className={INPUT_CLS} />
                 </div>

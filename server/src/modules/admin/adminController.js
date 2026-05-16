@@ -24,7 +24,7 @@ exports.excelUpload = excelUpload;
 // ── Single ID generation ────────────────────────────────────────────────────
 exports.generateUniqueId = async (req, res) => {
   try {
-    const { role, name, email, expiry_days } = req.body;
+    const { role, name, email, phone, expiry_days } = req.body;
     if (!role) return res.status(400).json({ message: 'Role is required' });
     if (role === 'teacher' && (!name || !email))
       return res.status(400).json({ message: 'Name and Email are required for Teacher ID generation.' });
@@ -42,13 +42,14 @@ exports.generateUniqueId = async (req, res) => {
     const newId = await UniqueId.create({
       unique_id: uniqueString, role: roleInt,
       student_name: name || null, student_email: email || null,
+      student_phone: phone || null,
       expiry_date: expiryDate, status: 'ACTIVE',
       generated_by: req.user ? req.user.id : null,
     });
     res.status(201).json({
       message: 'Unique ID generated successfully',
       unique_id: newId.unique_id, role: newId.role,
-      bound_to: { name: newId.student_name, email: newId.student_email },
+      bound_to: { name: newId.student_name, email: newId.student_email, phone: newId.student_phone },
     });
   } catch (err) {
     console.error('[generateUniqueId]', err.message);
@@ -159,6 +160,7 @@ exports.bulkGenerateStudentsFrontend = async (req, res) => {
         role: 3,
         student_name: name,
         student_email: email || null,
+        student_phone: student.phone || null,
         status: 'ACTIVE',
         generated_by: req.user?.id || null,
         // NEW: store academic routing data on the UniqueId record
@@ -184,6 +186,7 @@ exports.bulkGenerateStudentsFrontend = async (req, res) => {
         Name: r.student_name,
         'Roll No': r._rollNo,
         Email: r.student_email || 'N/A',
+        Phone: r.student_phone || 'N/A',
         'Unique ID': r.unique_id,
       })),
       errors: errors.map(e => ({

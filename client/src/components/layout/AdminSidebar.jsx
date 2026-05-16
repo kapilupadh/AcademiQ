@@ -29,6 +29,8 @@ const LOGO_LIGHT_MODE = "/Icons/Dark-Logo.jpg";
 /* ─── Nav data (unchanged) ──────────────────────────────────────── */
 const PRIMARY = [
   { key: "dashboard",    label: "Dashboard",          icon: LayoutDashboard, to: "/admin/dashboard" },
+  { key: "access-req",   label: "Access Requests",    icon: ShieldCheck,     to: "/admin/access-requests",
+    badge: { type: "new", text: "LIVE", style: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50" } },
   { key: "user-mgmt",    label: "User Management",    icon: UsersRound,      to: "/admin/generate-id",
     badge: { type: "chip", text: "ID", style: "bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400 border border-violet-200 dark:border-violet-900/50" } },
   { key: "exam-engine",  label: "Examination Engine", icon: BrainCircuit,    to: "/admin/exams",
@@ -86,6 +88,7 @@ const getSecondaryNav = (notificationsCount = 0) => [
   {
     key: "system-settings", label: "System Settings", icon: Settings2,
     sub: [
+      { label: "My Profile",          icon: UserSearch,   to: "/profile" },
       { label: "General Settings",    icon: Settings2,    to: "/admin/settings/general",    comingSoon: true },
       { label: "Roles & Permissions", icon: ShieldCheck,  to: "/admin/settings/roles",      comingSoon: true },
       { label: "Appearance",          icon: LayoutPanelTop,to: "/admin/settings/appearance", comingSoon: true },

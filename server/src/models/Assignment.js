@@ -39,6 +39,10 @@ const Assignment = sequelize.define('Assignment', {
     type: DataTypes.ENUM('DRAFT', 'PUBLISHED', 'CLOSED'),
     defaultValue: 'PUBLISHED',
   },
+  file_url: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 }, {
   timestamps: true,
   tableName: 'assignments',

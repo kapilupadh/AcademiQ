@@ -39,6 +39,15 @@ export default function AssignmentSubmissions() {
   };
 
   const handleGradeSubmit = async (submissionId) => {
+    if (parseFloat(gradeData.marks_obtained) > assignment.max_marks) {
+      alert(`Marks obtained cannot exceed maximum marks (${assignment.max_marks})`);
+      return;
+    }
+    if (parseFloat(gradeData.marks_obtained) < 0) {
+      alert("Marks obtained cannot be negative");
+      return;
+    }
+
     try {
       setSubmitting(true);
       await assignmentService.gradeSubmission(submissionId, gradeData);
@@ -47,7 +56,7 @@ export default function AssignmentSubmissions() {
       ));
       setGradingId(null);
     } catch (err) {
-      alert("Failed to save grade");
+      alert(err.response?.data?.message || "Failed to save grade");
     } finally {
       setSubmitting(false);
     }
@@ -106,8 +115,18 @@ export default function AssignmentSubmissions() {
                       <User size={20} />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-bold text-zinc-900 dark:text-white truncate">{sub.student?.full_name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-zinc-900 dark:text-white truncate">{sub.student?.full_name}</p>
+                        {sub.student?.current_semester && (
+                          <span className="px-1.5 py-0.5 bg-teal-500/10 text-teal-600 rounded text-[10px] font-black uppercase tracking-tighter">
+                            Sem {sub.student.current_semester}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-zinc-500 truncate">{sub.student?.email}</p>
+                      {sub.student?.college_roll_number && (
+                        <p className="text-[10px] font-bold text-zinc-400 mt-1 uppercase tracking-wider">Roll: {sub.student.college_roll_number}</p>
+                      )}
                     </div>
                   </div>
 
@@ -170,19 +189,10 @@ export default function AssignmentSubmissions() {
 
                   {/* Grading Actions */}
                   <div className="md:w-1/4 flex flex-col items-end justify-center gap-3">
-                    {sub.status === 'GRADED' && gradingId !== sub.id ? (
+                    {sub.status === 'GRADED' ? (
                       <div className="text-right">
                         <p className="text-xs text-zinc-500 font-bold uppercase">Grade</p>
                         <p className="text-xl font-bold text-green-600 font-mono">{sub.marks_obtained} / {assignment.max_marks}</p>
-                        <button 
-                          onClick={() => {
-                            setGradingId(sub.id);
-                            setGradeData({ marks_obtained: sub.marks_obtained, feedback: sub.feedback || "" });
-                          }}
-                          className="text-xs text-teal-600 hover:underline mt-1"
-                        >
-                          Edit Grade
-                        </button>
                       </div>
                     ) : gradingId === sub.id ? (
                       <div className="w-full space-y-3 bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-lg border border-teal-500/30">
@@ -192,6 +202,8 @@ export default function AssignmentSubmissions() {
                             type="number" 
                             className="w-full px-3 py-1.5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-700 rounded-md text-sm outline-none focus:ring-1 focus:ring-teal-500"
                             placeholder="Marks"
+                            max={assignment.max_marks}
+                            min="0"
                             value={gradeData.marks_obtained}
                             onChange={(e) => setGradeData({...gradeData, marks_obtained: e.target.value})}
                           />

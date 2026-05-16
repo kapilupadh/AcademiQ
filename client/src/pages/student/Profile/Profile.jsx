@@ -4,7 +4,7 @@ import api from "../../../services/api";
 import { useAcademic } from "../../../context/AcademicContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  User, Mail, Calendar, Key, Edit2, Save, X,
+  User, Mail, Calendar, Key, Edit2, Save, X, Phone,
   Eye, EyeOff, Shield, GraduationCap, BookOpen, Loader2,
   AlertCircle, CheckCircle2, UserCircle2,
 } from "lucide-react";
@@ -28,6 +28,7 @@ export default function Profile() {
     current_semester: "",
     program_id: "",
     department_id: "",
+    phone_number: "",
   });
 
   const [passwordData, setPasswordData] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
@@ -57,6 +58,7 @@ export default function Profile() {
         current_semester: res.data.current_semester || "",
         program_id: res.data.program_id || "",
         department_id: res.data.department_id || "",
+        phone_number: res.data.phone_number || "",
       });
     } catch (err) {
       setError("Failed to load profile.");
@@ -83,6 +85,7 @@ export default function Profile() {
         current_semester: formData.current_semester ? parseInt(formData.current_semester) : null,
         program_id: formData.program_id || null,
         department_id: formData.department_id || null,
+        phone_number: formData.phone_number,
       }, { headers: { Authorization: `Bearer ${token}` } });
 
       setProfile(res.data.user);
@@ -256,7 +259,7 @@ export default function Profile() {
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className={LABEL_CLS}>Full Name</label>
+                        <label className={LABEL_CLS}>Full Name <span className="text-red-500">*</span></label>
                         <input
                           type="text"
                           value={formData.full_name}
@@ -266,12 +269,24 @@ export default function Profile() {
                         />
                       </div>
                       <div>
-                        <label className={LABEL_CLS}>Date of Birth</label>
+                        <label className={LABEL_CLS}>Phone Number <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          value={formData.phone_number}
+                          onChange={e => setFormData({ ...formData, phone_number: e.target.value })}
+                          className={INPUT_CLS}
+                          required
+                          placeholder="10-digit number"
+                        />
+                      </div>
+                      <div>
+                        <label className={LABEL_CLS}>Date of Birth <span className="text-red-500">*</span></label>
                         <input
                           type="date"
                           value={formData.dob}
                           onChange={e => setFormData({ ...formData, dob: e.target.value })}
                           className={INPUT_CLS}
+                          required
                         />
                       </div>
                     </div>
@@ -370,6 +385,11 @@ export default function Profile() {
                         label="Email"
                         value={profile?.email}
                         className="break-all"
+                      />
+                      <InfoRow
+                        icon={Phone}
+                        label="Phone Number"
+                        value={profile?.phone_number || "Not set"}
                       />
                       <InfoRow
                         icon={Calendar}

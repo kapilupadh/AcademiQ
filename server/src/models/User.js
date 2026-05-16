@@ -48,6 +48,13 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  phone_number: {
+    type: DataTypes.STRING,
+    allowNull: true, // Will be enforced in controller during registration
+    validate: {
+      is: /^\d{10}$/, // Exactly 10 digits
+    },
+  },
   college_roll_number: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -84,6 +91,22 @@ const User = sequelize.define('User', {
   },
 }, {
   timestamps: true,
+  hooks: {
+    beforeDestroy: async (user, options) => {
+      try {
+        const { AccessRequest } = user.sequelize.models;
+        if (AccessRequest) {
+          await AccessRequest.destroy({
+            where: { email: user.email },
+            transaction: options.transaction
+          });
+          console.log(`[HOOK] Deleted AccessRequest for user: ${user.email}`);
+        }
+      } catch (err) {
+        console.error('[HOOK] Error deleting associated AccessRequest:', err);
+      }
+    }
+  }
 });
 
 module.exports = User;

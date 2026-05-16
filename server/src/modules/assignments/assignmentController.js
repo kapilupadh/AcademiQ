@@ -17,6 +17,11 @@ exports.createAssignment = async (req, res) => {
       return res.status(400).json({ message: 'Subject, title, and due date are required.' });
     }
 
+    let file_url = null;
+    if (req.file) {
+      file_url = `uploads/submissions/${req.file.filename}`; 
+    }
+
     const assignment = await Assignment.create({
       subject_id,
       teacher_id,
@@ -25,6 +30,7 @@ exports.createAssignment = async (req, res) => {
       due_date,
       max_marks,
       status: 'PUBLISHED',
+      file_url
     });
 
     res.status(201).json({ message: 'Assignment created successfully', assignment });
@@ -45,7 +51,12 @@ exports.updateAssignment = async (req, res) => {
 
     if (!assignment) return res.status(404).json({ message: 'Assignment not found or unauthorized.' });
 
-    await assignment.update({ title, description, due_date, max_marks, status });
+    let file_url = assignment.file_url;
+    if (req.file) {
+      file_url = `uploads/submissions/${req.file.filename}`;
+    }
+
+    await assignment.update({ title, description, due_date, max_marks, status, file_url });
     res.json({ message: 'Assignment updated successfully', assignment });
   } catch (error) {
     console.error('updateAssignment error:', error);
@@ -82,7 +93,7 @@ exports.getAssignmentSubmissions = async (req, res) => {
 
     const submissions = await AssignmentSubmission.findAll({
       where: { assignment_id: id },
-      include: [{ model: User, as: 'student', attributes: ['full_name', 'username', 'email'] }],
+      include: [{ model: User, as: 'student', attributes: ['full_name', 'username', 'email', 'college_roll_number', 'current_semester'] }],
       order: [['submitted_at', 'DESC']],
     });
 
@@ -104,8 +115,12 @@ exports.gradeSubmission = async (req, res) => {
       include: [{ model: Assignment, as: 'Assignment' }]
     });
 
-    if (!submission || submission.Assignment.teacher_id !== teacher_id) {
-      return res.status(404).json({ message: 'Submission not found or unauthorized.' });
+    if (submission.status === 'GRADED') {
+      return res.status(403).json({ message: 'This submission has already been graded and cannot be edited.' });
+    }
+
+    if (marks_obtained > submission.Assignment.max_marks) {
+      return res.status(400).json({ message: `Marks obtained (${marks_obtained}) cannot exceed maximum marks (${submission.Assignment.max_marks}).` });
     }
 
     await submission.update({
@@ -161,7 +176,10 @@ exports.getAssignmentDetails = async (req, res) => {
     res.json({ assignment, submission });
   } catch (error) {
     console.error('getAssignmentDetails error:', error);
-    res.status(500).json({ message: 'Server error while fetching assignment details.' });
+    res.status(500).json({ 
+      message: 'Server error while fetching assignment details.',
+      debug: error.message
+    });
   }
 };
 
@@ -178,38 +196,30 @@ exports.submitAssignment = async (req, res) => {
     const assignment = await Assignment.findByPk(id);
     if (!assignment) return res.status(404).json({ message: 'Assignment not found.' });
 
+    const existingSubmission = await AssignmentSubmission.findOne({
+      where: { assignment_id: id, student_id }
+    });
+
+    if (existingSubmission && ['SUBMITTED', 'LATE', 'GRADED'].includes(existingSubmission.status)) {
+      return res.status(403).json({ message: 'Assignment is already submitted and locked for editing.' });
+    }
+
     // Handle file path
     let file_path = null;
     if (file) {
       file_path = `uploads/submissions/${file.filename}`;
     }
 
-    if (new Date() > new Date(assignment.due_date)) {
-      // Allow late submission but mark it
-      var status = 'LATE';
-    } else {
-      var status = 'SUBMITTED';
-    }
+    const status = new Date() > new Date(assignment.due_date) ? 'LATE' : 'SUBMITTED';
 
-    const [submission, created] = await AssignmentSubmission.findOrCreate({
-      where: { assignment_id: id, student_id },
-      defaults: {
-        submission_content,
-        file_path,
-        status,
-        submitted_at: new Date(),
-      }
+    const submission = await AssignmentSubmission.create({
+      assignment_id: id,
+      student_id,
+      submission_content,
+      file_path,
+      status,
+      submitted_at: new Date(),
     });
-
-    if (!created) {
-      const updateData = {
-        submission_content,
-        status,
-        submitted_at: new Date(),
-      };
-      if (file_path) updateData.file_path = file_path;
-      await submission.update(updateData);
-    }
 
     res.status(201).json({ message: 'Assignment submitted successfully', submission });
   } catch (error) {
@@ -235,43 +245,37 @@ exports.getMyAssignments = async (req, res) => {
         order: [['due_date', 'ASC']],
       });
     } else { // Student
-      // Find subjects student is enrolled in
-      let enrollments = await StudentSubject.findAll({ 
-        where: { student_id: userId },
-        raw: true 
-      });
-      
-      console.log(`[DEBUG] Found ${enrollments.length} enrollment records for student: ${userId}`);
-      
-      // --- EMERGENCY FORCE-LINKER ---
-      try {
-        if (!enrollments || enrollments.length === 0) {
-          console.log(`[DEBUG] EMERGENCY: Force-linking student ${userId} to all subjects...`);
-          const allSubs = await Subject.findAll();
-          for (const s of allSubs) {
-            await StudentSubject.findOrCreate({
-              where: { student_id: userId, subject_id: s.id },
-              defaults: { student_id: userId, subject_id: s.id }
-            });
-          }
-          // Re-fetch
-          enrollments = await StudentSubject.findAll({ where: { student_id: userId }, raw: true });
-          console.log(`[DEBUG] EMERGENCY: Student ${userId} now has ${enrollments.length} enrollments.`);
-        }
-      } catch (innerErr) {
-        console.error('[DEBUG] Emergency Linker Failed:', innerErr);
+      // Fetch user to get their current department/program
+      const user = await User.findByPk(userId);
+      if (!user) return res.status(404).json({ message: 'User not found.' });
+
+      // --- UNIFIED BCA VISIBILITY ---
+      let assignmentsWhere = { 
+        status: { [Op.ne]: 'DRAFT' } 
+      };
+
+      if (user.department_id) {
+        // Find all subjects in the student's department
+        const deptSubjects = await Subject.findAll({
+          where: { department_id: user.department_id },
+          attributes: ['id'],
+          raw: true
+        });
+        const deptSubjectIds = deptSubjects.map(s => s.id);
+        assignmentsWhere.subject_id = { [Op.in]: deptSubjectIds };
+        console.log(`[DEBUG] Unified Mode: Showing all ${deptSubjectIds.length} subjects for Dept ${user.department_id}`);
       }
 
-      const subjectIds = enrollments.map(e => e.subject_id).filter(id => id != null);
-      console.log(`[DEBUG] Student enrolled in subjects: ${subjectIds.join(', ')}`);
-
       assignments = await Assignment.findAll({
-        where: { 
-          subject_id: { [Op.in]: subjectIds }, 
-          status: { [Op.ne]: 'DRAFT' } 
-        },
+        where: assignmentsWhere,
         include: [
-          { model: Subject, as: 'subject', attributes: ['name', 'code'] }
+          { model: Subject, as: 'subject', attributes: ['name', 'code', 'semester'] },
+          { 
+            model: AssignmentSubmission, 
+            as: 'AssignmentSubmissions',
+            where: { student_id: userId },
+            required: false 
+          }
         ],
         order: [['due_date', 'ASC']],
       });
@@ -283,7 +287,7 @@ exports.getMyAssignments = async (req, res) => {
     console.error('getMyAssignments error:', error);
     res.status(500).json({ 
       message: 'Server error while fetching assignments.',
-      error: error.message 
+      debug: error.message 
     });
   }
 };

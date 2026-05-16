@@ -19,6 +19,7 @@ const Attendance = require('./Attendance');
 const ActivityLog = require('./ActivityLog');
 const Assignment = require('./Assignment');
 const AssignmentSubmission = require('./AssignmentSubmission');
+const AccessRequest = require('./AccessRequest');
 
 // ── User associations ─────────────────────────────────────────────────────────
 User.belongsTo(Department, { foreignKey: 'department_id' });
@@ -137,4 +138,5 @@ module.exports = {
   ActivityLog,
   Assignment,
   AssignmentSubmission,
+  AccessRequest,
 };

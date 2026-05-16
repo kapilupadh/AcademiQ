@@ -75,7 +75,7 @@ export default function GenerateId() {
   const { departments, getProgramsForDept } = useAcademic();
 
   // ── Single ID state ──────────────────────────────────────────────
-  const [formData, setFormData] = useState({ role: "student", name: "", email: "", expiry_days: 7 });
+  const [formData, setFormData] = useState({ role: "student", name: "", email: "", phone: "", expiry_days: 7 });
   const [generatedId, setGeneratedId] = useState(null);
   const [errorSingle, setErrorSingle] = useState("");
   const [loadingSingle, setLoadingSingle] = useState(false);
@@ -189,6 +189,7 @@ export default function GenerateId() {
 
           const name = getVal("name", "student name", "student_name", "first name", "full name");
           const email = getVal("email", "student email", "student_email", "email address");
+          const phone = getVal("phone", "phone number", "mobile", "contact");
           const rollNo = getVal("roll no", "roll number", "roll_no", "university roll no", "exam roll no", "roll");
 
           let isValid = true, reason = "";
@@ -199,7 +200,7 @@ export default function GenerateId() {
           else if (email && emailSet.has(email.toLowerCase())) { isValid = false; reason = "Duplicate email in file"; }
           else if (email) emailSet.add(email.toLowerCase());
 
-          return { id: index, name, email, rollNo, isValid, reason };
+          return { id: index, name, email, phone, rollNo, isValid, reason };
         });
 
         if (!processedRows.some((r) => r.name || r.email || r.rollNo)) {
@@ -218,7 +219,7 @@ export default function GenerateId() {
   // ── Bulk submit ──────────────────────────────────────────────────
   const handleBulkSubmit = async () => {
     const validStudents = previewData.filter((r) => r.isValid).map((r) => ({
-      name: r.name, email: r.email, rollNo: r.rollNo,
+      name: r.name, email: r.email, phone: r.phone, rollNo: r.rollNo,
     }));
     if (!validStudents.length) { setBulkError("No valid rows to process."); return; }
     setLoadingBulk(true);
@@ -352,6 +353,19 @@ export default function GenerateId() {
                   />
                 </div>
 
+                {/* Phone */}
+                <div>
+                  <Label required>Phone Number</Label>
+                  <Input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="10-digit number"
+                    maxLength={10}
+                    required
+                  />
+                </div>
+
                 <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800">
                   <Button
                     type="submit"
@@ -397,6 +411,9 @@ export default function GenerateId() {
                         <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-400 mb-1">Bound To</p>
                         <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">{generatedId.bound_to.name}</p>
                         <p className="text-xs text-zinc-500 truncate mt-0.5">{generatedId.bound_to.email}</p>
+                        {generatedId.bound_to.phone && (
+                          <p className="text-xs text-zinc-500 truncate mt-0.5">{generatedId.bound_to.phone}</p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -404,7 +421,7 @@ export default function GenerateId() {
                   <Button
                     variant="secondary"
                     className="w-full"
-                    onClick={() => { setGeneratedId(null); setFormData({ role: "student", name: "", email: "", expiry_days: 7 }); }}
+                    onClick={() => { setGeneratedId(null); setFormData({ role: "student", name: "", email: "", phone: "", expiry_days: 7 }); }}
                   >
                     Generate Another
                   </Button>
@@ -568,7 +585,8 @@ export default function GenerateId() {
                     CSV, XLS, or XLSX — headers:{" "}
                     <code className="bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded text-[11px]">Name</code>,{" "}
                     <code className="bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded text-[11px]">Email</code> or{" "}
-                    <code className="bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded text-[11px]">Roll Number</code>
+                    <code className="bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded text-[11px]">Roll Number</code> and{" "}
+                    <code className="bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded text-[11px]">Phone</code>
                   </p>
                   <Button variant="secondary" className="pointer-events-none">
                     <Upload size={14} /> Select File
@@ -611,6 +629,7 @@ export default function GenerateId() {
                       <div>Name</div>
                       <div className="hidden md:block">Roll No</div>
                       <div>Email</div>
+                      <div>Phone</div>
                       <div>Status</div>
                     </div>
                     <div className="divide-y divide-zinc-100 dark:divide-zinc-800/70 max-h-[340px] overflow-y-auto">
@@ -631,6 +650,9 @@ export default function GenerateId() {
                           </div>
                           <div className={`truncate ${!row.email ? "text-zinc-400 italic" : "text-zinc-600 dark:text-zinc-300"}`}>
                             {row.email || (row.rollNo ? "—" : "Missing")}
+                          </div>
+                          <div className={`truncate ${!row.phone ? "text-zinc-400 italic" : "text-zinc-600 dark:text-zinc-300"}`}>
+                            {row.phone || "—"}
                           </div>
                           <div>
                             {row.isValid

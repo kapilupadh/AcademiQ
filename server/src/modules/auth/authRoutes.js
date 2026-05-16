@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('./authController');
+const accessRequestController = require('./accessRequestController');
 
 const { authenticateToken } = require('../../middleware/authMiddleware');
+const requireAdmin = require('../../middleware/requireAdmin');
 
 // POST /api/auth/admin-register  (secured by ADMIN_SETUP_CODE)
 router.post('/admin-register', authController.adminRegister);
@@ -30,6 +32,12 @@ router.post('/reset-password', authController.resetPassword);
 
 // POST /api/auth/dashboard-student 
 router.get('/dashboard', authenticateToken, authController.getStudentDashboard);
+
+// --- Access Requests ---
+router.post('/access-request', accessRequestController.submitRequest);
+router.get('/access-requests', authenticateToken, requireAdmin, accessRequestController.getRequests);
+router.post('/access-requests/:id/action', authenticateToken, requireAdmin, accessRequestController.handleAction);
+router.delete('/access-requests/:id', authenticateToken, requireAdmin, accessRequestController.deleteRequest);
 
 // --- Protected Routes ---
 router.get('/me', authenticateToken, authController.getProfile);

@@ -3,15 +3,14 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    //For One Time Password OTP
-    user: 'kapilupadhyaya6000@gmail.com',
-    pass: 'qeri zbcn axph xvgc'
+    user: process.env.SMTP_USER || 'kapilupadhyaya6000@gmail.com',
+    pass: process.env.SMTP_PASS || 'qeri zbcn axph xvgc'
   }
 });
 
 const sendOTP = async (email, otp) => {
   const mailOptions = {
-    from: '"AcademiQ Support" <kapilupadhyaya6000@gmail.com>',
+    from: `"AcademiQ Support" <${process.env.SMTP_USER || 'kapilupadhyaya6000@gmail.com'}>`,
     to: email,
     subject: 'AcademiQ - Password Reset OTP',
     html: `
@@ -45,10 +44,69 @@ const sendOTP = async (email, otp) => {
 };
 
 /**
+ * Send account credentials to a newly created user.
+ */
+const sendCredentialsEmail = async (email, name, unique_id, password, role) => {
+  const roleName = role === 2 ? 'Teacher' : 'Student';
+  const mailOptions = {
+    from: `"AcademiQ Admin" <${process.env.SMTP_USER || 'kapilupadhyaya6000@gmail.com'}>`,
+    to: email,
+    subject: `[AcademiQ] Your ${roleName} Account Credentials`,
+    html: `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #f0f0f0; border-radius: 12px; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 25px;">
+          <h1 style="color: #1a1a1a; margin: 0; font-size: 24px;">Welcome to AcademiQ</h1>
+          <p style="color: #666; font-size: 14px;">Your account has been successfully created</p>
+        </div>
+        
+        <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 25px;">
+          <p style="margin: 0 0 15px 0; color: #475569; font-size: 14px;">Hello <strong>${name}</strong>,</p>
+          <p style="margin: 0 0 20px 0; color: #475569; font-size: 14px; line-height: 1.5;">You have been registered as a <strong>${roleName}</strong> in the <strong>BCA</strong> department. Please use the following credentials to access the portal:</p>
+          
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 10px 0; color: #64748b; font-size: 13px; width: 40%;">Unique ID / Login ID</td>
+              <td style="padding: 10px 0; font-weight: bold; color: #1e293b; font-family: monospace; font-size: 16px;">${unique_id}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0; color: #64748b; font-size: 13px;">Temporary Password</td>
+              <td style="padding: 10px 0; font-weight: bold; color: #1e293b; font-family: monospace; font-size: 16px;">${password}</td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/login" style="display: inline-block; padding: 12px 30px; font-size: 14px; font-weight: bold; color: #ffffff; background-color: #000000; border-radius: 6px; text-decoration: none;">
+            Login to Portal
+          </a>
+        </div>
+
+        <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 12px 16px; margin-bottom: 25px;">
+          <p style="margin: 0; color: #92400e; font-size: 12px; line-height: 1.5;">
+            <strong>Security Notice:</strong> For your security, we recommend changing your password immediately after your first login.
+          </p>
+        </div>
+
+        <p style="color: #94a3b8; font-size: 11px; text-align: center; margin-top: 30px;">
+          This is an automated message. Please do not reply to this email.<br>
+          &copy; ${new Date().getFullYear()} AcademiQ. All rights reserved.
+        </p>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Credentials sent to ${email}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending credentials email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
  * Send exam schedule notification to a list of student emails.
- * @param {string[]} emails - Array of student email addresses
- * @param {object} exam - { title, subjectName, departmentName, semester, type, scheduled_start_at, scheduled_end_at, duration_minutes }
- * @param {boolean} isUpdate - true if this is a rescheduled update
  */
 const sendExamScheduleNotification = async (emails, exam, isUpdate = false) => {
   if (!emails || emails.length === 0) return { success: true, sent: 0 };
@@ -133,11 +191,11 @@ const sendExamScheduleNotification = async (emails, exam, isUpdate = false) => {
   let sent = 0;
   let failed = 0;
 
-  // Send emails in parallel (fire and forget per email)
+  // Send emails in parallel
   const results = await Promise.allSettled(
     emails.map((email) =>
       transporter.sendMail({
-        from: '"AcademiQ Notifications" <kapilupadhyaya6000@gmail.com>',
+        from: `"AcademiQ Notifications" <${process.env.SMTP_USER || 'kapilupadhyaya6000@gmail.com'}>`,
         to: email,
         subject: `[AcademiQ] Exam ${actionLabel}: ${exam.title}`,
         html,
@@ -158,4 +216,4 @@ const sendExamScheduleNotification = async (emails, exam, isUpdate = false) => {
   return { success: failed === 0, sent, failed };
 };
 
-module.exports = { sendOTP, sendExamScheduleNotification };
+module.exports = { sendOTP, sendCredentialsEmail, sendExamScheduleNotification };

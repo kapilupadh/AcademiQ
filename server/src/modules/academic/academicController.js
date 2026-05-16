@@ -91,11 +91,38 @@ exports.getMySubjects = async (req, res) => {
     }
     // Admin (role=1) — no filter, sees all
 
-    const subjects = await Subject.findAll({
+    let subjects = await Subject.findAll({
       where,
       attributes: ['id', 'name', 'code', 'semester', 'department_id'],
       order: [['semester', 'ASC'], ['name', 'ASC']],
     });
+
+    // ── FORCE SEED for BCA (if empty) ──
+    if (subjects.length === 0 && user.department_id) {
+       const dept = await Department.findByPk(user.department_id);
+       if (dept && dept.name === 'BCA') {
+          console.log('[DASHBOARD] BCA Subjects empty. Auto-seeding default subjects...');
+          const { Program } = require('../../models');
+          let program = await Program.findOne({ where: { department_id: dept.id } });
+          if (!program) {
+            program = await Program.create({ name: 'BCA General', code: 'BCA-GEN', department_id: dept.id, duration_years: 3, is_active: true });
+          }
+          const defaultSubs = [
+            { name: 'C Programming', code: 'BCA101', semester: 1 },
+            { name: 'Data Structures', code: 'BCA201', semester: 2 },
+            { name: 'Web Development', code: 'BCA301', semester: 3 }
+          ];
+          for (const s of defaultSubs) {
+            await Subject.create({ ...s, department_id: dept.id, program_id: program.id, is_active: true });
+          }
+          // Re-fetch
+          subjects = await Subject.findAll({
+            where,
+            attributes: ['id', 'name', 'code', 'semester', 'department_id'],
+            order: [['semester', 'ASC'], ['name', 'ASC']],
+          });
+       }
+    }
 
     res.json(subjects);
   } catch (err) {
@@ -109,12 +136,17 @@ exports.getMySubjects = async (req, res) => {
 exports.createSubject = async (req, res) => {
   try {
     const { name, code, semester } = req.body;
-    const { department_id, id: userId, role } = req.user;
+    const { id: userId, role } = req.user;
+
+    // Fetch fresh user data
+    const { User } = require('../../models');
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
 
     if (!name) return res.status(400).json({ message: 'Subject name is required.' });
 
-    // For teachers, we automatically assign their department
-    const targetDeptId = role === 1 && req.body.department_id ? req.body.department_id : department_id;
+    // For teachers, we automatically assign their department from DB
+    const targetDeptId = role === 1 && req.body.department_id ? req.body.department_id : user.department_id;
 
     if (!targetDeptId) return res.status(400).json({ message: 'Department not assigned to your account.' });
 

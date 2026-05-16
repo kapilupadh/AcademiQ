@@ -8,8 +8,12 @@ const assignmentService = {
   getSubjectAssignments: (subjectId) => api.get(`/assignments/subject/${subjectId}`),
 
   // Teacher
-  createAssignment: (data) => api.post('/assignments', data),
-  updateAssignment: (id, data) => api.put(`/assignments/${id}`, data),
+  createAssignment: (data) => api.post('/assignments', data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  updateAssignment: (id, data) => api.put(`/assignments/${id}`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
   deleteAssignment: (id) => api.delete(`/assignments/${id}`),
   getAssignmentSubmissions: (id) => api.get(`/assignments/${id}/submissions`),
   gradeSubmission: (submissionId, data) => api.put(`/assignments/submissions/${submissionId}/grade`, data),

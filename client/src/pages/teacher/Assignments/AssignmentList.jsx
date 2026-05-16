@@ -34,7 +34,8 @@ export default function AssignmentList() {
       const res = await assignmentService.getMyAssignments(); 
       setAssignments(res.data);
     } catch (err) {
-      setError("Failed to load assignments");
+      const errorMsg = err.response?.data?.debug || err.response?.data?.message || "Failed to load assignments";
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -126,14 +127,15 @@ export default function AssignmentList() {
                     <h3 className="font-bold text-zinc-900 dark:text-white group-hover:text-teal-500 transition-colors">
                       {assignment.title}
                     </h3>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="text-xs font-medium px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full">
-                        {assignment.subject?.name || "No Subject"}
+                    <div className="flex items-center gap-4 mt-2">
+                      <span className="text-[10px] font-black px-2 py-0.5 bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 rounded-md uppercase tracking-widest border border-teal-200 dark:border-teal-800/50">
+                        {assignment.subject?.name || "General"}
                       </span>
-                      <span className="flex items-center gap-1 text-xs text-zinc-500">
-                        <Calendar size={12} />
-                        Due: {new Date(assignment.due_date).toLocaleDateString()}
-                      </span>
+                      <div className="flex items-center gap-2 text-xs font-bold text-zinc-500">
+                        <Calendar size={14} className="text-zinc-400" />
+                        <span className="text-zinc-400 font-normal">Deadline:</span>
+                        {new Date(assignment.due_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </div>
                     </div>
                   </div>
                 </div>

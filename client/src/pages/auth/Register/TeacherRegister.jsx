@@ -20,6 +20,7 @@ export default function TeacherRegister() {
     password: "",
     confirm_password: "",
     username: "",
+    phone_number: "",
   });
 
   const [boundData, setBoundData] = useState(null); // Stores admin provided name/email
@@ -103,6 +104,19 @@ export default function TeacherRegister() {
       return;
     }
 
+    if (!formData.phone_number) {
+      setError("Phone number is compulsory.");
+      return;
+    }
+    if (!/^\d{10}$/.test(formData.phone_number)) {
+      setError("Phone number must be exactly 10 digits.");
+      return;
+    }
+    if (!formData.first_name || !formData.last_name || !formData.email || !formData.username || !formData.dob) {
+      setError("All fields are compulsory.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -114,6 +128,7 @@ export default function TeacherRegister() {
         password: formData.password,
         full_name: `${formData.first_name} ${formData.last_name}`,
         dob: formData.dob,
+        phone_number: formData.phone_number,
       };
 
       await api.post(`/auth/register`, payload);
@@ -201,7 +216,7 @@ export default function TeacherRegister() {
               {/* Username Field */}
               <div className="space-y-1">
                 <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  Username
+                  Username <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -217,7 +232,7 @@ export default function TeacherRegister() {
               <div className="flex flex-col gap-4 sm:flex-row">
                 <div className="w-full space-y-1">
                   <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                    First Name
+                    First Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -234,7 +249,7 @@ export default function TeacherRegister() {
                 </div>
                 <div className="w-full space-y-1">
                   <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                    Last Name
+                    Last Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -251,29 +266,44 @@ export default function TeacherRegister() {
                 </div>
               </div>
 
-              {/* Email */}
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  disabled={!!boundData?.email}
-                  className={`w-full px-3 py-2 text-sm bg-transparent border rounded-md outline-none border-zinc-300 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-700 dark:focus:ring-zinc-700 placeholder-zinc-400 font-medium transition-all ${
-                    boundData?.email
-                      ? "opacity-60 cursor-not-allowed bg-zinc-100 dark:bg-zinc-900"
-                      : ""
-                  }`}
-                />
+              {/* Email / Phone */}
+              <div className="flex flex-col gap-4 sm:flex-row">
+                <div className="w-full space-y-1">
+                  <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    disabled={!!boundData?.email}
+                    className={`w-full px-3 py-2 text-sm bg-transparent border rounded-md outline-none border-zinc-300 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-700 dark:focus:ring-zinc-700 placeholder-zinc-400 font-medium transition-all ${
+                      boundData?.email
+                        ? "opacity-60 cursor-not-allowed bg-zinc-100 dark:bg-zinc-900"
+                        : ""
+                    }`}
+                  />
+                </div>
+                <div className="w-full space-y-1">
+                  <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                    Phone Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="phone_number"
+                    value={formData.phone_number}
+                    onChange={handleChange}
+                    placeholder="10-digit number"
+                    className="w-full px-3 py-2 text-sm bg-transparent border rounded-md outline-none border-zinc-300 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-700 dark:focus:ring-zinc-700 placeholder-zinc-400 font-medium transition-all"
+                  />
+                </div>
               </div>
 
               {/* DOB */}
               <div className="space-y-1">
                 <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  Date of Birth
+                  Date of Birth <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -288,7 +318,7 @@ export default function TeacherRegister() {
               <div className="flex flex-col gap-4 sm:flex-row">
                 <div className="w-full space-y-1">
                   <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                    Password
+                    Password <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="password"
@@ -300,7 +330,7 @@ export default function TeacherRegister() {
                 </div>
                 <div className="w-full space-y-1">
                   <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                    Confirm Password
+                    Confirm Password <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="password"

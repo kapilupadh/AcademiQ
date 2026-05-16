@@ -45,6 +45,7 @@ const LOGO_LIGHT_MODE = "/Icons/Dark-Logo.jpg";
 /* ─── PRIMARY NAV ───────────────────────────────────────────────── */
 const PRIMARY = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, to: "/teacher/dashboard" },
+  { key: "profile", label: "My Profile", icon: Users, to: "/profile" },
   { key: "assignment", label: "Assignments", icon: NotebookPen, to: "/teacher/assignments" },
   { key: "examination", label: "Examination", icon: BookOpen, to: "/teacher/exams" },
   { key: "classes", label: "My Classes", icon: Users, to: "/teacher/students", comingSoon: true },
@@ -407,17 +408,22 @@ function SidebarContent({ collapsed, onToggleCollapsed, onItemClick, showClose, 
               className={`flex items-center gap-2.5 min-w-0 mt-1 p-2 rounded-lg border ${tk.divider} transition-all duration-200`}
             >
               <div
-                className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0 ${tk.avatar}`}
+                className={`w-9 h-9 rounded-full border-2 flex items-center justify-center shrink-0 shadow-sm ${tk.avatar} border-teal-500/30 bg-gradient-to-br from-teal-500 to-teal-700 text-white`}
               >
-                <span className="text-[11px] font-semibold leading-none">{initials}</span>
+                <span className="text-[12px] font-black leading-none tracking-tighter">{initials}</span>
               </div>
               <div className="flex flex-col flex-1 min-w-0 justify-center">
-                <p className={`text-xs font-semibold truncate leading-tight ${tk.userName}`}>
-                  {name}
+                <p className={`text-xs font-black truncate leading-tight tracking-tight ${tk.userName}`}>
+                  {user.full_name || user.name || "Teacher"}
                 </p>
-                <p className={`text-[10px] truncate leading-tight mt-0.5 ${tk.email}`}>
+                <p className={`text-[10px] truncate leading-tight mt-0.5 opacity-80 ${tk.email}`}>
                   {email}
                 </p>
+                {user.department_name && (
+                  <p className="text-[9px] font-black text-teal-600 dark:text-teal-400 mt-1 uppercase tracking-widest leading-none">
+                    {user.department_name}
+                  </p>
+                )}
               </div>
               <button
                 onClick={handleLogout}

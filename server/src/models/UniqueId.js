@@ -28,6 +28,10 @@ const UniqueId = sequelize.define('UniqueId', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  student_phone: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   is_used: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,

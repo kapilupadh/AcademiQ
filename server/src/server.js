@@ -10,6 +10,34 @@ const db = require('./models');
 dotenv.config();
 
 const app = express();
+const http = require('http');
+const server = http.createServer(app);
+const { Server } = require('socket.io');
+
+const io = new Server(server, {
+  cors: {
+    origin: [process.env.FRONTEND_URL || "http://localhost:3000", "http://localhost:5173"],
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+// Make io globally accessible
+global.io = io;
+
+io.on('connection', (socket) => {
+  console.log('⚡ User connected:', socket.id);
+  
+  socket.on('join_room', (room) => {
+    socket.join(room);
+    console.log(`👤 User joined room: ${room}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('🔥 User disconnected');
+  });
+});
+
 const PORT = process.env.PORT || 5000;
 
 const path = require('path');
@@ -69,16 +97,20 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log('✅ Database connected successfully.');
 
-    // Sync models (force: false means it won't drop existing tables)
-    // Use { alter: true } only in dev if you want to update columns without dropping
-    await sequelize.sync({ alter: false });
-    console.log('✅ Models synchronized.');
+    // Sync models (alter: true will update the table structure if columns are missing)
+    // Sync models
+    try {
+      await sequelize.sync({ alter: true });
+      console.log('✅ Models synchronized.');
+    } catch (syncErr) {
+      console.warn('⚠️ Sync issues:', syncErr.message);
+    }
 
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server is running on port ${PORT}`);
+    server.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 Server is running on port ${PORT}`);
     });
   } catch (error) {
-    console.error('❌ Unable to connect to the database:', error);
+    console.error('❌ Fatal server error:', error);
   }
 };
 

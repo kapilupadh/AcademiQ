@@ -1,7 +1,8 @@
 // client/src/pages/teacher/Assignments/CreateAssignment.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Save, Loader2, Calendar, FileText, Info } from "lucide-react";
+import { ChevronLeft, Save, Loader2, Calendar, FileText, Info, Search, ChevronDown } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import assignmentService from "../../../services/assignmentService";
 import api from "../../../services/api"; // For fetching subjects
 import Alert from "../../../components/ui/Alert";
@@ -26,6 +27,11 @@ export default function CreateAssignment() {
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState("");
   const [addingSubject, setAddingSubject] = useState(false);
+
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [subjectSearch, setSubjectSearch] = useState("");
+
+
 
   useEffect(() => {
     fetchSubjects();
@@ -88,10 +94,17 @@ export default function CreateAssignment() {
     setError("");
 
     try {
+      const data = new FormData();
+      Object.keys(formData).forEach(key => {
+        if (formData[key] !== null && formData[key] !== undefined) {
+          data.append(key, formData[key]);
+        }
+      });
+
       if (isEdit) {
-        await assignmentService.updateAssignment(id, formData);
+        await assignmentService.updateAssignment(id, data);
       } else {
-        await assignmentService.createAssignment(formData);
+        await assignmentService.createAssignment(data);
       }
       navigate("/teacher/assignments");
     } catch (err) {
@@ -110,27 +123,29 @@ export default function CreateAssignment() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <button
-        onClick={() => navigate("/teacher/assignments")}
-        className="flex items-center gap-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors mb-6 group"
-      >
-        <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-        Back to Assignments
-      </button>
-
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
-        <div className="p-8 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/50">
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
-            {isEdit ? "Edit Assignment" : "Create New Assignment"}
+    <div className="p-6 max-w-4xl mx-auto pb-40">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-8">
+        <button
+          onClick={() => navigate("/teacher/assignments")}
+          className="p-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all"
+        >
+          <ChevronLeft size={24} />
+        </button>
+        <div>
+          <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
+            {isEdit ? "Edit Assignment" : "New Assignment"}
           </h1>
-          <p className="text-zinc-500 dark:text-zinc-400 mt-1">
-            Fill in the details below to publish an assignment for your students.
+          <p className="text-zinc-500 dark:text-zinc-400 font-medium">
+            Fill in the details to {isEdit ? "update" : "publish"} the assignment
           </p>
         </div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
-          {error && <Alert variant="error">{error}</Alert>}
+      {error && <Alert variant="error" className="mb-6">{error}</Alert>}
+
+      <form onSubmit={handleSubmit} className="space-y-8 relative">
+        <div className="bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-teal-500/30 rounded-3xl shadow-[0_0_50px_rgba(20,184,166,0.1)] p-8 pb-48 space-y-8 overflow-visible relative z-10">
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
@@ -141,7 +156,11 @@ export default function CreateAssignment() {
                 <button
                   type="button"
                   onClick={() => setShowQuickAdd(!showQuickAdd)}
-                  className="text-xs font-bold text-teal-600 hover:text-teal-700 transition-colors"
+                  className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border ${
+                    showQuickAdd 
+                    ? "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:bg-zinc-200" 
+                    : "bg-teal-500/10 border-teal-500/20 text-teal-600 hover:bg-teal-500 hover:text-white shadow-sm"
+                  }`}
                 >
                   {showQuickAdd ? "Cancel" : "+ Quick Add"}
                 </button>
@@ -166,17 +185,54 @@ export default function CreateAssignment() {
                   </button>
                 </div>
               ) : (
-                <select
-                  required
-                  value={formData.subject_id}
-                  onChange={(e) => setFormData({ ...formData, subject_id: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
-                >
-                  <option value="" disabled>Select a subject</option>
-                  {subjects.map(sub => (
-                    <option key={sub.id} value={sub.id}>{sub.name} ({sub.code})</option>
-                  ))}
-                </select>
+                <div className="relative group">
+                  <div 
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-950 border-2 border-zinc-100 dark:border-zinc-800 rounded-xl flex items-center justify-between cursor-pointer group-hover:border-teal-500/50 transition-all"
+                  >
+                    <span className={`text-sm font-bold ${formData.subject_id ? "text-zinc-900 dark:text-white" : "text-zinc-400"}`}>
+                      {formData.subject_id 
+                        ? subjects.find(s => s.id === formData.subject_id)?.name + ` (${subjects.find(s => s.id === formData.subject_id)?.code})`
+                        : "Select a subject..."
+                      }
+                    </span>
+                    <ChevronDown size={18} className={`text-zinc-400 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+                  </div>
+
+                  <AnimatePresence>
+                    {dropdownOpen && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl z-50 overflow-hidden"
+                      >
+                        <div className="max-h-60 overflow-y-auto p-1 custom-scrollbar">
+                          {subjects.map(sub => (
+                            <div
+                              key={sub.id}
+                              onClick={() => {
+                                setFormData({ ...formData, subject_id: sub.id });
+                                setDropdownOpen(false);
+                              }}
+                              className={`p-3 rounded-xl flex items-center justify-between cursor-pointer transition-colors ${
+                                formData.subject_id === sub.id 
+                                  ? "bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800" 
+                                  : "hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                              }`}
+                            >
+                              <div className="flex flex-col">
+                                <span className="text-sm font-bold text-zinc-900 dark:text-white">{sub.name}</span>
+                                <span className="text-[10px] text-zinc-500 uppercase font-black">{sub.code}</span>
+                              </div>
+                              {formData.subject_id === sub.id && <div className="w-2 h-2 bg-teal-500 rounded-full shadow-[0_0_8px_rgba(20,184,166,0.5)]" />}
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               )}
             </div>
 
@@ -225,38 +281,70 @@ export default function CreateAssignment() {
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
-              Due Date
-            </label>
-            <div className="relative">
-              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
-              <input
-                type="date"
-                required
-                value={formData.due_date}
-                onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                className="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4 p-6 bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-100 dark:border-zinc-800 rounded-3xl relative">
+              <label className="text-sm font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                <Calendar size={14} className="text-teal-500" />
+                Submission Deadline
+              </label>
+              <div className="relative">
+                <input
+                  type="date"
+                  required
+                  min={new Date().toISOString().split('T')[0]}
+                  value={formData.due_date}
+                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                  className="w-full px-5 py-4 bg-white dark:bg-zinc-900 border-2 border-zinc-100 dark:border-zinc-800 rounded-2xl flex items-center cursor-pointer hover:border-teal-500/50 transition-all font-black text-zinc-900 dark:text-white shadow-sm outline-none focus:border-teal-500/50"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4 p-6 bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-100 dark:border-zinc-800 rounded-3xl">
+              <label className="text-sm font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                <FileText size={14} className="text-teal-500" />
+                Resource Attachment
+              </label>
+              <div className="relative group cursor-pointer h-[60px]">
+                <input
+                  type="file"
+                  name="assignment_file"
+                  onChange={(e) => setFormData({ ...formData, assignment_file: e.target.files[0] })}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                />
+                <div className="w-full h-full px-5 bg-white dark:bg-zinc-900 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl flex items-center justify-center gap-3 transition-all group-hover:border-teal-500/50 group-hover:bg-teal-500/5 shadow-sm">
+                  <div className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg group-hover:bg-teal-500 group-hover:text-white transition-colors">
+                    <FileText size={18} className="text-zinc-400 group-hover:text-white" />
+                  </div>
+                  <span className="text-xs font-bold text-zinc-500 group-hover:text-teal-600 truncate max-w-[150px]">
+                    {formData.assignment_file ? formData.assignment_file.name : "Attach Instructions"}
+                  </span>
+                </div>
+              </div>
+              <p className="text-[10px] text-zinc-400 font-medium">Supported: PDF, PNG, JPG (Max 5MB)</p>
             </div>
           </div>
 
-          <div className="pt-4 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-zinc-500 text-sm">
-              <Info size={16} />
-              Students will be notified once published.
+          <div className="pt-10 flex flex-col md:flex-row items-center justify-between gap-8 border-t border-zinc-100 dark:border-zinc-800">
+            <div className="flex items-center gap-4 text-zinc-500">
+              <div className="w-12 h-12 flex items-center justify-center bg-teal-500/10 rounded-2xl">
+                <Info size={24} className="text-teal-500" />
+              </div>
+              <div>
+                <p className="text-sm font-black text-zinc-900 dark:text-white leading-tight">Instant Notification</p>
+                <p className="text-xs text-zinc-500">Students will be notified via email & dashboard.</p>
+              </div>
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center gap-2 px-8 py-3 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-lg shadow-teal-600/20"
+              className="w-full md:w-auto min-w-[240px] inline-flex items-center justify-center gap-4 px-10 py-5 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-2xl font-black transition-all shadow-[0_20px_40px_rgba(20,184,166,0.25)] hover:scale-105 active:scale-95 group"
             >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-              {isEdit ? "Update Assignment" : "Publish Assignment"}
+              {loading ? <Loader2 className="animate-spin" size={24} /> : <Save size={24} className="group-hover:rotate-12 transition-transform" />}
+              <span className="uppercase tracking-[0.2em]">{isEdit ? "Update Changes" : "Publish Now"}</span>
             </button>
           </div>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   );
 }

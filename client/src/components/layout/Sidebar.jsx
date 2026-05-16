@@ -528,23 +528,29 @@ function SidebarContent({
               className={`flex items-center gap-2.5 min-w-0 mt-1 p-2 rounded-lg border ${tk.divider} transition-all duration-200`}
             >
               <div
-                className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0 ${tk.avatar}`}
+                className={`w-9 h-9 rounded-full border-2 flex items-center justify-center shrink-0 shadow-sm ${tk.avatar} border-indigo-500/30 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white`}
               >
-                <span className="text-[11px] font-semibold leading-none">
-                  {initials}
-                </span>
+                <span className="text-[12px] font-black leading-none tracking-tighter">{initials}</span>
               </div>
               <div className="flex flex-col flex-1 min-w-0 justify-center">
-                <p
-                  className={`text-xs font-semibold truncate leading-tight ${tk.userName}`}
-                >
+                <p className={`text-xs font-black truncate leading-tight tracking-tight ${tk.userName}`}>
                   {name}
                 </p>
-                <p
-                  className={`text-[10px] truncate leading-tight mt-0.5 ${tk.email}`}
-                >
-                  {email}
-                </p>
+                <div className="flex items-center gap-2 mt-0.5">
+                   <p className={`text-[10px] truncate leading-tight opacity-80 ${tk.email}`}>
+                     {email}
+                   </p>
+                   {user.current_semester && (
+                     <span className="px-1 py-0.5 bg-indigo-500/10 text-indigo-500 rounded text-[8px] font-black uppercase tracking-tighter">
+                       SEM {user.current_semester}
+                     </span>
+                   )}
+                </div>
+                {user.college_roll_number && (
+                  <p className="text-[9px] font-black text-indigo-400 mt-1 uppercase tracking-widest leading-none">
+                    Roll: {user.college_roll_number}
+                  </p>
+                )}
               </div>
               <button
                 onClick={handleLogout}
