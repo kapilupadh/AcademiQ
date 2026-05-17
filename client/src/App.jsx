@@ -30,6 +30,7 @@ import SubjectManager from "./pages/admin/SubjectManager/SubjectManager";
 import TeacherAttendancePage from "./pages/teacher/Attendance/TeacherAttendancePage";
 import StudentAttendancePage from "./pages/student/Attendance/StudentAttendancePage";
 import DepartmentLocation from "./pages/admin/DepartmentLocation/DepartmentLocation";
+import DepartmentManagement from "./pages/admin/DepartmentManagement/DepartmentManagement";
 import AdminAttendanceReport from "./pages/admin/AttendanceReport/AdminAttendanceReport";
 import TeacherSubjectsPage from "./pages/teacher/Subjects/TeacherSubjectsPage";
 import AssignmentList from "./pages/teacher/Assignments/AssignmentList";
@@ -155,6 +156,7 @@ export default function App() {
         <Route path="/admin/exams" element={<AdminPage><AdminExamEngine /></AdminPage>} />
         <Route path="/admin/subjects/import" element={<AdminPage><SubjectImport /></AdminPage>} />
         <Route path="/admin/subjects/manage" element={<AdminPage><SubjectManager /></AdminPage>} />
+        <Route path="/admin/departments/manage" element={<AdminPage><DepartmentManagement /></AdminPage>} />
         <Route path="/admin/departments/locations" element={<AdminPage><DepartmentLocation /></AdminPage>} />
         <Route path="/admin/attendance/report" element={<AdminPage><AdminAttendanceReport /></AdminPage>} />
 

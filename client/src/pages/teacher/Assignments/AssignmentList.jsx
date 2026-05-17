@@ -131,6 +131,11 @@ export default function AssignmentList() {
                       <span className="text-[10px] font-black px-2 py-0.5 bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 rounded-md uppercase tracking-widest border border-teal-200 dark:border-teal-800/50">
                         {assignment.subject?.name || "General"}
                       </span>
+                      {assignment.subject?.semester && (
+                        <span className="text-[10px] font-black px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-md uppercase tracking-widest border border-indigo-200 dark:border-indigo-800/50">
+                          Semester {assignment.subject.semester}
+                        </span>
+                      )}
                       <div className="flex items-center gap-2 text-xs font-bold text-zinc-500">
                         <Calendar size={14} className="text-zinc-400" />
                         <span className="text-zinc-400 font-normal">Deadline:</span>

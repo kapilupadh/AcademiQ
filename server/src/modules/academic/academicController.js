@@ -1,6 +1,6 @@
 // server/src/modules/academic/academicController.js
 
-const { Department, Program, Subject } = require('../../models');
+const { Department, Program, Subject, sequelize } = require('../../models');
 
 // GET /api/academics/departments
 // All roles
@@ -97,32 +97,6 @@ exports.getMySubjects = async (req, res) => {
       order: [['semester', 'ASC'], ['name', 'ASC']],
     });
 
-    // ── FORCE SEED for BCA (if empty) ──
-    if (subjects.length === 0 && user.department_id) {
-       const dept = await Department.findByPk(user.department_id);
-       if (dept && dept.name === 'BCA') {
-          console.log('[DASHBOARD] BCA Subjects empty. Auto-seeding default subjects...');
-          const { Program } = require('../../models');
-          let program = await Program.findOne({ where: { department_id: dept.id } });
-          if (!program) {
-            program = await Program.create({ name: 'BCA General', code: 'BCA-GEN', department_id: dept.id, duration_years: 3, is_active: true });
-          }
-          const defaultSubs = [
-            { name: 'C Programming', code: 'BCA101', semester: 1 },
-            { name: 'Data Structures', code: 'BCA201', semester: 2 },
-            { name: 'Web Development', code: 'BCA301', semester: 3 }
-          ];
-          for (const s of defaultSubs) {
-            await Subject.create({ ...s, department_id: dept.id, program_id: program.id, is_active: true });
-          }
-          // Re-fetch
-          subjects = await Subject.findAll({
-            where,
-            attributes: ['id', 'name', 'code', 'semester', 'department_id'],
-            order: [['semester', 'ASC'], ['name', 'ASC']],
-          });
-       }
-    }
 
     res.json(subjects);
   } catch (err) {
@@ -168,5 +142,104 @@ exports.createSubject = async (req, res) => {
   } catch (err) {
     console.error('createSubject error:', err);
     res.status(500).json({ message: 'Error creating subject' });
+  }
+};
+
+exports.deleteSubject = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId, role } = req.user;
+    
+    // Only teachers or admins should be able to delete subjects
+    if (role !== 1 && role !== 2) {
+      return res.status(403).json({ message: 'Unauthorized to delete subjects' });
+    }
+
+    const { Subject, Assignment } = require('../../models');
+    
+    // Check if the subject exists
+    const subject = await Subject.findByPk(id);
+    if (!subject) {
+      return res.status(404).json({ message: 'Subject not found' });
+    }
+
+    // Optional: Check if assignments depend on this subject and prevent deletion
+    const assignmentsCount = await Assignment.count({ where: { subject_id: id } });
+    if (assignmentsCount > 0) {
+      return res.status(409).json({ message: `Cannot delete subject. There are ${assignmentsCount} assignment(s) linked to it.` });
+    }
+
+    await subject.destroy();
+    res.json({ message: 'Subject deleted successfully' });
+  } catch (err) {
+    console.error('deleteSubject error:', err);
+    res.status(500).json({ message: 'Error deleting subject' });
+  }
+};
+
+// POST /api/academics/departments
+// Admin role only
+exports.createDepartment = async (req, res) => {
+  try {
+    const { name, code } = req.body;
+    if (!name) {
+      return res.status(400).json({ message: 'Department name is required.' });
+    }
+
+    const uppercaseCode = code ? code.trim().toUpperCase() : name.trim().slice(0, 4).toUpperCase();
+
+    // Check unique name (case insensitive)
+    const { Op } = require('sequelize');
+    const existing = await Department.findOne({ 
+      where: sequelize.where(
+        sequelize.fn('lower', sequelize.col('name')), 
+        sequelize.fn('lower', name.trim())
+      )
+    });
+    if (existing) {
+      return res.status(400).json({ message: 'A department with this name already exists.' });
+    }
+
+    const dept = await Department.create({
+      name: name.trim(),
+      code: uppercaseCode,
+      status: 'ACTIVE'
+    });
+
+    res.status(201).json({ message: 'Department created successfully', department: dept });
+  } catch (err) {
+    console.error('createDepartment error:', err);
+    res.status(500).json({ message: 'Error creating department.' });
+  }
+};
+
+// DELETE /api/academics/departments/:id
+// Admin role only
+exports.deleteDepartment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const dept = await Department.findByPk(id);
+    if (!dept) {
+      return res.status(404).json({ message: 'Department not found.' });
+    }
+
+    // Check if there are users (teachers/students) or programs assigned to this department
+    const { User, Program } = require('../../models');
+    
+    const userCount = await User.count({ where: { department_id: id } });
+    if (userCount > 0) {
+      return res.status(400).json({ message: 'Cannot delete department. Active users (students/teachers) are currently assigned to it.' });
+    }
+
+    const programCount = await Program.count({ where: { department_id: id } });
+    if (programCount > 0) {
+      return res.status(400).json({ message: 'Cannot delete department. There are active programs linked to it.' });
+    }
+
+    await dept.destroy();
+    res.json({ message: 'Department deleted successfully' });
+  } catch (err) {
+    console.error('deleteDepartment error:', err);
+    res.status(500).json({ message: 'Error deleting department.' });
   }
 };

@@ -33,7 +33,7 @@ exports.submitRequest = async (req, res) => {
       email,
       phone,
       role: parseInt(role),
-      department: 'BCA' // Fixed as per requirements
+      department: req.body.department // Dynamically capture department from frontend
     });
 
     // Notify Admin via Socket
@@ -99,45 +99,17 @@ exports.handleAction = async (req, res) => {
         status: 'ACTIVE'
       });
 
-      // 4. Ensure BCA Department and Program exist
-      const { Department, Program } = require('../../models');
-      let bcaDept = await Department.findOne({ where: { name: 'BCA' } });
-      if (!bcaDept) {
-        bcaDept = await Department.create({
-          name: 'BCA',
-          code: 'BCA',
+      // 4. Link User to their Requested Department
+      const { Department } = require('../../models');
+      let targetDept = await Department.findOne({ where: { name: request.department } });
+      
+      // If department somehow doesn't exist, create it dynamically
+      if (!targetDept) {
+        targetDept = await Department.create({
+          name: request.department,
+          code: request.department.substring(0, 4).toUpperCase(),
           status: 'ACTIVE'
         });
-      }
-
-      let bcaProgram = await Program.findOne({ where: { department_id: bcaDept.id } });
-      if (!bcaProgram) {
-        bcaProgram = await Program.create({
-          name: 'BCA General',
-          code: 'BCA-GEN',
-          department_id: bcaDept.id,
-          duration_years: 3,
-          is_active: true
-        });
-      }
-
-      // 4.5 Ensure some default subjects exist so the dropdown isn't empty
-      const { Subject } = require('../../models');
-      const subCount = await Subject.count({ where: { department_id: bcaDept.id } });
-      if (subCount === 0) {
-        const defaultSubs = [
-          { name: 'C Programming', code: 'BCA101', semester: 1 },
-          { name: 'Data Structures', code: 'BCA201', semester: 2 },
-          { name: 'Web Development', code: 'BCA301', semester: 3 }
-        ];
-        for (const s of defaultSubs) {
-          await Subject.create({
-            ...s,
-            department_id: bcaDept.id,
-            program_id: bcaProgram.id,
-            is_active: true
-          });
-        }
       }
 
       // 5. Create User
@@ -149,8 +121,8 @@ exports.handleAction = async (req, res) => {
         role: request.role,
         unique_id: unique_id,
         phone_number: request.phone, // Transfer phone from request
-        department_id: bcaDept.id,
-        program_id: bcaProgram.id,
+        department_id: targetDept.id,
+        program_id: null, // Will be set by user during final registration if needed
         current_semester: request.role === 3 ? 1 : null, 
         is_active: true,
         email_verified: true

@@ -46,7 +46,8 @@ const path = require('path');
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL,      // This will use your Vercel link from Railway variables
-    "http://localhost:3000"        // This keeps it working on your local computer
+    "http://localhost:3000",       // This keeps it working on your local computer (CRA)
+    "http://localhost:5173"        // This keeps it working on your local computer (Vite)
   ],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Authorization", "Content-Type"],

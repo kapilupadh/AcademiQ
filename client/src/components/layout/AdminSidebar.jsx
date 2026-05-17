@@ -33,6 +33,7 @@ const PRIMARY = [
     badge: { type: "new", text: "LIVE", style: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50" } },
   { key: "user-mgmt",    label: "User Management",    icon: UsersRound,      to: "/admin/generate-id",
     badge: { type: "chip", text: "ID", style: "bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400 border border-violet-200 dark:border-violet-900/50" } },
+  { key: "dept-mgmt",    label: "Manage Departments", icon: School,          to: "/admin/departments/manage" },
   { key: "exam-engine",  label: "Examination Engine", icon: BrainCircuit,    to: "/admin/exams",
     badge: { type: "new", text: "NEW", style: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700" } },
   { key: "att-reports",  label: "Attendance Reports", icon: BarChart2,       to: "/admin/attendance/report" },

@@ -91,7 +91,6 @@ Below is the high‑level tree of the repository.  Excluded: `node_modules`, `.g
 │   │   └── test_email.js
 │   └── src/
 │       ├── seed.js
-│       ├── seedAdmin.js
 │       ├── server.js
 │       ├── config/
 │       │   ├── database.js

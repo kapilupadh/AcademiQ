@@ -1,7 +1,7 @@
 // client/src/pages/teacher/Assignments/CreateAssignment.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Save, Loader2, Calendar, FileText, Info, Search, ChevronDown } from "lucide-react";
+import { ChevronLeft, Save, Loader2, Calendar, FileText, Info, Search, ChevronDown, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import assignmentService from "../../../services/assignmentService";
 import api from "../../../services/api"; // For fetching subjects
@@ -13,6 +13,7 @@ export default function CreateAssignment() {
   const isEdit = !!id;
 
   const [subjects, setSubjects] = useState([]);
+  const [subjectMode, setSubjectMode] = useState('select'); // 'select' or 'create'
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEdit);
   const [error, setError] = useState("");
@@ -26,7 +27,12 @@ export default function CreateAssignment() {
 
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState("");
+  const [newSubjectSemester, setNewSubjectSemester] = useState("1");
   const [addingSubject, setAddingSubject] = useState(false);
+  const [deletingSubjectId, setDeletingSubjectId] = useState(null);
+  
+  // Semester filter state for dropdown
+  const [selectedSemesterFilter, setSelectedSemesterFilter] = useState("ALL");
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [subjectSearch, setSubjectSearch] = useState("");
@@ -75,11 +81,15 @@ export default function CreateAssignment() {
     if (!newSubjectName.trim()) return;
     setAddingSubject(true);
     try {
-      const res = await api.post("/academics/subjects", { name: newSubjectName.trim() });
+      const res = await api.post("/academics/subjects", { 
+        name: newSubjectName.trim(),
+        semester: parseInt(newSubjectSemester)
+      });
       const newSub = res.data;
       setSubjects(prev => [...prev, newSub]);
       setFormData(prev => ({ ...prev, subject_id: newSub.id }));
       setNewSubjectName("");
+      setNewSubjectSemester("1");
       setShowQuickAdd(false);
     } catch (err) {
       setError("Failed to add subject");
@@ -87,6 +97,27 @@ export default function CreateAssignment() {
       setAddingSubject(false);
     }
   };
+
+  const handleDeleteSubject = async (e, subjectId) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this subject?")) return;
+    setDeletingSubjectId(subjectId);
+    try {
+      await api.delete(`/academics/subjects/${subjectId}`);
+      setSubjects(subjects.filter(s => s.id !== subjectId));
+      if (formData.subject_id === subjectId) {
+        setFormData(prev => ({ ...prev, subject_id: "" }));
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete subject. It might be linked to existing assignments.");
+    } finally {
+      setDeletingSubjectId(null);
+    }
+  };
+
+  const filteredSubjects = selectedSemesterFilter === "ALL" 
+    ? subjects 
+    : subjects.filter(sub => sub.semester === parseInt(selectedSemesterFilter));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -149,50 +180,59 @@ export default function CreateAssignment() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
-                  Subject
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowQuickAdd(!showQuickAdd)}
-                  className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border ${
-                    showQuickAdd 
-                    ? "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:bg-zinc-200" 
-                    : "bg-teal-500/10 border-teal-500/20 text-teal-600 hover:bg-teal-500 hover:text-white shadow-sm"
-                  }`}
+              <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl w-max mb-4">
+                <button 
+                  type="button" 
+                  onClick={() => setSubjectMode('select')} 
+                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${subjectMode === 'select' ? 'bg-white dark:bg-zinc-700 text-teal-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
                 >
-                  {showQuickAdd ? "Cancel" : "+ Quick Add"}
+                  Select Existing
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setSubjectMode('create')} 
+                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${subjectMode === 'create' ? 'bg-white dark:bg-zinc-700 text-teal-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+                >
+                  Create New
                 </button>
               </div>
-              
-              {showQuickAdd ? (
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Subject Name"
-                    value={newSubjectName}
-                    onChange={(e) => setNewSubjectName(e.target.value)}
-                    className="flex-1 px-4 py-2 bg-white dark:bg-zinc-950 border border-teal-500 rounded-xl focus:ring-2 focus:ring-teal-500/20 outline-none transition-all"
-                  />
-                  <button
-                    type="button"
-                    disabled={addingSubject || !newSubjectName.trim()}
-                    onClick={handleQuickAddSubject}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 disabled:opacity-50 transition-all shadow-sm"
+
+              {subjectMode === 'select' ? (
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                      Subject
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-zinc-500">Filter:</span>
+                  <select 
+                    value={selectedSemesterFilter}
+                    onChange={(e) => {
+                      setSelectedSemesterFilter(e.target.value);
+                      setFormData(prev => ({ ...prev, subject_id: "" })); // Reset selection on filter change
+                    }}
+                    className="bg-zinc-100 dark:bg-zinc-800 text-[10px] font-bold rounded-lg px-2 py-1 outline-none text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700"
                   >
-                    {addingSubject ? <Loader2 className="animate-spin" size={16} /> : "Add"}
-                  </button>
+                    <option value="ALL">All Semesters</option>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
+                      <option key={s} value={s}>Semester {s}</option>
+                    ))}
+                  </select>
                 </div>
-              ) : (
-                <div className="relative group">
+              </div>
+
+              {/* Dropdown for selecting existing subjects */}
+              <div className="relative group">
                   <div 
                     onClick={() => setDropdownOpen(!dropdownOpen)}
                     className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-950 border-2 border-zinc-100 dark:border-zinc-800 rounded-xl flex items-center justify-between cursor-pointer group-hover:border-teal-500/50 transition-all"
                   >
                     <span className={`text-sm font-bold ${formData.subject_id ? "text-zinc-900 dark:text-white" : "text-zinc-400"}`}>
                       {formData.subject_id 
-                        ? subjects.find(s => s.id === formData.subject_id)?.name + ` (${subjects.find(s => s.id === formData.subject_id)?.code})`
+                        ? (() => {
+                            const sub = subjects.find(s => s.id === formData.subject_id);
+                            return sub ? `${sub.name} (${sub.code}) - Sem ${sub.semester}` : "Select a subject...";
+                          })()
                         : "Select a subject..."
                       }
                     </span>
@@ -208,7 +248,10 @@ export default function CreateAssignment() {
                         className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl z-50 overflow-hidden"
                       >
                         <div className="max-h-60 overflow-y-auto p-1 custom-scrollbar">
-                          {subjects.map(sub => (
+                          {filteredSubjects.length === 0 && (
+                             <div className="p-3 text-center text-sm text-zinc-500">No subjects found for this semester.</div>
+                          )}
+                          {filteredSubjects.map(sub => (
                             <div
                               key={sub.id}
                               onClick={() => {
@@ -222,16 +265,66 @@ export default function CreateAssignment() {
                               }`}
                             >
                               <div className="flex flex-col">
-                                <span className="text-sm font-bold text-zinc-900 dark:text-white">{sub.name}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-bold text-zinc-900 dark:text-white">{sub.name}</span>
+                                  <span className="px-1.5 py-0.5 text-[9px] font-black bg-indigo-55 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded border border-indigo-100 dark:border-indigo-900/40">
+                                    Sem {sub.semester}
+                                  </span>
+                                </div>
                                 <span className="text-[10px] text-zinc-500 uppercase font-black">{sub.code}</span>
                               </div>
-                              {formData.subject_id === sub.id && <div className="w-2 h-2 bg-teal-500 rounded-full shadow-[0_0_8px_rgba(20,184,166,0.5)]" />}
+                              <div className="flex items-center gap-3">
+                                {formData.subject_id === sub.id && <div className="w-2 h-2 bg-teal-500 rounded-full shadow-[0_0_8px_rgba(20,184,166,0.5)]" />}
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleDeleteSubject(e, sub.id)}
+                                  className="text-zinc-400 hover:text-red-500 transition-colors p-1"
+                                >
+                                  {deletingSubjectId === sub.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
+                </div>
+              </div>
+              ) : (
+                <div className="space-y-4">
+                  <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300 block">
+                    Quick Add Subject
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      placeholder="Subject Name"
+                      value={newSubjectName}
+                      onChange={(e) => setNewSubjectName(e.target.value)}
+                      className="flex-1 px-4 py-2 bg-white dark:bg-zinc-950 border border-teal-500 rounded-xl focus:ring-2 focus:ring-teal-500/20 outline-none transition-all"
+                    />
+                    <select 
+                      value={newSubjectSemester}
+                      onChange={(e) => setNewSubjectSemester(e.target.value)}
+                      className="w-full sm:w-32 px-4 py-2 bg-white dark:bg-zinc-950 border border-teal-500 rounded-xl focus:ring-2 focus:ring-teal-500/20 outline-none transition-all"
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
+                        <option key={s} value={s}>Sem {s}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={addingSubject || !newSubjectName.trim()}
+                      onClick={async () => {
+                        await handleQuickAddSubject();
+                        setSubjectMode('select'); // Switch back to select after adding
+                      }}
+                      className="px-4 py-2 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 disabled:opacity-50 transition-all shadow-sm"
+                    >
+                      {addingSubject ? <Loader2 className="animate-spin" size={16} /> : "Add"}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

@@ -22,8 +22,10 @@ const AssignmentSubmission = require('./AssignmentSubmission');
 const AccessRequest = require('./AccessRequest');
 
 // ── User associations ─────────────────────────────────────────────────────────
-User.belongsTo(Department, { foreignKey: 'department_id' });
+User.belongsTo(Department, { foreignKey: 'department_id', as: 'department' });
 Department.hasMany(User, { foreignKey: 'department_id' });
+User.belongsTo(Program, { foreignKey: 'program_id', as: 'program' });
+Program.hasMany(User, { foreignKey: 'program_id' });
 
 // ── Department / Program / Subject ────────────────────────────────────────────
 Department.hasMany(Program, { foreignKey: 'department_id' });

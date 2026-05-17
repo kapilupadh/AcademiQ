@@ -25,6 +25,7 @@ const Subject = sequelize.define('Subject', {
     type: DataTypes.UUID,
     allowNull: true,
     references: { model: 'Users', key: 'id' },
+    onDelete: 'SET NULL',
   },
 
   semester: {

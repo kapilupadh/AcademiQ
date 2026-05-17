@@ -269,8 +269,8 @@ exports.login = async (req, res) => {
     const { login_id, password, expected_role } = req.body;
 
     // ── Check Hardcoded Admin ───────────────────────────────────────────
-    const adminId = process.env.ADMIN_ID || 'ADMIN-BCA-001';
-    const adminPass = process.env.ADMIN_PASSWORD || 'AcademiQ@BCA2026';
+    const adminId = process.env.ADMIN_ID || 'ADMIN-DU-001';
+    const adminPass = process.env.ADMIN_PASSWORD || 'AcademiQ@DU2026';
 
     if (login_id === adminId && password === adminPass) {
       if (expected_role && parseInt(expected_role) !== 1) {
@@ -379,9 +379,17 @@ exports.resetPassword = async (req, res) => {
 
 exports.getProfile = async (req, res) => {
   try {
-    const user = await User.findByPk(req.user.id, { attributes: { exclude: ['password_hash', 'otp', 'otp_expires_at'] } });
+    const { Department, Program } = require('../../models');
+    const user = await User.findByPk(req.user.id, { 
+      attributes: { exclude: ['password_hash', 'otp', 'otp_expires_at'] },
+      include: [
+        { model: Department, as: 'department', attributes: ['name', 'code'] },
+        { model: Program, as: 'program', attributes: ['name', 'code'] }
+      ]
+    });
     user ? res.json(user) : res.status(404).json({ message: 'User not found' });
   } catch (error) {
+    console.error('getProfile Error:', error);
     res.status(500).json({ message: 'Error fetching profile' });
   }
 };
@@ -397,12 +405,14 @@ exports.updateProfile = async (req, res) => {
       return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
     }
 
+    const isStudent = user.role === 3;
+    const isTeacher = user.role === 2;
     Object.assign(user, { 
-      full_name, 
-      dob, 
+      full_name: isStudent ? user.full_name : full_name, 
+      dob: (dob && dob !== "") ? dob : null, 
       current_semester: current_semester ? parseInt(current_semester) : null, 
       program_id: program_id || null, 
-      department_id: department_id || null,
+      department_id: (isStudent || isTeacher) ? user.department_id : (department_id || null),
       phone_number: phone_number || user.phone_number
     });
     await user.save();

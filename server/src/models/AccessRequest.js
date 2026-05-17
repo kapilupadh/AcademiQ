@@ -34,7 +34,7 @@ const AccessRequest = sequelize.define('AccessRequest', {
   },
   department: {
     type: DataTypes.STRING,
-    defaultValue: 'BCA',
+    allowNull: false,
   },
   status: {
     type: DataTypes.ENUM('PENDING', 'APPROVED', 'REJECTED'),

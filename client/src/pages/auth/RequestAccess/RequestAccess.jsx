@@ -17,15 +17,31 @@ import { Link } from 'react-router-dom';
 
 const RequestAccess = () => {
   const [role, setRole] = useState(3); // 3: Student, 2: Teacher
+  const [departments, setDepartments] = useState([]);
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
     phone: '',
-    department: 'BCA'
+    department: ''
   });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+
+  React.useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const res = await api.get('/departments');
+        setDepartments(res.data);
+        if (res.data.length > 0) {
+          setFormData(prev => ({ ...prev, department: res.data[0].name }));
+        }
+      } catch (err) {
+        console.error('Failed to load departments', err);
+      }
+    };
+    fetchDepartments();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,6 +50,12 @@ const RequestAccess = () => {
 
     if (!formData.phone || !/^\d{10}$/.test(formData.phone)) {
       setError('Phone number must be exactly 10 digits.');
+      setLoading(false);
+      return;
+    }
+
+    if (formData.email.toLowerCase().endsWith('@mail.com')) {
+      setError('Did you mean @gmail.com? Please enter a valid email address.');
       setLoading(false);
       return;
     }
@@ -213,12 +235,18 @@ const RequestAccess = () => {
                 <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-1">Department</label>
                 <div className="relative">
                   <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
-                  <input 
-                    type="text"
-                    disabled
-                    value="BCA"
-                    className="w-full bg-black/50 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm opacity-50 cursor-not-allowed"
-                  />
+                  <select 
+                    required
+                    value={formData.department}
+                    onChange={e => setFormData({...formData, department: e.target.value})}
+                    className="w-full bg-black/50 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-emerald-500/50 transition-all text-white"
+                  >
+                    {departments.map(dept => (
+                      <option key={dept.id} value={dept.name} className="bg-[#111] text-white">
+                        {dept.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>

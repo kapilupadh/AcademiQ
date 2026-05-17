@@ -257,6 +257,12 @@ export default function Profile() {
                     <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500 mb-3">
                       Personal Details
                     </h3>
+                    {profile?.role === 3 && (
+                      <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-3 text-xs text-zinc-600 dark:text-zinc-400 mb-4 flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
+                        <span>Student account policy: Your Full Name, Email, and Department are verified and cannot be edited. Please contact the administration office for corrections.</span>
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className={LABEL_CLS}>Full Name <span className="text-red-500">*</span></label>
@@ -264,8 +270,9 @@ export default function Profile() {
                           type="text"
                           value={formData.full_name}
                           onChange={e => setFormData({ ...formData, full_name: e.target.value })}
-                          className={INPUT_CLS}
+                          className={`${INPUT_CLS} ${profile?.role === 3 ? "bg-zinc-50 dark:bg-zinc-950/60 opacity-80 cursor-not-allowed" : ""}`}
                           required
+                          disabled={profile?.role === 3}
                         />
                       </div>
                       <div>
@@ -279,16 +286,18 @@ export default function Profile() {
                           placeholder="10-digit number"
                         />
                       </div>
-                      <div>
-                        <label className={LABEL_CLS}>Date of Birth <span className="text-red-500">*</span></label>
-                        <input
-                          type="date"
-                          value={formData.dob}
-                          onChange={e => setFormData({ ...formData, dob: e.target.value })}
-                          className={INPUT_CLS}
-                          required
-                        />
-                      </div>
+                      {profile?.role === 3 && (
+                        <div>
+                          <label className={LABEL_CLS}>Date of Birth <span className="text-red-500">*</span></label>
+                          <input
+                            type="date"
+                            value={formData.dob}
+                            onChange={e => setFormData({ ...formData, dob: e.target.value })}
+                            className={INPUT_CLS}
+                            required
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -303,34 +312,15 @@ export default function Profile() {
                         <select
                           value={formData.department_id}
                           onChange={e => setFormData({ ...formData, department_id: e.target.value, program_id: "", current_semester: "" })}
-                          className={INPUT_CLS}
+                          className={`${INPUT_CLS} ${(profile?.role === 3 || profile?.role === 2) ? "bg-zinc-50 dark:bg-zinc-950/60 opacity-80 cursor-not-allowed" : ""}`}
+                          disabled={profile?.role === 3 || profile?.role === 2}
                         >
                           <option value="" className={OPTION_CLS}>— Select Department —</option>
                           {departments?.map(d => <option key={d.id} value={d.id} className={OPTION_CLS}>{d.name}</option>)}
                         </select>
                       </div>
 
-                      {formData.department_id && (
-                        <div>
-                          <label className={LABEL_CLS}>Program</label>
-                          {loadingPrograms ? (
-                            <div className="flex h-10 items-center gap-2 text-xs text-zinc-500 dark:text-zinc-500 px-3 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50 dark:bg-zinc-950">
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Fetching programs...
-                            </div>
-                          ) : (
-                            <select
-                              value={formData.program_id}
-                              onChange={e => setFormData({ ...formData, program_id: e.target.value, current_semester: "" })}
-                              className={INPUT_CLS}
-                            >
-                              <option value="" className={OPTION_CLS}>— Select Program —</option>
-                              {programs?.map(p => <option key={p.id} value={p.id} className={OPTION_CLS}>{p.name} ({p.code})</option>)}
-                            </select>
-                          )}
-                        </div>
-                      )}
-
-                      {formData.program_id && (
+                      {formData.department_id && profile?.role === 3 && (
                         <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}>
                           <label className={LABEL_CLS}>Current Semester</label>
                           <select
@@ -391,11 +381,13 @@ export default function Profile() {
                         label="Phone Number"
                         value={profile?.phone_number || "Not set"}
                       />
-                      <InfoRow
-                        icon={Calendar}
-                        label="Date of Birth"
-                        value={profile?.dob ? new Date(profile.dob).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Not set"}
-                      />
+                      {profile?.role === 3 && (
+                        <InfoRow
+                          icon={Calendar}
+                          label="Date of Birth"
+                          value={profile?.dob ? new Date(profile.dob).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Not set"}
+                        />
+                      )}
                     </dl>
                   </div>
 
@@ -411,26 +403,22 @@ export default function Profile() {
                         value={deptName || "Not assigned"}
                         muted={!deptName}
                       />
-                      <InfoRow
-                        icon={BookOpen}
-                        label="Program"
-                        value={programName || "Not assigned"}
-                        muted={!programName}
-                      />
-                      <div className="space-y-1">
-                        <dt className="text-xs font-medium text-zinc-500 dark:text-zinc-500 flex items-center gap-1.5">
-                          <Calendar className="w-3 h-3" /> Current Semester
-                        </dt>
-                        <dd>
-                          {profile?.current_semester ? (
-                            <span className="inline-flex items-center gap-1 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-2 py-0.5 text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                              Semester {profile.current_semester}
-                            </span>
-                          ) : (
-                            <span className="text-sm text-zinc-400 dark:text-zinc-600">Not assigned</span>
-                          )}
-                        </dd>
-                      </div>
+                      {profile?.role === 3 && (
+                        <div className="space-y-1">
+                          <dt className="text-xs font-medium text-zinc-500 dark:text-zinc-500 flex items-center gap-1.5">
+                            <Calendar className="w-3 h-3" /> Current Semester
+                          </dt>
+                          <dd>
+                            {profile?.current_semester ? (
+                              <span className="inline-flex items-center gap-1 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-2 py-0.5 text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                                Semester {profile.current_semester}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-zinc-400 dark:text-zinc-600">Not assigned</span>
+                            )}
+                          </dd>
+                        </div>
+                      )}
                     </dl>
                   </div>
                 </motion.div>

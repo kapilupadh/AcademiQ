@@ -241,7 +241,7 @@ exports.getMyAssignments = async (req, res) => {
     if (role == 2) { // Teacher
       assignments = await Assignment.findAll({
         where: { teacher_id: userId },
-        include: [{ model: Subject, as: 'subject', attributes: ['name', 'code'] }],
+        include: [{ model: Subject, as: 'subject', attributes: ['name', 'code', 'semester'] }],
         order: [['due_date', 'ASC']],
       });
     } else { // Student
@@ -249,21 +249,26 @@ exports.getMyAssignments = async (req, res) => {
       const user = await User.findByPk(userId);
       if (!user) return res.status(404).json({ message: 'User not found.' });
 
-      // --- UNIFIED BCA VISIBILITY ---
+      // --- DEPARTMENT & SEMESTER ISOLATION ---
       let assignmentsWhere = { 
         status: { [Op.ne]: 'DRAFT' } 
       };
 
       if (user.department_id) {
-        // Find all subjects in the student's department
+        // Filter subjects by student's department and current semester
+        const subjectWhere = { department_id: user.department_id };
+        if (user.current_semester) {
+          subjectWhere.semester = user.current_semester;
+        }
+
         const deptSubjects = await Subject.findAll({
-          where: { department_id: user.department_id },
+          where: subjectWhere,
           attributes: ['id'],
           raw: true
         });
         const deptSubjectIds = deptSubjects.map(s => s.id);
         assignmentsWhere.subject_id = { [Op.in]: deptSubjectIds };
-        console.log(`[DEBUG] Unified Mode: Showing all ${deptSubjectIds.length} subjects for Dept ${user.department_id}`);
+        console.log(`[DEBUG] Isolated Mode: Showing ${deptSubjectIds.length} subjects for Dept ${user.department_id}, Semester ${user.current_semester || 'ALL'}`);
       }
 
       assignments = await Assignment.findAll({
